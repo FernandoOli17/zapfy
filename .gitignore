@@ -1,0 +1,46 @@
+# deps
+node_modules
+.pnpm-store
+
+# build
+dist
+.next
+.turbo
+.cache
+out
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# test
+coverage
+playwright-report
+test-results
+
+# misc
+.eslintcache
+.sentryclirc
+
+# uploads locais
+uploads
