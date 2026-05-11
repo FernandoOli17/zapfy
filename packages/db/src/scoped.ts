@@ -1,6 +1,6 @@
 import { ForbiddenError } from '@zapai/shared';
 
-import { prisma } from './index.js';
+import { prisma } from './index';
 
 /**
  * Cliente Prisma escopado a um workspace. Use em todo lugar que toca entidade

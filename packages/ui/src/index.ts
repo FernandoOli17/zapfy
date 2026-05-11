@@ -1,7 +1,7 @@
-export { cn } from './lib/utils.js';
-export { Button, buttonVariants, type ButtonProps } from './components/button.js';
-export { Input, type InputProps } from './components/input.js';
-export { Label } from './components/label.js';
+export { cn } from './lib/utils';
+export { Button, buttonVariants, type ButtonProps } from './components/button';
+export { Input, type InputProps } from './components/input';
+export { Label } from './components/label';
 export {
   Card,
   CardHeader,
@@ -9,4 +9,4 @@ export {
   CardDescription,
   CardContent,
   CardFooter,
-} from './components/card.js';
+} from './components/card';

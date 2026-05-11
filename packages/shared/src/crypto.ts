@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 
-import { AppError } from './errors.js';
+import { AppError } from './errors';
 
 /**
  * AES-256-GCM pra cifrar tokens da Meta e outros segredos por workspace.

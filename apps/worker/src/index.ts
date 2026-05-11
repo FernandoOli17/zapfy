@@ -2,8 +2,8 @@ import { Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { createLogger } from '@zapai/shared';
 
-import { env } from './env.js';
-import { QUEUE_NAMES } from './queues.js';
+import { env } from './env';
+import { QUEUE_NAMES } from './queues';
 
 const log = createLogger('worker');
 
