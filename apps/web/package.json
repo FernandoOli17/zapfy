@@ -16,6 +16,7 @@
     "@zapai/shared": "workspace:*",
     "@zapai/ui": "workspace:*",
     "better-auth": "^1.1.13",
+    "dotenv": "^17.4.2",
     "geist": "^1.3.1",
     "lucide-react": "^0.469.0",
     "next": "^15.1.4",
