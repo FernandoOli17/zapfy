@@ -28,24 +28,25 @@ export function SignupForm() {
         callbackURL: '/onboarding',
       });
       if (res.error) {
-        const errKeys = Object.keys(res.error);
-        console.error('[signup] error from better-auth', res.error, 'keys=', errKeys);
+        const errAny = res.error as Record<string, unknown>;
+        console.error('[signup] error from better-auth', {
+          raw: errAny,
+          stringified: JSON.stringify(errAny),
+          status: errAny['status'],
+          statusText: errAny['statusText'],
+          message: errAny['message'],
+          code: errAny['code'],
+        });
 
-        // Caso comum: error vazio = a rota /api/auth/* devolveu 500/HTML.
-        // Quase sempre é DB sem tabelas ('pnpm db:push' não rodou) ou Postgres off.
-        if (errKeys.length === 0) {
-          const diag = await probeAuthEndpoint();
+        // Se nao veio mensagem, da probe pra ler o body bruto da rota
+        if (!errAny['message']) {
+          const diag = await probeAuthSignup({ email, password, name });
           setError(diag);
           setBusy(false);
           return;
         }
 
-        const msg =
-          res.error.message ||
-          res.error.statusText ||
-          (res.error.code ? `Erro ${res.error.code}` : null) ||
-          'Falha ao criar conta. Confira se o e-mail já não está em uso.';
-        setError(msg);
+        setError(String(errAny['message']));
         setBusy(false);
         return;
       }
@@ -162,34 +163,68 @@ export function SignupForm() {
   );
 }
 
-async function probeAuthEndpoint(): Promise<string> {
+async function probeAuthSignup(payload: {
+  email: string;
+  password: string;
+  name: string;
+}): Promise<string> {
   try {
-    const res = await fetch('/api/auth/get-session', { cache: 'no-store' });
+    const res = await fetch('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    });
     const ct = res.headers.get('content-type') ?? '';
     const text = await res.text();
-    console.error('[signup] probe /api/auth/get-session', {
+    console.error('[signup] probe /api/auth/sign-up/email', {
       status: res.status,
+      statusText: res.statusText,
       contentType: ct,
-      body: text.slice(0, 1000),
+      bodyPreview: text.slice(0, 2000),
     });
 
+    // Tenta parsear JSON e pescar mensagem
+    let bodyJson: Record<string, unknown> | null = null;
+    try {
+      bodyJson = JSON.parse(text);
+    } catch {
+      // nao era JSON
+    }
+    const jsonMsg =
+      (bodyJson?.['message'] as string | undefined) ??
+      (typeof bodyJson?.['error'] === 'string' ? (bodyJson['error'] as string) : undefined) ??
+      ((bodyJson?.['error'] as { message?: string } | undefined)?.message);
+
+    // Padroes conhecidos no body
+    const lowered = text.toLowerCase();
+    if (lowered.includes('does not exist') || lowered.includes('p2021')) {
+      return 'Tabelas do banco ainda não existem. Rode `pnpm db:push` no terminal (Postgres precisa estar rodando: `docker compose up -d`).';
+    }
+    if (lowered.includes('econnrefused') || lowered.includes("can't reach database")) {
+      return 'Postgres não está respondendo. Rode `docker compose up -d` e confirma com `docker ps`.';
+    }
+    if (lowered.includes('already exists') || lowered.includes('user_exists') || lowered.includes('email_taken')) {
+      return 'E-mail já cadastrado. Tente entrar em vez de criar conta.';
+    }
+    if (lowered.includes('encryption_key') || lowered.includes('better_auth_secret')) {
+      return 'Falta variável de ambiente no .env. Confira BETTER_AUTH_SECRET e ENCRYPTION_KEY.';
+    }
+
+    if (jsonMsg) {
+      return jsonMsg;
+    }
+
     if (res.status >= 500) {
-      // 500 = rota explodiu. Quase sempre é Prisma sem schema migrado.
-      if (text.includes('relation') || text.includes('does not exist') || text.includes('P2021')) {
-        return 'Tabelas do banco ainda não existem. Rode `pnpm db:push` no terminal pra criar (Postgres precisa estar rodando — `docker compose up -d`).';
-      }
-      if (text.includes('ECONNREFUSED') || text.includes("Can't reach database")) {
-        return 'Postgres não está rodando. Rode `docker compose up -d` no terminal.';
-      }
-      return `Servidor de auth retornou ${res.status}. Veja o terminal do dev server pro erro completo. Provavelmente o banco precisa de migração: \`pnpm db:push\`.`;
+      return `Erro ${res.status} no servidor. Veja o terminal do \`pnpm dev\` pro stack trace. Body: ${text.slice(0, 200) || 'vazio'}`;
     }
-    if (!ct.includes('application/json')) {
-      return `Resposta inválida do servidor (content-type=${ct}). Veja o terminal do dev server pro erro completo.`;
+    if (res.status === 422 || res.status === 400) {
+      return `Dados inválidos (${res.status}). Body: ${text.slice(0, 200) || 'vazio'}`;
     }
-    return 'Falha ao criar conta. Veja o console do navegador (F12) e o terminal do dev server pra mais detalhes.';
+    return `Resposta ${res.status} sem mensagem. Body: ${text.slice(0, 200) || 'vazio'}`;
   } catch (err) {
     console.error('[signup] probe failed', err);
-    return 'Sem conexão com o servidor. O dev server está rodando? (`pnpm dev`)';
+    return `Sem conexão com a rota de auth: ${err instanceof Error ? err.message : 'desconhecido'}. O \`pnpm dev\` está rodando?`;
   }
 }
 
