@@ -22,11 +22,15 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.1.0",
-    "@zapai/shared": "workspace:*"
+    "@zapai/shared": "workspace:*",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
+    "@types/ws": "^8.18.1",
     "dotenv-cli": "^7.4.4",
     "prisma": "^6.1.0",
     "tsx": "^4.19.2",
