@@ -1,0 +1,134 @@
+---
+title: "LGPD na prática pra SaaS de WhatsApp"
+description: "Controlador, operador, base legal, retenção, endpoints. O que muda na arquitetura quando você leva LGPD a sério desde o dia zero."
+publishedAt: "2026-05-05"
+author: "Time ZapAI"
+tags: ["lgpd", "compliance", "engenharia"]
+---
+
+LGPD virou checkbox em quase todo SaaS brasileiro: política copy-pasted, banner de cookie genérico, e na hora que a ANPD bate na porta a empresa descobre que não tem nada disso implementado de verdade.
+
+A gente quer fazer diferente. Esse post é como **endereçamos LGPD na arquitetura do ZapAI** — não só na política, mas no código, na infra e nos endpoints.
+
+## Controlador vs operador (e por que isso importa)
+
+A LGPD distingue dois papéis:
+
+- **Controlador**: quem decide *o quê* e *por quê* tratar dados pessoais
+- **Operador**: quem trata em nome do controlador
+
+No ZapAI temos os dois papéis simultaneamente:
+
+| Dado | Papel do ZapAI | Papel do cliente |
+|------|----------------|-------------------|
+| Cadastro do cliente (e-mail, senha) | Controlador | — |
+| Faturamento (Stripe) | Controlador | — |
+| Conversas com contato final | Operador | Controlador |
+| Base de conhecimento do agente | Operador | Controlador |
+
+Isso muda **muita coisa** na prática:
+
+1. Quando um contato final pede "apaga meus dados", o ZapAI não pode agir unilateralmente — o cliente é quem decide. Por isso oferecemos endpoint que o cliente chama (não o titular direto).
+2. Cliente Premium pode assinar **DPA** (Data Processing Agreement) conosco — formalizando o tratamento de dados de terceiros.
+3. Em caso de incidente envolvendo conversas, o ZapAI notifica o cliente, que decide se notifica a ANPD e os titulares.
+
+## Endpoints que funcionam de verdade
+
+A maioria dos SaaS tem botão "Apagar conta" que envia e-mail pra suporte, alguém manualmente roda DELETE... duas semanas depois. Isso não é cumprimento da LGPD, é teatro.
+
+No ZapAI:
+
+```http
+POST /api/lgpd/export
+Authorization: Bearer zk_xxx
+Content-Type: application/json
+
+{ "phoneE164": "5511999998888" }
+```
+
+Resposta: ID de job. Em até 24h (geralmente <1 min) gera JSON com tudo do contato — mensagens, configs, tags, metadata — e disponibiliza pra download.
+
+```http
+POST /api/lgpd/delete
+```
+
+Soft delete imediato (contato vira invisível pra agente e UI). Hard delete agendado em 30 dias (período de reversão por engano). Audit log do request.
+
+```http
+POST /api/lgpd/opt-out
+```
+
+Marca o contato como "não contatar". Bloqueia broadcasts, templates e qualquer mensagem ativa pra ele. O contato pode continuar conversando, mas a iniciativa nunca parte do agente.
+
+Tudo idempotente. Tudo logado em `AuditLog`. Tudo acessível via dashboard pra workspaces que não querem usar API.
+
+## Tokens cifrados, mensagens não
+
+Decisão pragmática: **tokens da Meta cifrados at-rest, mensagens em texto plano** no banco.
+
+Por que assim?
+
+- **Tokens da Meta**: alto risco (acesso a tudo do número, irreversível se vazar) e baixo volume (1 token por workspace). Cifrar com AES-256-GCM por workspace, chave única por linha, é trivial.
+- **Mensagens**: precisa busca/RAG (`SELECT ... WHERE content ILIKE ...`, embeddings pgvector). Cifragem at-rest no nível do banco (TDE do Neon/Railway) atende. Cifragem no nível da aplicação quebraria busca.
+
+Mencionado na política. Cliente Premium que precisa de tudo cifrado tem opção via plugin específico (em desenvolvimento).
+
+## RLS na app layer, não no Postgres
+
+A gente decidiu **não usar Row-Level Security do Postgres**. Por quê?
+
+Postgres RLS é potente mas:
+
+- Difícil de testar (esquecer um set role e a query devolve dados de outro tenant)
+- Lento em queries complexas
+- Pegadinhas com connection pooling (necessário set role a cada query)
+
+A abordagem é **RLS na camada da aplicação**. Toda query do Prisma passa por um helper `scopedDb(workspaceId)` que injeta `where: { workspaceId }` automaticamente. Tentar passar pelo helper sem workspaceId é erro de TypeScript em tempo de build.
+
+Funciona. Bem auditado. Sem surpresa em produção.
+
+## Audit log: o detetive do compliance
+
+Toda ação relevante grava em `AuditLog`:
+
+- `auth.login` — quem entrou, quando, de onde
+- `agent.publish` — quem publicou nova versão
+- `whatsapp.connect` — quem conectou número (e os 4 primeiros chars do app_id)
+- `contact.delete` — quem apagou contato e por qual endpoint
+- `apikey.create` — quem criou API key e os scopes
+
+Tudo com `userId`, `workspaceId`, `targetType`, `targetId`, `metadata jsonb`, `ipAddress`. Retenção de 12 meses (compliance com obrigação legal de demonstrar conformidade).
+
+## Sub-operadores: lista pública e atualizada
+
+A LGPD exige transparência sobre **com quem você compartilha dados**. Listamos publicamente em [/privacidade](/privacidade) os sub-operadores: Meta (Cloud API), Anthropic (modelos), Voyage AI (embeddings), Stripe (pagamento), Neon (DB), Upstash (Redis), Pusher (real-time), Resend (e-mail), UploadThing (storage), Sentry/PostHog (observabilidade), Vercel/Railway (hospedagem).
+
+Quando incluímos novo sub-operador relevante, notificamos clientes com 30 dias de antecedência.
+
+## DPO de verdade
+
+DPO não é cargo decorativo. É a pessoa que aceita reclamação, orienta funcionários, mantém canal direto com a ANPD.
+
+No ZapAI o DPO tem e-mail dedicado (`dpo@zapai.dev`), responde em até 15 dias úteis, e tem autonomia pra recomendar mudança em produto/operação quando identificar risco.
+
+Quando lançarmos oficialmente, vamos publicar o nome e currículo do DPO. Não dá pra ser um "fulano de tal" anônimo — o titular tem direito de saber quem.
+
+## Sem dark pattern
+
+Algumas coisas que **não** fazemos, porque viram dark pattern em SaaS:
+
+- ❌ Banner de cookie com "Aceitar tudo" gigante e "Configurar" minúsculo
+- ❌ Cobrar pra exportar dados do próprio usuário
+- ❌ Período de retenção infinito por padrão
+- ❌ Política de privacidade longa intencionalmente
+- ❌ Esconder DPO atrás de form de suporte genérico
+
+A gente acha que LGPD bem implementada é **diferencial competitivo**, não custo de compliance. Cliente sério escolhe quem leva a sério. Cliente leigo confia em quem é transparente.
+
+## Quer revisar nossa política?
+
+Política de privacidade detalhada em [/privacidade](/privacidade). Página específica de direitos do titular em [/lgpd](/lgpd). Encarregado de dados em `dpo@zapai.dev`.
+
+Se você é DPO de outra empresa e quer trocar figurinha, [manda mensagem](/contato). A gente lê.
+
+[Cria sua conta →](/signup)

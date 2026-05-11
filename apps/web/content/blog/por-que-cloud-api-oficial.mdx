@@ -1,0 +1,103 @@
+---
+title: "Por que escolhemos a Cloud API oficial da Meta (e não as 'alternativas')"
+description: "Bibliotecas não-oficiais são tentadoras. E são uma armadilha. Por que o ZapAI só funciona via Cloud API oficial."
+publishedAt: "2026-05-08"
+author: "Time ZapAI"
+tags: ["whatsapp", "engenharia", "compliance"]
+---
+
+Toda vez que mostramos o ZapAI pra alguém técnico, recebemos a mesma pergunta:
+
+> "Vocês integram via WhatsApp Web? whatsapp-web.js, Baileys, esse tipo de coisa?"
+
+Não. E nunca vamos.
+
+Esse post é pra explicar **por que** a única forma sensata de construir um SaaS pro WhatsApp é via **Cloud API oficial da Meta** — e por que a tentação de usar libs "não-oficiais" é uma armadilha que destrói operação séria.
+
+## A tentação
+
+As bibliotecas não-oficiais (whatsapp-web.js, Baileys, etc.) funcionam emulando o WhatsApp Web. Você conecta um número, escaneia um QR code, e pronto: pode enviar e receber mensagens via API HTTP local.
+
+Vantagens superficiais:
+
+- **Grátis.** Sem custo por mensagem da Meta.
+- **Rápido.** Em 30 minutos você tá enviando mensagem.
+- **Funciona com WhatsApp pessoal**, não precisa Meta Business Account.
+
+Soa ótimo, né? Não é.
+
+## Os problemas reais
+
+### 1. Você está violando os Termos da Meta
+
+A Meta deixa explícito: qualquer automação que não passa pela Cloud API ou WhatsApp Business API viola os Termos de Serviço. Não é cinza, não é debate — está escrito.
+
+Resultado prático: a Meta **banimento permanente do número**. E como o banimento muitas vezes é por dispositivo/conta vinculada, **outros números seus também caem**.
+
+A gente já viu negócios perderem o número que tava em cartão de visita, em panfleto impresso, em campanha de anúncio rodando — porque resolveram economizar com lib não-oficial.
+
+### 2. Quebra a cada update do WhatsApp Web
+
+WhatsApp Web evolui semanalmente. A cada update, libs não-oficiais quebram em algum lugar: anexo não envia mais, status não vem, sessão expira sozinho.
+
+Manutenção dessas libs é voluntária, depende de comunidade. Você tá montando produção em cima de uma base que pode quebrar amanhã, sem aviso, sem SLA.
+
+### 3. Sem templates aprovados (HSM)
+
+Pra mandar mensagem ativa pra cliente fora da janela de 24h (que é o padrão pra reativação, lembrete, promoção), você precisa de **template HSM** aprovado pela Meta. Lib não-oficial não tem acesso a HSM.
+
+Resultado: você não consegue rodar broadcast ou retenção sem violar a janela. Aí ou viola e cliente reporta como spam (e número cai mais rápido), ou desiste de fazer.
+
+### 4. Sem números verificados / Green Badge
+
+Cliente recebe mensagem de empresa séria com **selo verde verificado**. Isso aumenta abertura, reduz dúvida ("será que isso é golpe?"), profissionaliza. Lib não-oficial não tem acesso ao processo de verificação — você fica com cara de fraude.
+
+### 5. Múltiplos atendentes simultâneos
+
+Cloud API permite N atendentes do time atendendo o mesmo número em paralelo, com inbox unificado. Lib não-oficial emula uma sessão de WhatsApp Web — você fica preso a uma sessão por vez.
+
+### 6. Compliance e LGPD
+
+Cliente Premium do ZapAI assina DPA conosco — porque tratamos dados sensíveis com responsabilidade. Como vamos garantir confidencialidade dos dados se tudo passa por uma sessão pirata de WhatsApp Web hospedada num servidor terceiro?
+
+Não dá. Compliance sério exige fluxo formal.
+
+## Mas a Cloud API é cara!
+
+É um mito de quem nunca rodou as contas.
+
+A Cloud API tem **1.000 conversas/mês grátis** por número no programa "Conversations". Acima disso, cobra por categoria:
+
+- **Marketing:** R$ 0,25–0,40 por conversa de 24h
+- **Utilidade** (transacional): R$ 0,05–0,08
+- **Autenticação** (códigos): R$ 0,01
+- **Iniciada pelo cliente:** grátis
+
+Pra um e-commerce que recebe 500 dúvidas/mês de cliente (iniciadas por ele) + envia 200 confirmações de pedido + roda 50 broadcasts de promoção: custo total ~R$ 30/mês. Caro? Compare com o salário de um SDR ou de uma agência de tráfego.
+
+## E quando o ZapAI vira Meta Tech Provider?
+
+A Meta tem programa de **Tech Provider** pra plataformas como nós. Quando entrarmos, o fluxo de onboarding muda:
+
+- Hoje (MVP — modelo BYO): você cria seu Meta App, ativa Cloud API, cola credenciais no dashboard
+- Futuro (Tech Provider + Embedded Signup): clica num botão "Conectar WhatsApp", autentica com Facebook, pronto
+
+Em ambos os casos, **continua sendo Cloud API oficial**. O que muda é só a fricção de setup.
+
+## Resumo
+
+| Critério | Cloud API oficial | Lib não-oficial |
+|----------|-------------------|------------------|
+| Risco de ban | Quase zero | Alto |
+| Estabilidade | SLA Meta | Comunidade |
+| Templates HSM (broadcast) | Sim | Não |
+| Green Badge | Sim (após verificação) | Não |
+| Multi-atendente | Sim | Não |
+| LGPD-friendly | Sim | Cinza |
+| Custo | Pequeno | "Grátis" |
+
+Pra quem tá só brincando com side project, lib não-oficial pode ser OK até pegar uma rasteira. Pra negócio que depende do número, não tem conversa.
+
+ZapAI é Cloud API oficial. Sempre.
+
+[Cria sua conta →](/signup)

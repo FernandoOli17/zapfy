@@ -2,55 +2,23 @@ import Link from 'next/link';
 import { ArrowRight, MessageSquare, Sparkles } from 'lucide-react';
 import { Button } from '@zapai/ui';
 
-import { ThemeToggle } from '@/components/theme-toggle';
-
 const VERTICALS = [
-  'E-commerce',
-  'Clínicas',
-  'Restaurantes',
-  'Infoproduto',
-  'Serviços',
-  'Educação',
-  'Imobiliário',
-  'B2B',
-];
+  { label: 'E-commerce', href: '/casos/ecommerce' },
+  { label: 'Clínicas', href: '/casos/clinica' },
+  { label: 'Restaurantes', href: '/casos/restaurante' },
+  { label: 'Infoproduto', href: '/casos/infoproduto' },
+  { label: 'Serviços', href: '/casos/servico' },
+] as const;
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen">
-      <Header />
+    <>
       <Hero />
       <Verticals />
       <HowItWorks />
       <ForgeSection />
       <FinalCta />
-      <Footer />
-    </div>
-  );
-}
-
-function Header() {
-  return (
-    <header className="sticky top-0 z-50 border-b border-border/40 bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="inline-block h-2 w-2 rounded-full bg-primary" aria-hidden />
-          ZapAI
-        </Link>
-        <nav className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/login">Entrar</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/signup">
-              Criar conta
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        </nav>
-      </div>
-    </header>
+    </>
   );
 }
 
@@ -116,13 +84,15 @@ function Stat({ number, label }: { number: string; label: string }) {
 
 function Verticals() {
   return (
-    <section className="border-y border-border/60 bg-secondary/20 py-12">
+    <section className="border-y border-border/60 bg-secondary/20 py-14">
       <div className="mx-auto max-w-6xl px-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">Pra qualquer negócio</p>
         <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 text-xl md:text-2xl">
           {VERTICALS.map((v, i) => (
-            <span key={v} className="flex items-center gap-8">
-              <span className="font-medium tracking-tight">{v}</span>
+            <span key={v.label} className="flex items-center gap-8">
+              <Link href={v.href} className="font-medium tracking-tight transition-colors hover:text-primary">
+                {v.label}
+              </Link>
               {i < VERTICALS.length - 1 && (
                 <span className="text-muted-foreground/40" aria-hidden>
                   ·
@@ -142,14 +112,10 @@ function HowItWorks() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-12 md:grid-cols-[1fr_2fr] md:gap-20">
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Como funciona
-            </p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">Como funciona</p>
             <h2 className="mt-4 text-4xl font-medium leading-tight tracking-tight md:text-6xl">
               Três passos.{' '}
-              <span className="font-serif italic font-normal text-muted-foreground">
-                Sem trapaça.
-              </span>
+              <span className="font-serif italic font-normal text-muted-foreground">Sem trapaça.</span>
             </h2>
           </div>
           <div className="space-y-12">
@@ -246,38 +212,5 @@ function FinalCta() {
         </div>
       </div>
     </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="border-t border-border/60 py-12">
-      <div className="mx-auto max-w-6xl px-6">
-        <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="inline-block h-2 w-2 rounded-full bg-primary" aria-hidden />
-            <span className="font-semibold tracking-tight">ZapAI</span>
-            <span className="text-muted-foreground">— WhatsApp com cérebro próprio</span>
-          </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <Link href="/precos" className="hover:text-foreground">
-              Preços
-            </Link>
-            <Link href="/termos" className="hover:text-foreground">
-              Termos
-            </Link>
-            <Link href="/privacidade" className="hover:text-foreground">
-              Privacidade
-            </Link>
-            <Link href="/lgpd" className="hover:text-foreground">
-              LGPD
-            </Link>
-            <Link href="/contato" className="hover:text-foreground">
-              Contato
-            </Link>
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }

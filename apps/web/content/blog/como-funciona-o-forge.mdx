@@ -1,0 +1,102 @@
+---
+title: "Como o Forge funciona por dentro"
+description: "A IA que monta a IA — state machine, meta-prompt e versionamento explicados sem mistério."
+publishedAt: "2026-05-11"
+author: "Time ZapAI"
+tags: ["forge", "engenharia"]
+---
+
+Todo SaaS de IA pro WhatsApp começa igual: você cria conta, abre um dashboard com 40 campos, switches, dropdowns, e tem que adivinhar o que cada coisa faz. Isso não é configuração — é arqueologia de produto.
+
+A gente fez diferente. O **Forge** é uma IA separada do agente de produção, e o trabalho dela é uma coisa só: **entrevistar você** e gerar o agente que vai conversar com seus clientes. Sem formulário. Sem documentação chata. Você conta sobre seu negócio e ele monta.
+
+Nesse post a gente abre o capô: **state machine, meta-prompt e versionamento**. Como funciona pra valer.
+
+## State machine, não chat livre
+
+A primeira tentação ao construir o Forge seria largar um Claude na conversa e deixar ele "naturalmente" entender o cliente. Isso quebra rápido — a conversa diverge, fica longa, e no fim você tem 30 mensagens e nenhuma configuração concreta.
+
+A solução é uma **máquina de estados explícita**. Cada fase tem um objetivo, prompt próprio e condição de saída:
+
+```
+DISCOVERY      → entende o negócio
+VERTICAL_DETECT → classifica (e-com, clínica, restaurante, infoproduto, serviço)
+GOALS          → o que a IA precisa fazer (vender, agendar, qualificar)
+TONE           → tom de voz, palavras proibidas, formalidade
+KNOWLEDGE      → coleta docs, FAQs, links
+TOOLS          → seleciona tools do playbook do vertical
+HANDOFF        → quando passar pra humano
+REVIEW         → mostra o system prompt gerado e pede feedback
+PUBLISH        → salva nova AgentVersion
+REFINEMENT     → modo contínuo pra "deixa mais informal", "nunca dê desconto", etc.
+```
+
+Cada fase é um nó. Cada nó tem:
+
+- **System prompt próprio** — o Forge "se comporta diferente" em DISCOVERY (curioso, perguntando aberto) vs em REVIEW (apresentando o resultado, pedindo confirmação)
+- **Tools próprias** — DISCOVERY pode chamar `classify_business_vertical()`, KNOWLEDGE pode chamar `scrape_url()`, TOOLS pode chamar `suggest_tools_for_vertical()`
+- **Exit condition** — quando o Forge tem informação suficiente, avança. Tipicamente um `next_phase()` que ele chama explicitamente.
+
+O cliente nunca vê isso. Pra ele é uma conversa só.
+
+## O meta-prompt: a estrela
+
+A peça mais crítica é uma função: `generate_system_prompt(answers) → string`. Ela é chamada uma vez quando todas as fases anteriores terminaram. Recebe um JSON tipado com tudo coletado:
+
+```ts
+{
+  business: "Loja de tênis online focada em corrida",
+  vertical: "ecommerce",
+  goals: ["vender", "recuperar carrinho", "tirar dúvida de frete"],
+  tone: { style: "informal", emoji: "moderado", forbidden: ["mano", "mina"] },
+  knowledge: { docs: [...], scrapes: [...] },
+  tools: ["list_products", "recommend_product", "send_checkout_link"],
+  handoff: { keywords: ["humano", "atendente"], conditions: ["reclamação"] },
+}
+```
+
+E retorna um system prompt completo, pronto pra ir pra produção. Não é template tradicional com `{{ }}`. É **outro Claude** rodando com um **meta-prompt** (prompt que escreve prompt) que sabe transformar essas respostas em instruções claras pro agente.
+
+Por que outro Claude e não template? Porque agente bom precisa de:
+
+- Few-shot examples gerados a partir do contexto do cliente
+- Restrições explícitas que dependem do negócio ("nunca prometa frete pra capital sem confirmar com humano se for um lançamento")
+- Estrutura de resposta condicional (formato de oferta muda se for promoção vs catálogo)
+
+Template não dá conta. Outro Claude, com um meta-prompt bem afinado, dá.
+
+## Versionamento e rollback
+
+Toda mudança vira uma versão nova. `AgentVersion` no banco — imutável, com `versionNumber`, `changeNotes`, e referência à `ForgeSession` que gerou.
+
+Quando você diz "deixa ela menos vendedora", o Forge entra em modo **REFINEMENT**:
+
+1. Pega o `systemPrompt` atual
+2. Roda um Claude com instrução "aplique esse ajuste preservando o resto"
+3. Gera um diff e mostra (linha verde adicionada, linha vermelha removida)
+4. Você confirma → vira versão N+1 com `changeNotes: "menos vendedora — pedido do owner em 11/05"`
+5. Versão N continua disponível pra rollback em um clique
+
+Isso resolve o problema mais chato de prompt engineering: **regressão silenciosa**. Você mexe pra resolver A, quebra B, e só descobre quando o cliente reclamou. Com diff-style + versionamento, você vê o que mudou e pode voltar.
+
+## Por que não é template-fillable?
+
+Já vimos product managers olharem isso e perguntarem: "mas no fundo é só um wizard sofisticado, não?"
+
+Não. Wizard te força a respostas estruturadas. O Forge entende:
+
+> "olha, o pessoal que compra em loja física daqui costuma ter 50+ anos, então o tom mais sério funciona melhor; agora se for pelo Instagram, é a galera mais nova, pode ser mais leve"
+
+Isso é uma instrução condicional sobre **canal e demografia**, com nuance temporal. Um wizard não captura. O Forge captura porque é uma conversa em linguagem natural, e o Claude por trás entende essa nuance e codifica no system prompt resultante.
+
+É a diferença entre **configurar** e **ser entendido**.
+
+## O que vem por aí
+
+- **Modo voz** — entrevista por áudio quando o cliente preferir ditar
+- **Re-entrevista periódica** — Forge volta a perguntar "alguma coisa mudou no negócio?" a cada 30 dias
+- **Comparação A/B** — duas versões do agente atendendo em paralelo, métricas comparadas, vencedora promovida
+
+Por ora, basta abrir a conta, conversar, publicar. Em 5 minutos.
+
+[Cria sua conta →](/signup)
