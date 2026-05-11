@@ -28,7 +28,18 @@ export function SignupForm() {
         callbackURL: '/onboarding',
       });
       if (res.error) {
-        console.error('[signup] error from better-auth', res.error);
+        const errKeys = Object.keys(res.error);
+        console.error('[signup] error from better-auth', res.error, 'keys=', errKeys);
+
+        // Caso comum: error vazio = a rota /api/auth/* devolveu 500/HTML.
+        // Quase sempre é DB sem tabelas ('pnpm db:push' não rodou) ou Postgres off.
+        if (errKeys.length === 0) {
+          const diag = await probeAuthEndpoint();
+          setError(diag);
+          setBusy(false);
+          return;
+        }
+
         const msg =
           res.error.message ||
           res.error.statusText ||
@@ -149,6 +160,37 @@ export function SignupForm() {
       </p>
     </div>
   );
+}
+
+async function probeAuthEndpoint(): Promise<string> {
+  try {
+    const res = await fetch('/api/auth/get-session', { cache: 'no-store' });
+    const ct = res.headers.get('content-type') ?? '';
+    const text = await res.text();
+    console.error('[signup] probe /api/auth/get-session', {
+      status: res.status,
+      contentType: ct,
+      body: text.slice(0, 1000),
+    });
+
+    if (res.status >= 500) {
+      // 500 = rota explodiu. Quase sempre é Prisma sem schema migrado.
+      if (text.includes('relation') || text.includes('does not exist') || text.includes('P2021')) {
+        return 'Tabelas do banco ainda não existem. Rode `pnpm db:push` no terminal pra criar (Postgres precisa estar rodando — `docker compose up -d`).';
+      }
+      if (text.includes('ECONNREFUSED') || text.includes("Can't reach database")) {
+        return 'Postgres não está rodando. Rode `docker compose up -d` no terminal.';
+      }
+      return `Servidor de auth retornou ${res.status}. Veja o terminal do dev server pro erro completo. Provavelmente o banco precisa de migração: \`pnpm db:push\`.`;
+    }
+    if (!ct.includes('application/json')) {
+      return `Resposta inválida do servidor (content-type=${ct}). Veja o terminal do dev server pro erro completo.`;
+    }
+    return 'Falha ao criar conta. Veja o console do navegador (F12) e o terminal do dev server pra mais detalhes.';
+  } catch (err) {
+    console.error('[signup] probe failed', err);
+    return 'Sem conexão com o servidor. O dev server está rodando? (`pnpm dev`)';
+  }
 }
 
 function GoogleIcon({ className }: { className?: string }) {

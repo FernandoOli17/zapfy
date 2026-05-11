@@ -9,15 +9,12 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true,
-      "dependsOn": ["^db:generate"]
+      "persistent": true
     },
     "lint": {
       "dependsOn": ["^build"]
     },
-    "typecheck": {
-      "dependsOn": ["^db:generate"]
-    },
+    "typecheck": {},
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
