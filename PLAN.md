@@ -12,8 +12,8 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 1 — Fundação (concluída — pendente validação E2E com Docker)
-- **Próxima ação:** instalar Docker Desktop + `docker compose up -d` + `pnpm db:migrate` + `pnpm dev` pra validar signup → onboarding → dashboard. Depois OK pra Fase 2.
+- **Fase atual:** 1 — Fundação ✅ **CONCLUÍDA E VALIDADA E2E** (signup → onboarding → dashboard rodando contra Neon Postgres em produção)
+- **Próxima ação:** decidir Fase 2 (marketing + legais) ou pular pra Fase 3 (Forge — o moat). Recomendação: Fase 3.
 
 ---
 
@@ -26,26 +26,21 @@ contínuo em linguagem natural.
 - [x] Resolver perguntas-bloqueio
 - [x] OK do usuário pra iniciar Fase 1
 
-### Fase 1 — Fundação ✅ (validação E2E pendente de Docker)
+### Fase 1 — Fundação ✅ CONCLUÍDA E VALIDADA E2E
 Monorepo pnpm + Turborepo. Apps `web` e `worker`. Packages `db`, `ai`, `wa`, `shared`, `ui`.
-Prisma schema completo (todas as entidades da spec). Seed (user demo + workspace + plano dev).
-docker-compose com Postgres 16 + pgvector + Redis. Better Auth (email/senha + Google + magic link).
-Tailwind v4 + componentes UI base. Layout base do dashboard. Páginas signup/login/onboarding/dashboard.
+Prisma schema completo (32 modelos cobrindo toda a spec). Seed dev. docker-compose com
+Postgres 16 + pgvector + Redis. Better Auth (email/senha + Google + magic link). Tailwind v4
++ componentes UI base com tokens editoriais (Geist + Instrument Serif italic + verde elétrico).
+Páginas redesignadas: landing editorial, signup/login com split brand panel, onboarding,
+dashboard com sidebar + bento.
 
-**Estado:** `pnpm lint && pnpm typecheck && pnpm test` ✅ verde. Migration inicial NÃO executada
-(precisa Docker rodando). Build do Next NÃO executado.
+**Infra final adotada:** Postgres = **Neon** (free tier, com pgvector); Redis = **Upstash**
+(free tier). Driver Prisma com adapter **Neon HTTP/WS** pra runtime via porta 443 (escapa
+de firewall corporativo Cisco que bloqueia 5432). `prisma db push` continua via TCP 5432
+(precisa de rede sem filtro — hotspot 4G na primeira vez).
 
-**Pra validar manualmente quando Docker estiver instalado:**
-```
-docker compose up -d
-cp .env.example .env  # preencher BETTER_AUTH_SECRET (openssl rand -hex 32),
-                       # ENCRYPTION_KEY (openssl rand -hex 32),
-                       # LOG_PII_SALT (openssl rand -hex 16)
-pnpm db:migrate
-pnpm db:seed
-pnpm dev
-# abrir http://localhost:3000, signup, onboarding, dashboard
-```
+**Validação E2E:** signup → workspace ("Granvilla") → dashboard ✅. `pnpm lint && pnpm
+typecheck && pnpm test` verde.
 
 **Depende de:** —
 
@@ -181,6 +176,8 @@ README + deploy guide (Vercel + Railway).
 - **2026-05-10** — Spec recebida. Fase 0 iniciada. PLAN.md e CLAUDE.md criados.
 - **2026-05-10** — Fase 1 implementada: monorepo + 5 packages + 2 apps + Prisma schema completo
   + Better Auth + Tailwind v4 + páginas auth/onboarding/dashboard. Lint/typecheck/test ✅ verde.
-  Decisões técnicas: zod 4 (Better Auth pediu), Anthropic SDK 0.95.1 (era 0.34 inexistente),
-  @t3-oss/env 0.13.11 (suporta zod 4), pnpm 10.4.1 via npm global (corepack falhou por permissão
-  em Program Files). Pendente: rodar Docker → migrate → dev pra E2E.
+- **2026-05-11** — Redesign editorial de todas as páginas (landing + auth split + onboarding
+  + dashboard com sidebar/bento). Infra ajustada pra cloud (Neon + Upstash) pq Docker local
+  esbarrou em virtualização. Plugado Neon HTTP driver pra runtime via porta 443. Plugado
+  dotenv no next.config.ts pra ler `.env` do monorepo root. **Validação E2E completa:**
+  signup → workspace "Granvilla" → dashboard. Fase 1 ✅ fechada.
