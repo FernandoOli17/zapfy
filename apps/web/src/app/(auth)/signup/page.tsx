@@ -7,16 +7,20 @@ export const metadata = { title: 'Criar conta' };
 export default function SignupPage() {
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Criar conta no ZapAI</h1>
-      <p className="text-sm text-muted-foreground mt-1">
-        7 dias grátis. Sem cartão. Configure seu agente conversando com o Forge.
+      <p className="text-xs uppercase tracking-widest text-muted-foreground">Comece grátis</p>
+      <h1 className="mt-3 text-4xl font-medium leading-[1.05] tracking-tight">
+        Criar{' '}
+        <span className="font-serif italic font-normal text-primary">conta.</span>
+      </h1>
+      <p className="mt-3 text-sm text-muted-foreground">
+        7 dias grátis. Sem cartão. Sem ligação de vendas.
       </p>
       <div className="mt-8">
         <SignupForm />
       </div>
-      <p className="text-sm text-muted-foreground mt-6">
+      <p className="mt-8 text-sm text-muted-foreground">
         Já tem conta?{' '}
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
           Entrar
         </Link>
       </p>

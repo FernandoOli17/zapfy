@@ -28,7 +28,7 @@ export async function createWorkspaceAction(
 
   const existing = await prisma.workspace.findUnique({ where: { slug: parsed.data.slug } });
   if (existing) {
-    return { error: 'Slug já está em uso' };
+    return { error: 'Esse slug já está em uso. Escolha outro.' };
   }
 
   try {
@@ -55,7 +55,8 @@ export async function createWorkspaceAction(
     if (err instanceof AppError) {
       return { error: err.userMessage };
     }
-    return { error: 'Falha ao criar workspace' };
+    console.error('[onboarding] createWorkspace failed', err);
+    return { error: 'Falha ao criar workspace. Tenta de novo em instantes.' };
   }
 
   redirect('/dashboard');
