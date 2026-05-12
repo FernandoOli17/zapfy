@@ -14,5 +14,20 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/forge/:path*', '/inbox/:path*', '/agent/:path*'],
+  matcher: [
+    '/dashboard/:path*',
+    '/forge/:path*',
+    '/inbox/:path*',
+    '/agent/:path*',
+    '/whatsapp/:path*',
+    '/contacts/:path*',
+    '/knowledge/:path*',
+    '/team/:path*',
+    '/settings/:path*',
+    '/automations/:path*',
+    '/analytics/:path*',
+    '/integrations/:path*',
+    '/billing/:path*',
+    '/products/:path*',
+  ],
 };

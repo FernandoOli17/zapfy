@@ -26,7 +26,7 @@ const NAV = [
   { href: '/contacts', label: 'Contatos', icon: Users, ready: false },
   { href: '/agent', label: 'Agente', icon: MessageSquareText, ready: false },
   { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: false },
-  { href: '/whatsapp', label: 'WhatsApp', icon: Phone, ready: false },
+  { href: '/whatsapp', label: 'WhatsApp', icon: Phone, ready: true },
   { href: '/team', label: 'Time', icon: Headset, ready: false },
   { href: '/settings', label: 'Configurações', icon: Settings, ready: false },
 ] as const;

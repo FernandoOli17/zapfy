@@ -40,7 +40,7 @@ const ACTIONS: Action[] = [
     description: 'Cole as credenciais do seu Meta App pra começar a atender via Cloud API oficial.',
     href: '/whatsapp',
     icon: Phone,
-    ready: false,
+    ready: true,
     span: 'col-span-1',
   },
   {

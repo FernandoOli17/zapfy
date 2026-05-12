@@ -12,8 +12,8 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 3 — Forge ✅ implementada (pendente validação E2E com chave de IA real)
-- **Próxima ação:** preencher `OPENAI_API_KEY` (ou `ANTHROPIC_API_KEY`) no `.env`, restart `pnpm dev`, abrir `/forge` e conversar pra ver fluxo end-to-end. Depois passar pra Fase 4 (WhatsApp Cloud API).
+- **Fase atual:** 4 — WhatsApp Cloud API ✅ implementada (sem IA — agente IA chega na Fase 5)
+- **Próxima ação:** preencher `OPENAI_API_KEY` ou `ANTHROPIC_API_KEY` no `.env` pra validar Fase 3 (Forge), e/ou conectar um número Meta em `/whatsapp` pra validar Fase 4. Fase 5 plugando os dois.
 
 ---
 
@@ -92,15 +92,55 @@ rollback. ✅ `lint + typecheck` verde em 7 packages.
 
 **Depende de:** Fases 1 e 2.
 
-### Fase 4 — Integração WhatsApp Cloud API
-Tela de conexão (cliente cola credenciais Meta — modelo BYO confirmado na pergunta #1).
-Webhook GET/POST em `/api/webhooks/whatsapp` com validação HMAC (`x-hub-signature-256`).
-Cliente WA tipado em `packages/wa` (sendText, sendImage, sendDocument, sendAudio,
-sendTemplate, sendInteractiveButtons/List, markAsRead, uploadMedia, downloadMedia).
-Criptografia AES-256-GCM dos tokens (helper em `packages/shared/crypto.ts`).
-Janela de 24h: bloqueia mensagem livre, força template HSM.
+### Fase 4 — Integração WhatsApp Cloud API ✅ IMPLEMENTADA
 
-**Depende de:** Fase 1. Bloqueada por decisão pergunta #1 (BYO vs Tech Provider).
+**Cliente Cloud API tipado** (`packages/wa`):
+- `createWaClient({ phoneNumberId, accessToken, version, timeoutMs, onRequest })`
+- `sendText` (com previewUrl), `sendImage`, `sendAudio`, `sendVideo`, `sendDocument`,
+  `sendSticker`, `sendTemplate` (HSM com components), `sendInteractiveButtons` (até 3),
+  `sendInteractiveList` (sections), `markAsRead`, `uploadMedia`, `getMediaUrl`,
+  `downloadMedia`, `testConnection`.
+- Erros tipados: `WaApiError` (com metaCode/subcode/type/traceId), `WaWebhookSignatureError`,
+  `WaWindowExpiredError`.
+- Schemas Zod completos do payload de webhook v21: `WaWebhookPayload`, `WaIncomingMessage`,
+  `WaStatusUpdate`, contatos, errors.
+- Utils: `splitText` (chunks respeitando quebra de palavra/parágrafo + counter opcional
+  "1/3"), `isWithin24hWindow`, `hoursSince`, `normalizePhone`, `parseMetaTimestamp`.
+- Helpers webhook: `verifyWebhookSignature` (HMAC SHA-256 com `timingSafeEqual`),
+  `parseWebhookPayload`, `handleWebhookVerification` (hub.challenge GET),
+  `flattenWebhookEvents` (agrupa events por phoneNumberId).
+
+**UI conectar** (`/whatsapp`):
+- Lista contas existentes com status (CONNECTED/PENDING/ERROR), display_phone, IDs,
+  copy buttons pra Webhook URL + Verify Token. Botões Testar/Desconectar.
+- Form de novo número (phone_number_id, business_account_id, access_token, app_secret).
+- Server action `connectWhatsAppAction`: testa credenciais com `client.testConnection()`,
+  cifra tokens AES-256-GCM, gera `webhookVerifyToken` aleatório (16 bytes hex), upsert
+  com guard de "número já em outro workspace", audit log.
+- `testWhatsAppConnectionAction`: re-valida + atualiza status.
+- `disconnectWhatsAppAction`: marca DISCONNECTED.
+- Tela mostra 6 passos guiados de como pegar credenciais na Meta (App, API Setup,
+  WABA id, App Secret, Webhook config, número de teste).
+
+**Webhook receiver** (`/api/webhooks/whatsapp/[phoneNumberId]/route.ts`):
+- `GET`: valida `hub.mode=subscribe` + `hub.verify_token` contra o que tá no DB do
+  workspace. Retorna `hub.challenge` ou 403.
+- `POST`: lê raw body, decifra `appSecret` cifrado, valida HMAC `x-hub-signature-256`,
+  parseia payload com Zod, agrupa por `phoneNumberId`. Pra cada mensagem inbound:
+  upsert Contact + Conversation (1 ativa por contato) + Message com guard de dedup pelo
+  whatsappMessageId. Pra cada status: `updateMany` na Message correspondente. Sempre
+  retorna 200 (mesmo em falha) pra não trigger retry agressivo. Logs estruturados sem PII.
+
+**Middleware:** /whatsapp + outras rotas (app) adicionadas ao matcher pra auth gate.
+
+**Saída:** signup → onboarding → /whatsapp → conecta número Meta → webhook recebe
+mensagens reais e persiste em Contact/Conversation/Message. Sem agente IA respondendo
+ainda — isso é Fase 5.
+
+**Pendente E2E:** rodar localmente com ngrok ou deploy + Meta App de teste pra ver
+fluxo completo de mensagem chegando.
+
+**Depende de:** Fase 1.
 
 ### Fase 5 — Agente de produção + RAG
 Worker BullMQ processa `process-message` jobs. Pipeline:
