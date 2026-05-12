@@ -48,7 +48,7 @@ const ACTIONS: Action[] = [
     description: 'Conversas em tempo real, com IA e humanos no mesmo lugar.',
     href: '/inbox',
     icon: Inbox,
-    ready: false,
+    ready: true,
     span: 'col-span-1',
   },
   {

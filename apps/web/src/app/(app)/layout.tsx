@@ -22,7 +22,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 const NAV = [
   { href: '/dashboard', label: 'Início', icon: LayoutDashboard, ready: true },
   { href: '/forge', label: 'Forge', icon: Sparkles, ready: true },
-  { href: '/inbox', label: 'Inbox', icon: Inbox, ready: false },
+  { href: '/inbox', label: 'Inbox', icon: Inbox, ready: true },
   { href: '/contacts', label: 'Contatos', icon: Users, ready: false },
   { href: '/agent', label: 'Agente', icon: MessageSquareText, ready: false },
   { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: false },

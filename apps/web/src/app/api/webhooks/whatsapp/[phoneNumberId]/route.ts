@@ -21,6 +21,7 @@ import {
 } from '@zapai/wa';
 
 import { env } from '@/env';
+import { publishInboxEvent } from '@/lib/realtime/pusher-server';
 
 const log = createLogger('wa-webhook');
 
@@ -230,7 +231,7 @@ async function persistInboundMessage(input: {
   // jsonb content varia por tipo
   const content: Prisma.InputJsonValue = buildContentJson(m);
 
-  await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     // contact upsert
     const contact = await tx.contact.upsert({
       where: { workspaceId_phoneE164: { workspaceId, phoneE164: m.from } },
@@ -263,9 +264,9 @@ async function persistInboundMessage(input: {
 
     // duplicate guard (se Meta retransmite o mesmo evento)
     const dup = await tx.message.findUnique({ where: { whatsappMessageId: m.id } });
-    if (dup) return;
+    if (dup) return null;
 
-    await tx.message.create({
+    const created = await tx.message.create({
       data: {
         workspaceId,
         conversationId: conversation.id,
@@ -287,7 +288,27 @@ async function persistInboundMessage(input: {
         unreadCount: { increment: 1 },
       },
     });
+
+    return { messageId: created.id, conversationId: conversation.id, contactId: contact.id };
   });
+
+  if (result) {
+    const previewText =
+      typeof content === 'object' && content && 'text' in (content as Record<string, unknown>)
+        ? String((content as Record<string, unknown>)['text'] ?? '')
+        : `[${messageType.toLowerCase()}]`;
+    await publishInboxEvent(workspaceId, {
+      name: 'message.new',
+      data: {
+        conversationId: result.conversationId,
+        messageId: result.messageId,
+        contactId: result.contactId,
+        direction: 'INBOUND',
+        preview: previewText.slice(0, 140),
+        createdAt: timestamp.toISOString(),
+      },
+    });
+  }
 }
 
 function buildContentJson(m: WaIncomingMessage): Prisma.InputJsonValue {
