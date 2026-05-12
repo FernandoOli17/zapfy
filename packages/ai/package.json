@@ -15,8 +15,10 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.95.1",
+    "@ai-sdk/anthropic": "^3.0.76",
+    "@ai-sdk/openai": "^3.0.63",
     "@zapai/shared": "workspace:*",
+    "ai": "^6.0.177",
     "zod": "^4.0.0"
   },
   "devDependencies": {

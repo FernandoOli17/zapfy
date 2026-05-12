@@ -32,7 +32,7 @@ const ACTIONS: Action[] = [
       'Configure seu agente em linguagem natural. Vertical, tom, tools, handoff. Tudo gerado e versionado.',
     href: '/forge',
     icon: Sparkles,
-    ready: false,
+    ready: true,
     span: 'md:col-span-2',
   },
   {

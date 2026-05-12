@@ -12,8 +12,8 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 1 — Fundação ✅ **CONCLUÍDA E VALIDADA E2E** (signup → onboarding → dashboard rodando contra Neon Postgres em produção)
-- **Próxima ação:** decidir Fase 2 (marketing + legais) ou pular pra Fase 3 (Forge — o moat). Recomendação: Fase 3.
+- **Fase atual:** 3 — Forge ✅ implementada (pendente validação E2E com chave de IA real)
+- **Próxima ação:** preencher `OPENAI_API_KEY` (ou `ANTHROPIC_API_KEY`) no `.env`, restart `pnpm dev`, abrir `/forge` e conversar pra ver fluxo end-to-end. Depois passar pra Fase 4 (WhatsApp Cloud API).
 
 ---
 
@@ -52,19 +52,43 @@ Mobile-first.
 
 **Depende de:** Fase 1.
 
-### Fase 3 — Forge (builder conversacional) — CRÍTICA
-State machine (xstate ou discriminated union em TS) com fases:
-DISCOVERY → VERTICAL_DETECTION → GOALS → TONE → KNOWLEDGE → TOOLS → HANDOFF → REVIEW → PUBLISH.
+### Fase 3 — Forge (builder conversacional) ✅ IMPLEMENTADA
+State machine declarativa com 10 fases (DISCOVERY, VERTICAL_DETECTION, GOALS, TONE,
+KNOWLEDGE, TOOLS, HANDOFF, REVIEW, PUBLISH, REFINEMENT). Cada fase tem system prompt
+próprio com identidade base herdada + instruções específicas + digest dos answers já
+coletados.
 
-Tools do Forge: `classify_business_vertical`, `scrape_url`, `suggest_tools_for_vertical`,
-`generate_system_prompt` (meta-prompt — a estrela), `generate_personality_profile`,
-`save_agent_version`.
+**Tools** (Vercel AI SDK v6 com Zod): `set_business_info`, `classify_business_vertical`,
+`set_goals`, `set_tone`, `scrape_url`, `add_knowledge_item`, `suggest_tools_for_vertical`,
+`set_tools`, `set_handoff_rules`, `generate_system_prompt`, `refine_system_prompt`,
+`publish_agent_version`, `advance_phase`. Filtro por fase via `PHASE_TOOLS`.
 
-UI: chat full-screen à esquerda, preview ao vivo à direita (system prompt sendo escrito,
-tools ativadas, exemplos de resposta). Modo refinamento contínuo diff-style (pergunta #3).
+**Meta-prompt** em `packages/ai/src/forge/prompts/meta-prompt.ts` — recebe ForgeAnswers
+tipado, devolve system prompt de produção em pt-BR com seções obrigatórias (Identidade,
+Tom, Comportamento, Conhecimento, Tools, Handoff, Restrições, Estilo, Few-shot).
 
-**Saída:** cliente novo consegue criar conta → conversar com o Forge → publicar primeira
-versão do agente. Agente fica armazenado em `AgentVersion` com rollback funcional.
+**Provider abstraction** (`packages/ai/src/provider.ts`): aceita `AI_PROVIDER=openai`
+ou `anthropic` via env. Auto-detect pela presença de `OPENAI_API_KEY` ou
+`ANTHROPIC_API_KEY`. Default: Anthropic.
+
+**Engine** `runForgeStep`: closure-based — callbacks mutam ref viva de answers entre
+tool calls. Max 6 iterações de tool calling por turn. Persistência em `ForgeSession`
+(transcript + collectedAnswers JSONB + currentPhase enum). Quando publica, marca
+status=PUBLISHED.
+
+**UI** `/forge`: split 2 cols (chat + preview). Empty state com sugestões. Mensagens
+com avatar role-based, badges de tool calls, typing indicator. Preview painel mostra
+progresso de fases em ordem, answers coletados em tempo real, system prompt draft em
+`<pre>` quando gerado. Botão Resetar.
+
+**Persistência publish:** `publishAgentVersionIo` em `prisma.$transaction` — cria
+Agent (ou atualiza vertical), incrementa versionNumber, salva AgentVersion +
+atualiza currentVersionId do Agent.
+
+**Saída:** signup → onboarding → /forge → conversa → publica AgentVersion v1 com
+rollback. ✅ `lint + typecheck` verde em 7 packages.
+
+**Pendente E2E:** validar com chave de IA real (OPENAI_API_KEY ou ANTHROPIC_API_KEY).
 
 **Depende de:** Fases 1 e 2.
 
