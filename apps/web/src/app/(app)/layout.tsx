@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import {
   BookOpen,
+  CreditCard,
   Headset,
   Inbox,
   LayoutDashboard,
@@ -28,6 +29,7 @@ const NAV = [
   { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: false },
   { href: '/whatsapp', label: 'WhatsApp', icon: Phone, ready: true },
   { href: '/team', label: 'Time', icon: Headset, ready: false },
+  { href: '/billing', label: 'Billing', icon: CreditCard, ready: true },
   { href: '/settings', label: 'Configurações', icon: Settings, ready: false },
 ] as const;
 
