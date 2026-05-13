@@ -2,12 +2,14 @@ import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import {
+  BarChart3,
   BookOpen,
   CreditCard,
   Headset,
   Inbox,
   KeyRound,
   LayoutDashboard,
+  Megaphone,
   MessageSquareText,
   Phone,
   Settings,
@@ -27,12 +29,14 @@ const NAV = [
   { href: '/inbox', label: 'Inbox', icon: Inbox, ready: true },
   { href: '/contacts', label: 'Contatos', icon: Users, ready: true },
   { href: '/agent', label: 'Agente', icon: MessageSquareText, ready: false },
-  { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: false },
+  { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: true },
   { href: '/whatsapp', label: 'WhatsApp', icon: Phone, ready: true },
+  { href: '/automations/templates', label: 'Automações', icon: Megaphone, ready: true },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, ready: true },
   { href: '/team', label: 'Time', icon: Headset, ready: true },
   { href: '/integrations', label: 'Integrações', icon: KeyRound, ready: true },
   { href: '/billing', label: 'Billing', icon: CreditCard, ready: true },
-  { href: '/settings', label: 'Configurações', icon: Settings, ready: false },
+  { href: '/settings', label: 'Configurações', icon: Settings, ready: true },
 ] as const;
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
