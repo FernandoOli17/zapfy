@@ -3,9 +3,14 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma, PlanId, SubscriptionStatus, WorkspaceRole } from '@zapai/db';
-import { AppError, createWorkspaceSchema, TRIAL_DAYS } from '@zapai/shared';
+import { AppError, createLogger, createWorkspaceSchema, TRIAL_DAYS } from '@zapai/shared';
 
 import { auth } from '@/lib/auth';
+import { env } from '@/env';
+import { sendEmail } from '@/lib/email/client';
+import { welcomeEmail } from '@/lib/email/templates';
+
+const log = createLogger('onboarding');
 
 type ActionState = { error?: string } | undefined;
 
@@ -55,9 +60,38 @@ export async function createWorkspaceAction(
     if (err instanceof AppError) {
       return { error: err.userMessage };
     }
-    console.error('[onboarding] createWorkspace failed', err);
+    log.error({ err: String(err) }, 'createWorkspace failed');
     return { error: 'Falha ao criar workspace. Tenta de novo em instantes.' };
   }
 
+  // Welcome email (best-effort, não bloqueia redirect)
+  void sendWelcomeEmailAsync({
+    name: session.user.name ?? session.user.email,
+    email: session.user.email,
+    workspaceSlug: parsed.data.slug,
+  });
+
   redirect('/dashboard');
+}
+
+async function sendWelcomeEmailAsync(input: {
+  name: string;
+  email: string;
+  workspaceSlug: string;
+}): Promise<void> {
+  try {
+    const tmpl = welcomeEmail({
+      name: input.name,
+      workspaceSlug: input.workspaceSlug,
+      appUrl: env.NEXT_PUBLIC_APP_URL,
+    });
+    await sendEmail({
+      to: input.email,
+      subject: tmpl.subject,
+      html: tmpl.html,
+      text: tmpl.text,
+    });
+  } catch (err) {
+    log.warn({ err: String(err), email: input.email }, 'welcome email falhou');
+  }
 }

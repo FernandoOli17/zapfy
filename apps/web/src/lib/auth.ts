@@ -2,8 +2,13 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { magicLink } from 'better-auth/plugins';
 import { prisma } from '@zapai/db';
+import { createLogger } from '@zapai/shared';
 
 import { env } from '@/env';
+import { isEmailConfigured, sendEmail } from '@/lib/email/client';
+import { magicLinkEmail } from '@/lib/email/templates';
+
+const log = createLogger('auth');
 
 const socialProviders =
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
@@ -28,13 +33,24 @@ export const auth = betterAuth({
   plugins: [
     magicLink({
       sendMagicLink: async ({ email, url }) => {
-        // TODO Fase 2: enviar via Resend. Em dev, log no console.
-        if (env.NODE_ENV !== 'production') {
-          console.info(`🔗 Magic link pra ${email}: ${url}`);
+        if (!isEmailConfigured()) {
+          // Em dev, log no console pro user clicar.
+          log.info({ email, url }, '🔗 Magic link (dev) — sem RESEND_API_KEY');
+          if (env.NODE_ENV === 'production') {
+            throw new Error('RESEND_API_KEY não configurada em produção');
+          }
           return;
         }
-        // Em prod sem RESEND, falhar explicitamente.
-        throw new Error('RESEND_API_KEY não configurada — magic link indisponível');
+        const tmpl = magicLinkEmail({ url, email });
+        const result = await sendEmail({
+          to: email,
+          subject: tmpl.subject,
+          html: tmpl.html,
+          text: tmpl.text,
+        });
+        if (!result.ok) {
+          throw new Error(result.error ?? 'Falha ao enviar magic link');
+        }
       },
     }),
   ],
