@@ -1,7 +1,10 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { z } from 'zod';
 import { createLogger } from '@zapai/shared';
+
+import { clientIp, enforceRateLimit, RL_CONTACT } from '@/lib/rate-limit';
 
 const log = createLogger('contato');
 
@@ -21,6 +24,16 @@ export async function sendContactAction(
   _prev: ContactState | undefined,
   formData: FormData,
 ): Promise<ContactState> {
+  const reqHeaders = await headers();
+  const ip = clientIp(reqHeaders);
+  const rl = await enforceRateLimit(`contact:${ip}`, RL_CONTACT);
+  if (!rl.success) {
+    return {
+      status: 'error',
+      error: `Calma! Tenta de novo em ${Math.ceil((rl.reset - Date.now()) / 1000)}s.`,
+    };
+  }
+
   const parsed = contactSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
@@ -31,7 +44,7 @@ export async function sendContactAction(
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Dados inválidos' };
   }
 
-  // TODO Fase 9: enviar via Resend pra oi@zapai.dev quando RESEND_API_KEY estiver configurado.
+  // TODO Fase B: enviar via Resend pra oi@zapai.dev quando RESEND_API_KEY estiver configurado.
   // Por enquanto, só registra no log estruturado pra MVP.
   log.info(
     {
@@ -39,12 +52,10 @@ export async function sendContactAction(
       email: parsed.data.email,
       subject: parsed.data.subject,
       messageLength: parsed.data.message.length,
+      ip,
     },
     'contato recebido',
   );
-
-  // simula latência pra feedback visual ficar honesto
-  await new Promise((r) => setTimeout(r, 400));
 
   return { status: 'success' };
 }

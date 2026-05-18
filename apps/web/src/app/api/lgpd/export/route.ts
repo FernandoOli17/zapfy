@@ -4,6 +4,7 @@ import { AppError, createLogger, phoneE164Schema } from '@zapai/shared';
 import { z } from 'zod';
 
 import { authenticateApiKey, requireScope } from '@/lib/api-auth';
+import { clientIp, enforceRateLimit, RL_LGPD_API } from '@/lib/rate-limit';
 
 const log = createLogger('lgpd-export');
 
@@ -25,6 +26,15 @@ const inputSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
+    const ip = clientIp(req.headers);
+    const rl = await enforceRateLimit(`lgpd-export:${ip}`, RL_LGPD_API);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'rate limit', retryAfterMs: rl.reset - Date.now() },
+        { status: 429, headers: { 'retry-after': String(Math.ceil((rl.reset - Date.now()) / 1000)) } },
+      );
+    }
+
     const authResult = await authenticateApiKey(req.headers.get('authorization'));
     requireScope(authResult, 'lgpd:export');
 

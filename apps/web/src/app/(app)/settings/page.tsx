@@ -1,4 +1,5 @@
-import { AlertTriangle, Building2 } from 'lucide-react';
+import Link from 'next/link';
+import { AlertTriangle, ArrowUpRight, Building2, ScrollText } from 'lucide-react';
 
 import { requireWorkspace } from '@/lib/inbox';
 
@@ -46,6 +47,22 @@ export default async function SettingsPage() {
               isOwner={isOwner}
             />
           </div>
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8">
+          <div className="flex items-center gap-2">
+            <ScrollText className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-medium tracking-tight">Audit log</h2>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Quem mexeu em quê. Útil pra compliance LGPD e investigação. Retenção 12 meses.
+          </p>
+          <Link
+            href="/settings/audit-log"
+            className="mt-4 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+          >
+            Ver registros completos <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
         </section>
 
         {isOwner && (

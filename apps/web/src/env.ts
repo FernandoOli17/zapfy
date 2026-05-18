@@ -35,6 +35,9 @@ export const env = createEnv({
     PUSHER_SECRET: z.string().optional(),
     PUSHER_CLUSTER: z.string().optional(),
 
+    UPSTASH_REDIS_REST_URL: z.string().url().optional(),
+    UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+
     ENCRYPTION_KEY: z.string().length(64, 'Use 64 chars hex (32 bytes)'),
     LOG_PII_SALT: z.string().min(16),
 
