@@ -19,6 +19,8 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
 import { publishInboxEvent, workspaceChannel } from '@/lib/realtime/pusher-server';
+import { captureException } from '@/lib/sentry';
+import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 
 const log = createLogger('inbox-actions');
 
@@ -112,6 +114,10 @@ export async function sendInboxMessage(
             ? err.message
             : 'Falha ao enviar';
       log.warn({ conversationId: conversation.id, err: msg }, 'sendText falhou');
+      captureException(err, {
+        context: 'inbox.sendInboxMessage',
+        conversationId: conversation.id,
+      });
       // Cria Message com FAILED pra deixar visível no inbox
       const failed = await prisma.message.create({
         data: {
@@ -127,6 +133,13 @@ export async function sendInboxMessage(
         },
       });
       created.push(failed.id);
+      void dispatchOutgoingEvent(workspace.id, 'message.failed', {
+        messageId: failed.id,
+        conversationId: conversation.id,
+        contactId: conversation.contactId,
+        error: msg,
+        textPreview: chunk.slice(0, 140),
+      });
       return { status: 'error', error: msg };
     }
 
@@ -156,6 +169,16 @@ export async function sendInboxMessage(
         preview: chunk.slice(0, 140),
         createdAt: new Date().toISOString(),
       },
+    });
+
+    void dispatchOutgoingEvent(workspace.id, 'message.sent', {
+      messageId: message.id,
+      conversationId: conversation.id,
+      contactId: conversation.contactId,
+      ...(waMessageId ? { whatsappMessageId: waMessageId } : {}),
+      type: 'text',
+      textPreview: chunk.slice(0, 140),
+      fromAi: false,
     });
   }
 
@@ -198,6 +221,11 @@ export async function assumeConversation(conversationId: string) {
       assignedToUserId: user.id,
     },
   });
+  void dispatchOutgoingEvent(workspace.id, 'conversation.assumed', {
+    conversationId: conversation.id,
+    contactId: conversation.contactId,
+    assignedToUserId: user.id,
+  });
   revalidatePath(`/inbox/${conversation.id}`);
   revalidatePath('/inbox');
   return { status: 'ok' as const };
@@ -229,6 +257,10 @@ export async function returnConversationToAi(conversationId: string) {
       assignedToUserId: null,
     },
   });
+  void dispatchOutgoingEvent(workspace.id, 'conversation.returned', {
+    conversationId: conversation.id,
+    contactId: conversation.contactId,
+  });
   revalidatePath(`/inbox/${conversation.id}`);
   revalidatePath('/inbox');
   return { status: 'ok' as const };
@@ -256,6 +288,11 @@ export async function closeConversation(conversationId: string) {
       status: 'CLOSED',
       assignedToUserId: conversation.assignedToUserId,
     },
+  });
+  void dispatchOutgoingEvent(workspace.id, 'conversation.closed', {
+    conversationId: conversation.id,
+    contactId: conversation.contactId,
+    closedByUserId: user.id,
   });
   revalidatePath(`/inbox/${conversation.id}`);
   revalidatePath('/inbox');

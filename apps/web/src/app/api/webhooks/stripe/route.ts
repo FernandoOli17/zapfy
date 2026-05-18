@@ -4,6 +4,7 @@ import { PlanId, prisma, SubscriptionStatus } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
 import { env } from '@/env';
+import { captureException } from '@/lib/sentry';
 import { getStripeClient, planIdFromStripePrice } from '@/lib/stripe';
 
 const log = createLogger('stripe-webhook');
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     log.error({ type: event.type, err: String(err) }, 'handler explodiu');
+    captureException(err, { context: 'stripe.webhook', eventType: event.type, eventId: event.id });
     // mesmo assim 200 pra Stripe não bombardear de retry — Stripe Dashboard mostra a falha
   }
 

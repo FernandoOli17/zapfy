@@ -9,6 +9,8 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { AVAILABLE_SCOPES, generateApiKey } from '@/lib/api-auth';
+import { assertPlanFeature } from '@/lib/plans';
+import { PlanLimitError } from '@zapai/shared';
 
 const log = createLogger('integrations-actions');
 
@@ -52,6 +54,24 @@ export async function createApiKey(
   const ctx = await requireOwnerOrAdmin();
   if ('error' in ctx) return { status: 'error', error: ctx.error };
   const { workspace, user } = ctx;
+
+  // Scopes não-LGPD exigem plano Premium (apiAccess=true). LGPD é
+  // compliance obrigatório — qualquer plano pode criar chave só com
+  // lgpd:* pra automatizar atendimento ao titular.
+  const onlyLgpd = parsed.data.scopes.every((s) => s.startsWith('lgpd:'));
+  if (!onlyLgpd) {
+    try {
+      await assertPlanFeature(workspace.id, 'apiAccess');
+    } catch (err) {
+      if (err instanceof PlanLimitError) {
+        return {
+          status: 'error',
+          error: `${err.userMessage} Pra essa chave, use só scopes de LGPD (lgpd:export, lgpd:delete, lgpd:opt-out).`,
+        };
+      }
+      throw err;
+    }
+  }
 
   const { secret, keyHash, prefix } = generateApiKey();
   const expiresAt = parsed.data.expiresInDays

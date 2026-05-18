@@ -4,7 +4,9 @@ import { AppError, createLogger, phoneE164Schema } from '@zapai/shared';
 import { z } from 'zod';
 
 import { authenticateApiKey, requireScope } from '@/lib/api-auth';
+import { enqueue, QUEUE_NAMES, type LgpdHardDeleteJob } from '@/lib/queues';
 import { clientIp, enforceRateLimit, RL_LGPD_API } from '@/lib/rate-limit';
+import { captureException } from '@/lib/sentry';
 
 const log = createLogger('lgpd-delete');
 
@@ -102,8 +104,25 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    // Enqueue hard delete com delay até a data agendada. O worker sweep
+    // periódico é fallback caso o Redis caia ou o job seja descartado.
+    const job: LgpdHardDeleteJob = {
+      workspaceId: authResult.workspaceId,
+      contactId: contact.id,
+    };
+    const enq = await enqueue(QUEUE_NAMES.lgpdHardDelete, job, {
+      delay: hardDeleteAt.getTime() - Date.now(),
+      jobId: `hard-delete:${contact.id}`,
+    });
+    if (!enq.ok) {
+      log.warn(
+        { contactId: contact.id, err: enq.error },
+        'enqueue hard delete falhou — worker sweep vai cobrir',
+      );
+    }
+
     log.info(
-      { contactId: contact.id, hardDeleteAt: hardDeleteAt.toISOString() },
+      { contactId: contact.id, hardDeleteAt: hardDeleteAt.toISOString(), enqueued: enq.ok },
       'soft delete + agendamento hard',
     );
     return NextResponse.json({
@@ -119,6 +138,7 @@ export async function POST(req: NextRequest) {
       );
     }
     log.error({ err: String(err) }, 'lgpd delete falhou');
+    captureException(err, { context: 'lgpd.delete' });
     return NextResponse.json({ error: 'Erro inesperado' }, { status: 500 });
   }
 }

@@ -22,6 +22,8 @@ import {
 
 import { env } from '@/env';
 import { publishInboxEvent } from '@/lib/realtime/pusher-server';
+import { captureException } from '@/lib/sentry';
+import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 
 const log = createLogger('wa-webhook');
 
@@ -160,6 +162,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           },
           'persistInboundMessage falhou',
         );
+        captureException(err, { context: 'wa.persistInboundMessage', phoneNumberId });
       }
     }
 
@@ -174,6 +177,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           { phoneNumberId, whatsappMessageId: status.id, err: String(err) },
           'applyOutboundStatus falhou',
         );
+        captureException(err, {
+          context: 'wa.applyOutboundStatus',
+          phoneNumberId,
+          whatsappMessageId: status.id,
+        });
       }
     }
 
@@ -189,6 +197,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     return ack();
   } catch (err) {
     log.error({ phoneNumberId, err: String(err) }, 'webhook handler explodiu');
+    captureException(err, { context: 'wa.webhook.handler', phoneNumberId });
     return ack();
   }
 }
@@ -308,6 +317,17 @@ async function persistInboundMessage(input: {
         createdAt: timestamp.toISOString(),
       },
     });
+
+    // Dispatch outgoing webhook pro sistema do cliente (best-effort)
+    void dispatchOutgoingEvent(workspaceId, 'message.received', {
+      messageId: result.messageId,
+      conversationId: result.conversationId,
+      contactId: result.contactId,
+      phoneE164: m.from,
+      type: m.type,
+      text: previewText,
+      receivedAt: timestamp.toISOString(),
+    });
   }
 }
 
@@ -377,5 +397,26 @@ async function applyOutboundStatus(input: {
 
   if (result.count === 0) {
     log.warn({ whatsappMessageId: status.id }, 'status pra message_id desconhecido');
+    return;
+  }
+
+  // Dispatch outgoing webhook por status
+  const eventMap = {
+    sent: 'message.sent',
+    delivered: 'message.delivered',
+    read: 'message.read',
+    failed: 'message.failed',
+  } as const;
+  const eventName = eventMap[status.status];
+  if (eventName) {
+    void dispatchOutgoingEvent(workspaceId, eventName, {
+      whatsappMessageId: status.id,
+      recipientId: status.recipient_id,
+      status: status.status,
+      timestamp: status.timestamp,
+      ...(status.errors?.[0]
+        ? { error: { code: status.errors[0].code, message: status.errors[0].message } }
+        : {}),
+    });
   }
 }

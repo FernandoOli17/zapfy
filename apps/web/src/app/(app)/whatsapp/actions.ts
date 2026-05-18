@@ -12,6 +12,10 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
+import { assertPlanLimit } from '@/lib/plans';
+import { captureException } from '@/lib/sentry';
+import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
+import { PlanLimitError } from '@zapai/shared';
 
 const log = createLogger('whatsapp-actions');
 
@@ -66,6 +70,25 @@ export async function connectWhatsAppAction(
   const { workspace } = await requireSessionAndWorkspace();
   const data = parsed.data;
 
+  // 0) plan limit: número de WhatsAppAccounts (skip se for reconexão do mesmo number)
+  const existingForPhone = await prisma.whatsAppAccount.findUnique({
+    where: { phoneNumberId: data.phoneNumberId },
+    select: { workspaceId: true },
+  });
+  if (!existingForPhone || existingForPhone.workspaceId !== workspace.id) {
+    const currentCount = await prisma.whatsAppAccount.count({
+      where: { workspaceId: workspace.id, status: { not: WhatsAppStatus.DISCONNECTED } },
+    });
+    try {
+      await assertPlanLimit(workspace.id, 'whatsappNumbers', currentCount);
+    } catch (err) {
+      if (err instanceof PlanLimitError) {
+        return { status: 'error', error: err.userMessage };
+      }
+      throw err;
+    }
+  }
+
   // 1) testa as credenciais com a Meta
   const client = createWaClient({
     phoneNumberId: data.phoneNumberId,
@@ -90,6 +113,7 @@ export async function connectWhatsAppAction(
       };
     }
     log.error({ err: String(err) }, 'meta testConnection erro inesperado');
+    captureException(err, { context: 'whatsapp.connect.testConnection' });
     return {
       status: 'error',
       error: err instanceof Error ? err.message : 'Erro inesperado ao falar com a Meta',
@@ -149,6 +173,13 @@ export async function connectWhatsAppAction(
       targetId: account.id,
       metadata: { phoneNumberId: data.phoneNumberId, displayPhone },
     },
+  });
+
+  void dispatchOutgoingEvent(workspace.id, 'whatsapp.connected', {
+    accountId: account.id,
+    phoneNumberId: data.phoneNumberId,
+    displayPhone,
+    isReconnect: Boolean(existing),
   });
 
   revalidatePath('/whatsapp');
@@ -218,6 +249,11 @@ export async function disconnectWhatsAppAction(
       targetType: 'WhatsAppAccount',
       targetId: account.id,
     },
+  });
+  void dispatchOutgoingEvent(workspace.id, 'whatsapp.disconnected', {
+    accountId: account.id,
+    phoneNumberId: account.phoneNumberId,
+    displayPhone: account.displayPhone,
   });
   revalidatePath('/whatsapp');
   return { status: 'ok' };

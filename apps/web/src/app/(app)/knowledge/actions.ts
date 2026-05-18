@@ -8,13 +8,25 @@ import {
   KnowledgeSource,
   prisma,
 } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { createLogger, PlanLimitError } from '@zapai/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { scrapeUrlForForge } from '@/lib/forge/io';
+import { assertPlanLimit } from '@/lib/plans';
 
 const log = createLogger('knowledge-actions');
+
+async function checkKnowledgeLimit(workspaceId: string): Promise<string | null> {
+  const count = await prisma.knowledgeDocument.count({ where: { workspaceId } });
+  try {
+    await assertPlanLimit(workspaceId, 'knowledgeDocs', count);
+    return null;
+  } catch (err) {
+    if (err instanceof PlanLimitError) return err.userMessage;
+    throw err;
+  }
+}
 
 async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -39,6 +51,8 @@ export async function addManualKnowledge(raw: z.infer<typeof manualInput>) {
   if (!parsed.success) {
     return { status: 'error' as const, error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
+  const limit = await checkKnowledgeLimit(ctx.workspace.id);
+  if (limit) return { status: 'error' as const, error: limit };
   await prisma.knowledgeDocument.create({
     data: {
       workspaceId: ctx.workspace.id,
@@ -70,6 +84,8 @@ export async function addUrlKnowledge(raw: z.infer<typeof urlInput>) {
   if (!parsed.success) {
     return { status: 'error' as const, error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
+  const limit = await checkKnowledgeLimit(ctx.workspace.id);
+  if (limit) return { status: 'error' as const, error: limit };
   // cria PROCESSING, scrape, marca READY ou ERROR
   const doc = await prisma.knowledgeDocument.create({
     data: {

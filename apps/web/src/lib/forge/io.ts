@@ -9,6 +9,8 @@ import {
 } from '@zapai/ai';
 import { createLogger } from '@zapai/shared';
 
+import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
+
 const log = createLogger('forge-io');
 
 /** Fetch leve de uma URL pública, extrai title + texto-corpo resumido. */
@@ -120,6 +122,16 @@ export async function publishAgentVersionIo(
     await tx.agent.update({
       where: { id: agent.id },
       data: { currentVersionId: version.id },
+    });
+
+    // Dispatch outside the tx callback (best-effort) via setImmediate
+    void dispatchOutgoingEvent(workspaceId, 'agent.published', {
+      agentId: agent.id,
+      agentName,
+      versionNumber,
+      vertical,
+      forgeSessionId,
+      ...(userId ? { publishedByUserId: userId } : {}),
     });
 
     return { agentId: agent.id, versionNumber };

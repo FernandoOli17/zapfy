@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { authenticateApiKey, requireScope } from '@/lib/api-auth';
 import { clientIp, enforceRateLimit, RL_LGPD_API } from '@/lib/rate-limit';
+import { captureException } from '@/lib/sentry';
+import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 
 const log = createLogger('lgpd-opt-out');
 
@@ -77,6 +79,14 @@ export async function POST(req: NextRequest) {
       parsed.data.optOut ? 'opt-out registrado' : 'opt-in (revogou opt-out anterior)',
     );
 
+    if (parsed.data.optOut) {
+      void dispatchOutgoingEvent(authResult.workspaceId, 'lgpd.opt_out', {
+        contactId: contact.id,
+        phoneE164: contact.phoneE164,
+        viaApiKeyId: authResult.apiKeyId,
+      });
+    }
+
     return NextResponse.json({ status: 'ok', optedOut: parsed.data.optOut });
   } catch (err) {
     if (err instanceof AppError) {
@@ -86,6 +96,7 @@ export async function POST(req: NextRequest) {
       );
     }
     log.error({ err: String(err) }, 'lgpd opt-out falhou');
+    captureException(err, { context: 'lgpd.opt-out' });
     return NextResponse.json({ error: 'Erro inesperado' }, { status: 500 });
   }
 }
