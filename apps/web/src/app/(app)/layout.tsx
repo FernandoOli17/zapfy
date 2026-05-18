@@ -28,7 +28,7 @@ const NAV = [
   { href: '/forge', label: 'Forge', icon: Sparkles, ready: true },
   { href: '/inbox', label: 'Inbox', icon: Inbox, ready: true },
   { href: '/contacts', label: 'Contatos', icon: Users, ready: true },
-  { href: '/agent', label: 'Agente', icon: MessageSquareText, ready: false },
+  { href: '/agent', label: 'Agente', icon: MessageSquareText, ready: true },
   { href: '/knowledge', label: 'Conhecimento', icon: BookOpen, ready: true },
   { href: '/whatsapp', label: 'WhatsApp', icon: Phone, ready: true },
   { href: '/automations/templates', label: 'Automações', icon: Megaphone, ready: true },
