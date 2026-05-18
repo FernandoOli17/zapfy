@@ -1,8 +1,11 @@
+/**
+ * Tem que casar com apps/web/src/lib/queues.ts (producer side).
+ * Se mudar aqui, mude lá também.
+ */
 export const QUEUE_NAMES = {
   processMessage: 'process-message',
-  embedDocument: 'embed-document',
   sendBroadcast: 'send-broadcast',
-  scheduledBroadcast: 'scheduled-broadcast',
+  outgoingWebhook: 'outgoing-webhook',
   lgpdHardDelete: 'lgpd-hard-delete',
 } as const;
 

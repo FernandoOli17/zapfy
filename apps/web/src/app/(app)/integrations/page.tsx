@@ -1,4 +1,5 @@
-import { KeyRound, Shield } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, KeyRound, Shield, Webhook } from 'lucide-react';
 import { prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
@@ -11,10 +12,14 @@ export const dynamic = 'force-dynamic';
 
 export default async function IntegrationsPage() {
   const { workspace } = await requireWorkspace();
-  const keys = await prisma.apiKey.findMany({
-    where: { workspaceId: workspace.id },
-    orderBy: { createdAt: 'desc' },
-  });
+  const [keys, webhooksCount, activeWebhooks] = await Promise.all([
+    prisma.apiKey.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.outgoingWebhook.count({ where: { workspaceId: workspace.id } }),
+    prisma.outgoingWebhook.count({ where: { workspaceId: workspace.id, active: true } }),
+  ]);
 
   return (
     <div className="relative overflow-hidden">
@@ -71,6 +76,28 @@ export default async function IntegrationsPage() {
               ))}
             </ul>
           )}
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Webhook className="h-4 w-4 text-primary" />
+                Webhooks de saída
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {webhooksCount === 0
+                  ? 'Nenhum endpoint configurado. Receba eventos do ZapAI no seu sistema.'
+                  : `${activeWebhooks} ativo${activeWebhooks === 1 ? '' : 's'} de ${webhooksCount} configurado${webhooksCount === 1 ? '' : 's'}.`}
+              </p>
+            </div>
+            <Link
+              href="/integrations/webhooks"
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              Gerenciar <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </section>
 
         <section className="mt-12 rounded-2xl border border-primary/30 bg-primary/5 p-6 md:p-8">

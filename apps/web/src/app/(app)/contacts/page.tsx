@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, UserX, Users } from 'lucide-react';
+import { ArrowUpRight, FileUp, UserX, Users } from 'lucide-react';
 import { prisma, type Prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
@@ -74,33 +74,42 @@ export default async function ContactsPage({ searchParams }: PageProps) {
               </span>
             </h1>
           </div>
-          <form className="flex flex-wrap items-center gap-2">
-            <input
-              type="search"
-              name="q"
-              defaultValue={q}
-              placeholder="Buscar nome, telefone ou e-mail…"
-              className="h-10 w-64 rounded-md border border-border/60 bg-background/40 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <select
-              name="tag"
-              defaultValue={tag}
-              className="h-10 rounded-md border border-border/60 bg-background/40 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/contacts/import"
+              className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-3 text-sm hover:bg-secondary"
             >
-              <option value="">Todas as tags</option>
-              {allTags.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Filtrar
-            </button>
-          </form>
+              <FileUp className="h-4 w-4" />
+              Importar CSV
+            </Link>
+            <form className="flex flex-wrap items-center gap-2">
+              <input
+                type="search"
+                name="q"
+                defaultValue={q}
+                placeholder="Buscar nome, telefone ou e-mail…"
+                className="h-10 w-64 rounded-md border border-border/60 bg-background/40 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <select
+                name="tag"
+                defaultValue={tag}
+                className="h-10 rounded-md border border-border/60 bg-background/40 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Todas as tags</option>
+                {allTags.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Filtrar
+              </button>
+            </form>
+          </div>
         </div>
 
         {contacts.length === 0 ? (
