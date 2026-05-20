@@ -44,7 +44,7 @@ function BrandPanel() {
         aria-hidden
         style={{
           background:
-            'radial-gradient(ellipse 70% 50% at 20% 100%, color-mix(in srgb, hsl(142 76% 36%) 25%, transparent), transparent 60%)',
+            'radial-gradient(ellipse 70% 50% at 20% 100%, color-mix(in srgb, hsl(263 70% 50%) 25%, transparent), transparent 60%)',
         }}
       />
       <Link href="/" className="relative flex items-center gap-2 font-semibold tracking-tight">

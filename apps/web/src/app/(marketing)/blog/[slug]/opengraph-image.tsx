@@ -24,7 +24,7 @@ export default async function BlogOG({ params }: Props) {
         style={{
           width: '100%',
           height: '100%',
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #052e16 100%)',
+          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #1e0a3c 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -48,7 +48,7 @@ export default async function BlogOG({ params }: Props) {
               width: 12,
               height: 12,
               borderRadius: 999,
-              background: '#22c55e',
+              background: '#7C3AED',
             }}
           />
           ZapAI Blog
@@ -95,7 +95,7 @@ export default async function BlogOG({ params }: Props) {
             {author}
             {date ? ` · ${date}` : ''}
           </div>
-          <div style={{ color: '#22c55e' }}>zapai.dev</div>
+          <div style={{ color: '#7C3AED' }}>zapai.dev</div>
         </div>
       </div>
     ),

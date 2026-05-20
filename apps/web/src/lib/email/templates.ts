@@ -27,7 +27,7 @@ const HEADER_STYLES = `
 
 const BUTTON_STYLES = `
   display: inline-block;
-  background-color: #15803d;
+  background-color: #7C3AED;
   color: #ffffff;
   text-decoration: none;
   font-weight: 500;
@@ -50,13 +50,13 @@ function wrap(inner: string): string {
   <div style="${BASE_STYLES}">
     <div style="${CONTAINER_STYLES}">
       <div style="${HEADER_STYLES}; padding-bottom: 12px;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#15803d;vertical-align:middle;margin-right:8px"></span>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#7C3AED;vertical-align:middle;margin-right:8px"></span>
         ZapAI
       </div>
       ${inner}
       <div style="${FOOTER_STYLES}">
         ZapAI · O WhatsApp da sua empresa, com cérebro próprio.<br/>
-        Não esperava esse email? <a href="mailto:oi@zapai.dev" style="color:#15803d">avisa pra gente</a>.
+        Não esperava esse email? <a href="mailto:oi@zapai.dev" style="color:#7C3AED">avisa pra gente</a>.
       </div>
     </div>
   </div>
@@ -89,7 +89,7 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
       <li>Comece a atender 24/7.</li>
     </ol>
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
-    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#15803d">dashboard</a>.</p>
+    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#7C3AED">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
     <p style="color:#71717a;font-size:13px">— Time ZapAI</p>
   `);
@@ -107,10 +107,10 @@ export function contactNotificationEmail(input: {
     <h1 style="font-size:20px;margin:24px 0 8px">Novo contato pelo site</h1>
     <table style="width:100%;border-collapse:collapse;margin:16px 0">
       <tr><td style="padding:6px 0;color:#71717a;width:80px">Nome:</td><td>${escapeHtml(input.name)}</td></tr>
-      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#15803d">${escapeHtml(input.email)}</a></td></tr>
+      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#7C3AED">${escapeHtml(input.email)}</a></td></tr>
       <tr><td style="padding:6px 0;color:#71717a">Assunto:</td><td>${escapeHtml(input.subject)}</td></tr>
     </table>
-    <div style="border-left:3px solid #15803d;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
+    <div style="border-left:3px solid #7C3AED;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
     <p style="color:#71717a;font-size:13px">Responda direto pelo Reply-To deste email.</p>
   `);
   const text = `Novo contato:\n\nNome: ${input.name}\nE-mail: ${input.email}\nAssunto: ${input.subject}\n\n---\n${input.message}`;

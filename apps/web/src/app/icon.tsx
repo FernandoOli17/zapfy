@@ -23,8 +23,8 @@ export default function Icon() {
             width: 14,
             height: 14,
             borderRadius: 999,
-            background: '#22c55e',
-            boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
+            background: '#7C3AED',
+            boxShadow: '0 0 8px rgba(124, 58, 237, 0.6)',
           }}
         />
       </div>

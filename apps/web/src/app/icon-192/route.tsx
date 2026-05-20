@@ -16,7 +16,7 @@ export function GET() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 14,
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #052e16 100%)',
+          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #1e0a3c 100%)',
         }}
       >
         <div
@@ -24,8 +24,8 @@ export function GET() {
             width: 72,
             height: 72,
             borderRadius: 999,
-            background: '#22c55e',
-            boxShadow: '0 0 40px rgba(34, 197, 94, 0.55)',
+            background: '#7C3AED',
+            boxShadow: '0 0 40px rgba(124, 58, 237, 0.55)',
           }}
         />
         <div

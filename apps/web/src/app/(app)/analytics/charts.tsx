@@ -14,7 +14,7 @@ import {
   YAxis,
 } from 'recharts';
 
-const PRIMARY = 'hsl(142 70% 45%)';
+const PRIMARY = 'hsl(263 70% 50%)';
 const MUTED = 'hsl(240 5% 64%)';
 
 export function MessagesPerDayChart({

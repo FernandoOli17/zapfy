@@ -100,7 +100,7 @@ export default async function AnalyticsPage() {
   })();
 
   const statusData = [
-    { name: 'IA', value: aiHandlingConversations, color: 'hsl(142 70% 45%)' },
+    { name: 'IA', value: aiHandlingConversations, color: 'hsl(263 70% 50%)' },
     { name: 'Humano', value: humanHandlingConversations, color: 'hsl(240 5% 65%)' },
     { name: 'Fechadas', value: closedCount, color: 'hsl(240 5% 35%)' },
   ];

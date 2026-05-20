@@ -12,7 +12,7 @@ export default function OG() {
         style={{
           width: '100%',
           height: '100%',
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 50%, #052e16 100%)',
+          background: 'linear-gradient(160deg, #09090b 0%, #18181b 50%, #1e0a3c 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -36,7 +36,7 @@ export default function OG() {
               width: 14,
               height: 14,
               borderRadius: 999,
-              background: '#22c55e',
+              background: '#7C3AED',
             }}
           />
           ZapAI
@@ -57,7 +57,7 @@ export default function OG() {
             <span
               style={{
                 fontStyle: 'italic',
-                color: '#22c55e',
+                color: '#7C3AED',
                 fontWeight: 400,
                 fontFamily: 'serif',
               }}
@@ -82,7 +82,7 @@ export default function OG() {
           }}
         >
           <div>Cloud API oficial · LGPD-friendly</div>
-          <div style={{ color: '#22c55e' }}>zapai.dev</div>
+          <div style={{ color: '#7C3AED' }}>zapai.dev</div>
         </div>
       </div>
     ),

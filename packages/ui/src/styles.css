@@ -1,5 +1,5 @@
 /* ZapAI design tokens — Tailwind v4 (@theme block).
- * Paleta: zinc base + verde elétrico (accent WhatsApp).
+ * Paleta: zinc base + violeta elétrico (#7C3AED).
  * Tipografia: Geist (configurada via next/font no app).
  *
  * Importe esse arquivo na ordem após `@import "tailwindcss";` no globals.css do app:
@@ -23,24 +23,25 @@
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(240 10% 3.9%);
 
-  --color-primary: hsl(142 76% 36%);
+  /* Violeta #7C3AED — diferencia, premium, Notion/Linear vibe */
+  --color-primary: hsl(263 70% 50%);
   --color-primary-foreground: hsl(0 0% 100%);
 
-  --color-secondary: hsl(240 4.8% 95.9%);
-  --color-secondary-foreground: hsl(240 5.9% 10%);
+  --color-secondary: hsl(263 20% 96%);
+  --color-secondary-foreground: hsl(263 30% 20%);
 
-  --color-muted: hsl(240 4.8% 95.9%);
-  --color-muted-foreground: hsl(240 3.8% 46.1%);
+  --color-muted: hsl(240 5% 96%);
+  --color-muted-foreground: hsl(240 4% 46%);
 
-  --color-accent: hsl(142 90% 50%);
-  --color-accent-foreground: hsl(240 5.9% 10%);
+  --color-accent: hsl(263 50% 94%);
+  --color-accent-foreground: hsl(263 70% 40%);
 
   --color-destructive: hsl(0 84.2% 60.2%);
   --color-destructive-foreground: hsl(0 0% 98%);
 
   --color-border: hsl(240 5.9% 90%);
   --color-input: hsl(240 5.9% 90%);
-  --color-ring: hsl(142 76% 36%);
+  --color-ring: hsl(263 70% 50%);
 
   --radius: 0.5rem;
 }
@@ -56,24 +57,25 @@
     --color-popover: hsl(240 6% 8%);
     --color-popover-foreground: hsl(0 0% 98%);
 
-    --color-primary: hsl(142 70% 45%);
-    --color-primary-foreground: hsl(240 6% 10%);
+    /* Violeta claro no dark — brilho suficiente sobre zinc-950 */
+    --color-primary: hsl(263 70% 65%);
+    --color-primary-foreground: hsl(0 0% 100%);
 
-    --color-secondary: hsl(240 3.7% 15.9%);
+    --color-secondary: hsl(263 15% 14%);
     --color-secondary-foreground: hsl(0 0% 98%);
 
     --color-muted: hsl(240 3.7% 15.9%);
     --color-muted-foreground: hsl(240 5% 64.9%);
 
-    --color-accent: hsl(142 90% 50%);
-    --color-accent-foreground: hsl(240 6% 10%);
+    --color-accent: hsl(263 30% 20%);
+    --color-accent-foreground: hsl(263 70% 75%);
 
     --color-destructive: hsl(0 62.8% 30.6%);
     --color-destructive-foreground: hsl(0 0% 98%);
 
     --color-border: hsl(240 3.7% 15.9%);
     --color-input: hsl(240 3.7% 15.9%);
-    --color-ring: hsl(142 70% 45%);
+    --color-ring: hsl(263 70% 65%);
   }
 
   *,
@@ -98,5 +100,5 @@
 
 @utility bg-radial-fade {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 70%);
+    radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 70%);
 }
