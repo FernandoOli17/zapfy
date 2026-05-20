@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowUpRight, FileUp, UserX, Users } from 'lucide-react';
+import { ArrowUpRight, FileUp, Pencil, UserPlus, UserX, Users } from 'lucide-react';
 import { prisma, type Prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
@@ -75,6 +75,13 @@ export default async function ContactsPage({ searchParams }: PageProps) {
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/contacts/new"
+              className="inline-flex h-10 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              <UserPlus className="h-4 w-4" />
+              Novo contato
+            </Link>
             <Link
               href="/contacts/import"
               className="inline-flex h-10 items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-3 text-sm hover:bg-secondary"
@@ -180,12 +187,22 @@ export default async function ContactsPage({ searchParams }: PageProps) {
                       {c.lastSeenAt ? new Date(c.lastSeenAt).toLocaleString('pt-BR') : '—'}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <Link
-                        href={`/inbox?contactId=${c.id}`}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        Conversas <ArrowUpRight className="h-3 w-3" />
-                      </Link>
+                      <div className="inline-flex items-center gap-3">
+                        <Link
+                          href={`/contacts/${c.id}/edit`}
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                          aria-label="Editar contato"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Editar
+                        </Link>
+                        <Link
+                          href={`/inbox?contactId=${c.id}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          Conversas <ArrowUpRight className="h-3 w-3" />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
