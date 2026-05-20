@@ -5,6 +5,7 @@ import { prisma } from '@zapai/db';
 import { requireWorkspace } from '@/lib/inbox';
 
 import { TemplateRow } from './template-row';
+import { AutomationsTabs } from '../tabs';
 
 export const metadata = { title: 'Templates HSM' };
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,9 @@ export default async function TemplatesPage() {
     <div className="relative overflow-hidden">
       <div className="bg-radial-fade absolute inset-0 -z-10" aria-hidden />
       <div className="mx-auto max-w-5xl px-6 py-12 md:px-10 md:py-16">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <AutomationsTabs current="templates" />
+
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">
               Automations · Templates HSM
