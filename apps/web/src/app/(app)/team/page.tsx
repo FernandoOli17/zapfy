@@ -3,6 +3,8 @@ import { prisma, type WorkspaceRole } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 
+import { InviteForm } from './invite-form';
+
 export const metadata = { title: 'Time' };
 export const dynamic = 'force-dynamic';
 
@@ -83,16 +85,22 @@ export default async function TeamPage() {
         </section>
 
         <section className="mt-12 rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8">
-          <UserPlus className="h-5 w-5 text-primary" />
-          <h3 className="mt-3 text-xl font-medium tracking-tight">Convidar novo membro</h3>
+          <div className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" />
+            <h3 className="text-xl font-medium tracking-tight">Convidar novo membro</h3>
+          </div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Convites por e-mail vêm logo. Por enquanto, peça pra pessoa criar conta com o mesmo
-            e-mail e te avise que a gente associa manualmente.
+            Mande um link de convite por e-mail. Quem aceitar entra no workspace com o papel
+            que você escolher. Link expira em 7 dias.
           </p>
-          {me?.role !== 'OWNER' && me?.role !== 'ADMIN' && (
+          {me?.role !== 'OWNER' && me?.role !== 'ADMIN' ? (
             <p className="mt-4 text-xs text-muted-foreground">
               Só Owner ou Admin podem convidar.
             </p>
+          ) : (
+            <div className="mt-6">
+              <InviteForm />
+            </div>
           )}
         </section>
 

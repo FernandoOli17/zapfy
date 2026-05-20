@@ -117,6 +117,19 @@ export function contactNotificationEmail(input: {
   return { html, text, subject: `[ZapAI Contato] ${input.subject}` };
 }
 
+export function passwordResetEmail(input: { url: string; email: string }) {
+  const html = wrap(`
+    <h1 style="font-size:24px;margin:24px 0 8px;color:#18181b">Redefinir sua senha</h1>
+    <p>Recebemos pedido pra redefinir a senha de <strong>${escapeHtml(input.email)}</strong>.</p>
+    <a href="${input.url}" style="${BUTTON_STYLES}">Definir nova senha</a>
+    <p style="color:#71717a;font-size:13px">Link expira em 1 hora. Se o botão não funcionar, copia e cola:</p>
+    <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
+    <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu, pode ignorar — a senha atual continua válida.</p>
+  `);
+  const text = `Redefinir senha do ZapAI: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
+  return { html, text, subject: 'Redefinir sua senha do ZapAI' };
+}
+
 export function teamInviteEmail(input: {
   inviterName: string;
   workspaceName: string;

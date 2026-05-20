@@ -6,7 +6,7 @@ import { createLogger } from '@zapai/shared';
 
 import { env } from '@/env';
 import { isEmailConfigured, sendEmail } from '@/lib/email/client';
-import { magicLinkEmail } from '@/lib/email/templates';
+import { magicLinkEmail, passwordResetEmail } from '@/lib/email/templates';
 
 const log = createLogger('auth');
 
@@ -28,6 +28,26 @@ export const auth = betterAuth({
     enabled: true,
     autoSignIn: true,
     minPasswordLength: 8,
+    sendResetPassword: async ({ user, url }) => {
+      if (!isEmailConfigured()) {
+        log.info({ email: user.email, url }, '🔑 Reset password (dev) — sem RESEND_API_KEY');
+        if (env.NODE_ENV === 'production') {
+          throw new Error('RESEND_API_KEY não configurada em produção');
+        }
+        return;
+      }
+      const tmpl = passwordResetEmail({ url, email: user.email });
+      const result = await sendEmail({
+        to: user.email,
+        subject: tmpl.subject,
+        html: tmpl.html,
+        text: tmpl.text,
+      });
+      if (!result.ok) {
+        throw new Error(result.error ?? 'Falha ao enviar reset link');
+      }
+    },
+    resetPasswordTokenExpiresIn: 60 * 60, // 1h em segundos
   },
   ...(socialProviders ? { socialProviders } : {}),
   plugins: [
