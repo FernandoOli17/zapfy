@@ -12,8 +12,8 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 4 — WhatsApp Cloud API ✅ implementada (sem IA — agente IA chega na Fase 5)
-- **Próxima ação:** preencher `OPENAI_API_KEY` ou `ANTHROPIC_API_KEY` no `.env` pra validar Fase 3 (Forge), e/ou conectar um número Meta em `/whatsapp` pra validar Fase 4. Fase 5 plugando os dois.
+- **Fase atual:** 5 ✅ — Agente IA de produção + RAG implementados
+- **Próxima ação:** adicionar `MOCK_AI=true` no `.env` e testar pipeline inteiro sem custo de API. Com `ANTHROPIC_API_KEY` real: agente de produção ativo. Fases 6-9 pendentes (ver abaixo).
 
 ---
 
@@ -142,7 +142,7 @@ fluxo completo de mensagem chegando.
 
 **Depende de:** Fase 1.
 
-### Fase 5 — Agente de produção + RAG
+### Fase 5 — Agente de produção + RAG ✅ IMPLEMENTADA
 Worker BullMQ processa `process-message` jobs. Pipeline:
 webhook → enfileira → resolve `Conversation` (ou cria) → se `HUMAN_HANDLING` só salva →
 senão classifier Haiku (intent/sentiment/needs_handoff/language) → se handoff, mensagem-ponte
