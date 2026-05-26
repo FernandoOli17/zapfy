@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+﻿import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import {
@@ -94,9 +94,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <span className="text-xs font-bold text-primary-foreground">Z</span>
+            <span className="text-xs font-bold text-primary-foreground">O</span>
           </div>
-          <span className="text-base font-semibold tracking-tight">ZapAI</span>
+          <span className="text-base font-semibold tracking-tight">Orbe</span>
         </div>
 
         {/* Workspace card */}
@@ -108,7 +108,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="min-w-0">
               <p className="truncate text-sm font-medium leading-tight">{workspace.name}</p>
               <p className="truncate text-[11px] text-muted-foreground">
-                zapai.dev/{workspace.slug}
+                Orbe.dev/{workspace.slug}
               </p>
             </div>
           </div>
@@ -146,9 +146,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3.5 md:hidden">
           <Link href="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-              <span className="text-[10px] font-bold text-primary-foreground">Z</span>
+              <span className="text-[10px] font-bold text-primary-foreground">O</span>
             </div>
-            ZapAI
+            Orbe
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

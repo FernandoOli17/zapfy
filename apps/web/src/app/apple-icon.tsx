@@ -1,4 +1,4 @@
-import { ImageResponse } from 'next/og';
+﻿import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 export const size = { width: 180, height: 180 };
@@ -16,7 +16,7 @@ export default function AppleIcon() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 12,
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #1e0a3c 100%)',
+          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 60%, #0d2547 100%)',
         }}
       >
         <div
@@ -24,8 +24,8 @@ export default function AppleIcon() {
             width: 64,
             height: 64,
             borderRadius: 999,
-            background: '#7C3AED',
-            boxShadow: '0 0 32px rgba(34, 197, 94, 0.5)',
+            background: '#60A5FA',
+            boxShadow: '0 0 32px rgba(96, 165, 250, 0.6)',
           }}
         />
         <div
@@ -36,7 +36,7 @@ export default function AppleIcon() {
             letterSpacing: '-0.03em',
           }}
         >
-          ZapAI
+          Orbe
         </div>
       </div>
     ),

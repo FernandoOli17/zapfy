@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
@@ -31,7 +31,6 @@ export function ConversationListClient({ initialConversations }: Props) {
   const [query, setQuery] = useState('');
   const [, startTransition] = useTransition();
 
-  // Atualiza quando o server passa props novas (revalidatePath)
   useEffect(() => {
     setConversations(initialConversations);
   }, [initialConversations]);
@@ -57,20 +56,23 @@ export function ConversationListClient({ initialConversations }: Props) {
   }
 
   return (
-    <aside className="flex min-h-0 flex-col border-r border-border/60 bg-secondary/15">
-      <header className="border-b border-border/60 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <InboxIcon className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium tracking-tight">Inbox</h2>
+    <aside className="flex min-h-0 flex-col border-r border-border bg-card">
+      <header className="border-b border-border px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <InboxIcon className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold tracking-tight">Inbox</h2>
+          </div>
+          <span className="text-xs text-muted-foreground">{filtered.length}</span>
         </div>
-        <div className="mt-3 relative">
-          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative mt-3">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar nome ou telefone…"
-            className="h-9 w-full rounded-md border border-border/60 bg-background/40 pl-8 pr-7 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 w-full rounded-md border border-border bg-background pl-8 pr-8 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           {query && (
             <button
@@ -83,17 +85,17 @@ export function ConversationListClient({ initialConversations }: Props) {
             </button>
           )}
         </div>
-        <div className="mt-3 flex gap-1.5">
+        <div className="mt-3 flex gap-1">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               type="button"
               onClick={() => setFilter(f.id)}
               className={cn(
-                'rounded-full border px-2.5 py-0.5 text-xs transition-colors',
+                'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
                 filter === f.id
-                  ? 'border-primary/40 bg-primary/10 text-foreground'
-                  : 'border-border/60 bg-background/40 text-muted-foreground hover:text-foreground',
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
               {f.label}
@@ -112,53 +114,71 @@ export function ConversationListClient({ initialConversations }: Props) {
                 : 'Nenhuma conversa nesse filtro.'}
           </div>
         ) : (
-          <ul>
-            {filtered.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/inbox/${c.id}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleClick(c.id);
-                  }}
-                  className={cn(
-                    'block border-b border-border/40 px-5 py-3 transition-colors hover:bg-background/40',
-                    selected === c.id && 'bg-background/60',
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium">
-                      {c.contact.name ?? `+${c.contact.phoneE164}`}
-                    </p>
-                    <p className="shrink-0 text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {c.lastMessageAt ? formatRelative(c.lastMessageAt) : ''}
-                    </p>
-                  </div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <StatusBadge status={c.status} />
-                    {c.unreadCount > 0 && (
-                      <span className="rounded-full bg-primary px-1.5 text-[10px] font-medium text-primary-foreground">
-                        {c.unreadCount > 99 ? '99+' : c.unreadCount}
-                      </span>
+          <ul className="divide-y divide-border">
+            {filtered.map((c) => {
+              const isSelected = selected === c.id;
+              const initials = (c.contact.name ?? c.contact.phoneE164).slice(0, 2).toUpperCase();
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/inbox/${c.id}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleClick(c.id);
+                    }}
+                    className={cn(
+                      'flex gap-3 px-4 py-3 transition-colors hover:bg-muted/50',
+                      isSelected && 'bg-primary/[0.06] border-l-2 border-l-primary pl-[14px]',
                     )}
-                    {c.contact.tags.slice(0, 2).map((t) => (
-                      <span
-                        key={t}
-                        className="rounded-full border border-border/60 bg-background/40 px-1.5 text-[10px] text-muted-foreground"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  {c.lastMessagePreview && (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {c.lastMessageFromAi && '🤖 '}
-                      {c.lastMessagePreview}
-                    </p>
-                  )}
-                </Link>
-              </li>
-            ))}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                        c.unreadCount > 0
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-primary/10 text-primary',
+                      )}
+                    >
+                      {initials}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p
+                          className={cn(
+                            'truncate text-sm',
+                            c.unreadCount > 0 ? 'font-semibold' : 'font-medium',
+                          )}
+                        >
+                          {c.contact.name ?? `+${c.contact.phoneE164}`}
+                        </p>
+                        <p className="shrink-0 text-[10px] text-muted-foreground">
+                          {c.lastMessageAt ? formatRelative(c.lastMessageAt) : ''}
+                        </p>
+                      </div>
+                      {c.lastMessagePreview && (
+                        <p
+                          className={cn(
+                            'mt-0.5 truncate text-xs',
+                            c.unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground',
+                          )}
+                        >
+                          {c.lastMessageFromAi && '🤖 '}
+                          {c.lastMessagePreview}
+                        </p>
+                      )}
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <StatusBadge status={c.status} />
+                        {c.unreadCount > 0 && (
+                          <span className="ml-auto inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                            {c.unreadCount > 99 ? '99+' : c.unreadCount}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -169,18 +189,18 @@ export function ConversationListClient({ initialConversations }: Props) {
 function StatusBadge({ status }: { status: InboxConversationListItem['status'] }) {
   if (status === 'AI_HANDLING')
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-1.5 text-[10px] text-primary">
+      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
         <Bot className="h-2.5 w-2.5" /> IA
       </span>
     );
   if (status === 'HUMAN_HANDLING')
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-secondary/40 px-1.5 text-[10px] text-foreground">
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
         <Headset className="h-2.5 w-2.5" /> Humano
       </span>
     );
   return (
-    <span className="rounded-full border border-border/60 bg-secondary/40 px-1.5 text-[10px] text-muted-foreground">
+    <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
       fechada
     </span>
   );

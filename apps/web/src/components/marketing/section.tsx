@@ -1,4 +1,4 @@
-import { cn } from '@zapai/ui';
+﻿import { cn } from '@zapai/ui';
 
 interface SectionProps extends Omit<React.HTMLAttributes<HTMLElement>, 'title'> {
   children: React.ReactNode;

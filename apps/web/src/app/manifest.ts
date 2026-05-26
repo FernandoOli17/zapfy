@@ -1,14 +1,14 @@
-import type { MetadataRoute } from 'next';
+﻿import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ZapAI',
-    short_name: 'ZapAI',
+    name: 'Orbe',
+    short_name: 'Orbe',
     description: 'O WhatsApp da sua empresa, com cérebro próprio.',
     start_url: '/dashboard',
     display: 'standalone',
-    background_color: '#09090b',
-    theme_color: '#7C3AED',
+    background_color: '#05070f',
+    theme_color: '#60A5FA',
     lang: 'pt-BR',
     orientation: 'portrait',
     icons: [

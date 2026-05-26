@@ -8,7 +8,7 @@ const TABS = [
 
 export function AutomationsTabs({ current }: { current: 'templates' | 'broadcasts' }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
       {TABS.map((t) => {
         const active = t.key === current;
         const Icon = t.icon;
@@ -18,8 +18,8 @@ export function AutomationsTabs({ current }: { current: 'templates' | 'broadcast
             href={t.href}
             className={
               active
-                ? 'inline-flex h-9 items-center gap-2 rounded-md bg-secondary px-3 text-sm font-medium text-foreground'
-                : 'inline-flex h-9 items-center gap-2 rounded-md px-3 text-sm text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                ? 'inline-flex h-8 items-center gap-2 rounded-md bg-primary/10 px-3 text-sm font-medium text-primary'
+                : 'inline-flex h-8 items-center gap-2 rounded-md px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground'
             }
           >
             <Icon className="h-4 w-4" />

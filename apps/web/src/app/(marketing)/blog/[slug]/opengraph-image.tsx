@@ -1,9 +1,9 @@
-import { ImageResponse } from 'next/og';
+﻿import { ImageResponse } from 'next/og';
 
 import { getPost } from '@/lib/blog';
 
 export const runtime = 'nodejs';
-export const alt = 'Post no blog ZapAI';
+export const alt = 'Post no blog Orbe';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -13,7 +13,7 @@ interface Props {
 
 export default async function BlogOG({ params }: Props) {
   const post = await getPost(params.slug);
-  const title = post?.title ?? 'ZapAI';
+  const title = post?.title ?? 'Orbe';
   const description = post?.description ?? '';
   const date = post?.publishedAt ?? '';
   const author = post?.author ?? '';
@@ -24,7 +24,7 @@ export default async function BlogOG({ params }: Props) {
         style={{
           width: '100%',
           height: '100%',
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #1e0a3c 100%)',
+          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 60%, #0d2547 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -48,10 +48,10 @@ export default async function BlogOG({ params }: Props) {
               width: 12,
               height: 12,
               borderRadius: 999,
-              background: '#7C3AED',
+              background: '#60A5FA',
             }}
           />
-          ZapAI Blog
+          Orbe Blog
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -95,7 +95,7 @@ export default async function BlogOG({ params }: Props) {
             {author}
             {date ? ` · ${date}` : ''}
           </div>
-          <div style={{ color: '#7C3AED' }}>zapai.dev</div>
+          <div style={{ color: '#60A5FA' }}>Orbe.dev</div>
         </div>
       </div>
     ),

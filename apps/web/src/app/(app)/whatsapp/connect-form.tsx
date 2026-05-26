@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
@@ -163,7 +163,7 @@ export function ConnectForm() {
         )}
       </Button>
       <p className="text-xs text-muted-foreground">
-        Ao clicar em "Conectar", o ZapAI testa as credenciais chamando{' '}
+        Ao clicar em "Conectar", o Orbe testa as credenciais chamando{' '}
         <code className="font-mono">GET /v21.0/{'{phone_number_id}'}</code> na Meta. Se passar, o
         número fica como CONNECTED e os tokens são cifrados antes de persistir.
       </p>

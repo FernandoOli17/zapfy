@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import {
@@ -88,27 +88,43 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
 
   const isClosed = detail.status === 'CLOSED';
   const isHuman = detail.status === 'HUMAN_HANDLING';
+  const initials = (detail.contact.name ?? detail.contact.phoneE164).slice(0, 2).toUpperCase();
 
   return (
-    <section className="flex h-full min-h-0 flex-col">
-      <header className="flex items-center justify-between border-b border-border/60 bg-background/60 px-6 py-4 backdrop-blur">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            {detail.contact.name ? `+${detail.contact.phoneE164}` : 'Contato'}
-          </p>
-          <h2 className="mt-0.5 text-lg font-medium tracking-tight">
-            {detail.contact.name ?? `+${detail.contact.phoneE164}`}
-          </h2>
+    <section className="flex h-full min-h-0 flex-col bg-muted/20">
+      <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            {initials}
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">
+              {detail.contact.name ?? `+${detail.contact.phoneE164}`}
+            </h2>
+            <p className="text-xs text-muted-foreground">+{detail.contact.phoneE164}</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {!isClosed && isHuman && (
-            <Button type="button" variant="outline" size="sm" onClick={onReturnToAi} disabled={pendingAction}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onReturnToAi}
+              disabled={pendingAction}
+            >
               <Undo2 className="mr-1.5 h-3.5 w-3.5" />
               Voltar pra IA
             </Button>
           )}
           {!isClosed && !isHuman && (
-            <Button type="button" variant="outline" size="sm" onClick={onAssume} disabled={pendingAction}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAssume}
+              disabled={pendingAction}
+            >
               <UserCheck className="mr-1.5 h-3.5 w-3.5" />
               Assumir
             </Button>
@@ -129,8 +145,8 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
         </div>
       </header>
 
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-6 py-8 md:px-10">
-        <div className="mx-auto max-w-3xl space-y-3">
+      <div ref={scrollerRef} className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        <div className="mx-auto max-w-3xl space-y-2">
           {detail.messages.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">
               Sem mensagens nessa conversa ainda.
@@ -140,16 +156,19 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
               const prev = i > 0 ? detail.messages[i - 1] : null;
               const showDateBreak =
                 !prev ||
-                new Date(m.createdAt).toDateString() !== new Date(prev.createdAt).toDateString();
+                new Date(m.createdAt).toDateString() !==
+                  new Date(prev.createdAt).toDateString();
               return (
                 <div key={m.id}>
                   {showDateBreak && (
-                    <div className="my-4 text-center text-[10px] uppercase tracking-widest text-muted-foreground">
-                      {new Date(m.createdAt).toLocaleDateString('pt-BR', {
-                        weekday: 'short',
-                        day: '2-digit',
-                        month: 'short',
-                      })}
+                    <div className="my-4 flex items-center justify-center">
+                      <span className="rounded-full bg-card px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground shadow-sm">
+                        {new Date(m.createdAt).toLocaleDateString('pt-BR', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'short',
+                        })}
+                      </span>
                     </div>
                   )}
                   <MessageBubble message={m} />
@@ -160,7 +179,7 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
         </div>
       </div>
 
-      <div className="border-t border-border/60 bg-background/80 px-6 py-4 backdrop-blur md:px-10">
+      <div className="border-t border-border bg-card px-4 py-3 md:px-8">
         <div className="mx-auto max-w-3xl">
           {error && (
             <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -168,18 +187,19 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
             </div>
           )}
           {isClosed ? (
-            <div className="rounded-md border border-border/60 bg-card/40 px-4 py-3 text-sm text-muted-foreground">
+            <div className="rounded-md border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
               Conversa encerrada. Reabra usando a próxima mensagem que o contato mandar.
             </div>
           ) : !isHuman ? (
-            <div className="rounded-md border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
-              <span className="text-primary">IA respondendo automaticamente.</span>{' '}
+            <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+              <Bot className="h-4 w-4 shrink-0 text-primary" />
+              <span className="text-primary font-medium">IA respondendo</span>
               <span className="text-muted-foreground">
-                Clique em &quot;Assumir&quot; pra parar a IA e responder você mesmo.
+                · Clique em &quot;Assumir&quot; pra parar a IA e responder você mesmo.
               </span>
             </div>
           ) : (
-            <div className="flex items-end gap-2 rounded-2xl border border-border/60 bg-card/40 p-2 focus-within:border-primary/60">
+            <div className="flex items-end gap-2 rounded-2xl border border-border bg-background p-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -199,10 +219,14 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
                 size="icon"
                 onClick={onSend}
                 disabled={busy || !draft.trim()}
-                className="h-10 w-10 rounded-xl"
+                className="h-9 w-9 rounded-xl"
                 aria-label="Enviar"
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+                {busy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" />
+                )}
               </Button>
             </div>
           )}
@@ -225,16 +249,16 @@ function MessageBubble({ message }: { message: InboxMessage }) {
     <div className={cn('flex', isInbound ? 'justify-start' : 'justify-end')}>
       <div
         className={cn(
-          'group max-w-[85%] rounded-2xl px-4 py-2.5 text-sm',
+          'group max-w-[85%] rounded-2xl px-3.5 py-2 text-sm shadow-sm',
           isInbound
-            ? 'rounded-bl-sm bg-secondary text-foreground'
+            ? 'rounded-bl-md bg-card text-foreground border border-border/60'
             : message.fromAi
-              ? 'rounded-br-sm bg-primary/10 text-foreground'
-              : 'rounded-br-sm bg-primary text-primary-foreground',
+              ? 'rounded-br-md border border-primary/20 bg-primary/[0.06] text-foreground'
+              : 'rounded-br-md bg-primary text-primary-foreground',
         )}
       >
         {message.fromAi && (
-          <p className="mb-1 inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-primary/90">
+          <p className="mb-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-primary">
             <Bot className="h-3 w-3" /> Agente IA
           </p>
         )}
@@ -261,7 +285,7 @@ function MessageBubble({ message }: { message: InboxMessage }) {
 function StatusGlyph({ status, hasError }: { status: InboxMessage['status']; hasError: boolean }) {
   if (hasError) return <AlertCircle className="h-3 w-3 text-destructive" />;
   if (status === 'READ')
-    return <CheckCheck className="h-3 w-3 text-blue-400" aria-label="lido" />;
+    return <CheckCheck className="h-3 w-3 text-sky-400" aria-label="lido" />;
   if (status === 'DELIVERED') return <CheckCheck className="h-3 w-3" aria-label="entregue" />;
   if (status === 'SENT') return <CheckCircle2 className="h-3 w-3" aria-label="enviado" />;
   return <Clock className="h-3 w-3" aria-label="enviando" />;
@@ -310,14 +334,16 @@ function ContactPanel({ detail }: { detail: InboxConversationDetail }) {
   };
 
   return (
-    <aside className="hidden flex-col gap-5 border-l border-border/60 bg-secondary/15 p-5 lg:flex">
-      <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Status</p>
-        <div className="mt-2 flex items-center gap-2 text-sm">
+    <aside className="hidden flex-col gap-4 overflow-y-auto border-l border-border bg-card p-5 lg:flex">
+      <div className="rounded-lg border border-border bg-background p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Status
+        </p>
+        <div className="mt-1.5 flex items-center gap-2 text-sm font-medium">
           {detail.status === 'AI_HANDLING' ? (
             <Bot className="h-4 w-4 text-primary" />
           ) : detail.status === 'HUMAN_HANDLING' ? (
-            <Headset className="h-4 w-4 text-foreground" />
+            <Headset className="h-4 w-4 text-emerald-500" />
           ) : (
             <PhoneOff className="h-4 w-4 text-muted-foreground" />
           )}
@@ -326,14 +352,18 @@ function ContactPanel({ detail }: { detail: InboxConversationDetail }) {
       </div>
 
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Telefone</p>
-        <p className="mt-2 font-mono text-sm">+{detail.contact.phoneE164}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Telefone
+        </p>
+        <p className="mt-1.5 font-mono text-sm">+{detail.contact.phoneE164}</p>
       </div>
 
       {detail.contact.lastSeenAt && (
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Última vez</p>
-          <p className="mt-2 text-sm text-foreground/80">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Última vez
+          </p>
+          <p className="mt-1.5 text-sm text-foreground/80">
             {new Date(detail.contact.lastSeenAt).toLocaleString('pt-BR')}
           </p>
         </div>
@@ -346,21 +376,21 @@ function ContactPanel({ detail }: { detail: InboxConversationDetail }) {
       )}
 
       <div>
-        <p className="flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           <Tag className="h-3 w-3" /> Tags
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {tags.map((t) => (
             <span
               key={t}
-              className="group inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/40 px-2 py-0.5 text-xs"
+              className="group inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
             >
               {t}
               <button
                 type="button"
                 onClick={() => removeTag(t)}
                 aria-label={`Remover ${t}`}
-                className="text-muted-foreground hover:text-destructive"
+                className="text-primary/60 hover:text-destructive"
               >
                 ×
               </button>
@@ -379,7 +409,7 @@ function ContactPanel({ detail }: { detail: InboxConversationDetail }) {
               }
             }}
             placeholder="Nova tag…"
-            className="h-9 flex-1 rounded-md border border-border/60 bg-background/40 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-8 flex-1 rounded-md border border-border bg-background px-2 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <Button type="button" size="sm" variant="outline" onClick={() => addTag(tagDraft)}>
             Add
@@ -388,16 +418,20 @@ function ContactPanel({ detail }: { detail: InboxConversationDetail }) {
       </div>
 
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Anotação interna</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Anotação interna
+        </p>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onBlur={saveNote}
           placeholder="Visível só pro time. Não vai pro cliente."
           rows={4}
-          className="mt-2 w-full resize-none rounded-md border border-border/60 bg-background/40 p-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          className="mt-2 w-full resize-none rounded-md border border-border bg-background p-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
-        <p className="mt-1 text-[10px] text-muted-foreground">Salva automaticamente ao sair do campo.</p>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          Salva automaticamente ao sair do campo.
+        </p>
       </div>
     </aside>
   );

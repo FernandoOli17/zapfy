@@ -1,4 +1,4 @@
-import { Mail, MessageCircle, Send } from 'lucide-react';
+﻿import { Mail, MessageCircle, Send } from 'lucide-react';
 
 import { ContactForm } from './contact-form';
 
@@ -11,8 +11,8 @@ const CHANNELS = [
   {
     icon: Mail,
     label: 'E-mail',
-    value: 'oi@zapai.dev',
-    href: 'mailto:oi@zapai.dev',
+    value: 'oi@Orbe.dev',
+    href: 'mailto:oi@Orbe.dev',
     blurb: 'Respondemos em até 1 dia útil.',
   },
   {
@@ -25,8 +25,8 @@ const CHANNELS = [
   {
     icon: Send,
     label: 'Comercial',
-    value: 'comercial@zapai.dev',
-    href: 'mailto:comercial@zapai.dev',
+    value: 'comercial@Orbe.dev',
+    href: 'mailto:comercial@Orbe.dev',
     blurb: 'Pra empresa querendo Premium ou parceria.',
   },
 ];

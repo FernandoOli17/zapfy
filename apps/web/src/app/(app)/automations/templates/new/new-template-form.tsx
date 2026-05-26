@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -144,7 +144,7 @@ export function NewTemplateForm() {
           maxLength={60}
           value={footer}
           onChange={(e) => setFooter(e.target.value)}
-          placeholder="Equipe ZapAI"
+          placeholder="Equipe Orbe"
           className="mt-1.5 h-10"
         />
         <p className="mt-1 text-xs text-muted-foreground">{footer.length} / 60</p>

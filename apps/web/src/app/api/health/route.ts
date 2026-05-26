@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { prisma } from '@zapai/db';
 
 import { isStripeConfigured } from '@/lib/stripe';

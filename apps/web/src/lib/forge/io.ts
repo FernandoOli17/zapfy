@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 import { prisma, Prisma, Vertical } from '@zapai/db';
 import {
@@ -18,7 +18,7 @@ export async function scrapeUrlForForge(url: string): Promise<{ title: string; e
   try {
     const res = await fetch(url, {
       headers: {
-        'user-agent': 'ZapAI-Forge/1.0 (+https://zapai.dev)',
+        'user-agent': 'Orbe-Forge/1.0 (+https://Orbe.dev)',
         accept: 'text/html,application/xhtml+xml',
       },
       // Limita tempo de espera. Cloud API timeout < 30s; aqui usamos AbortController curto.

@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+﻿import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
 import { PlanId, prisma, SubscriptionStatus } from '@zapai/db';
 import { createLogger } from '@zapai/shared';

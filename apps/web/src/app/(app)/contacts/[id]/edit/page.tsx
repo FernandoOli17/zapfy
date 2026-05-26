@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { prisma } from '@zapai/db';
@@ -27,23 +27,22 @@ export default async function EditContactPage({
   if (!contact) notFound();
 
   return (
-    <div className="mx-auto max-w-xl px-6 py-12 md:px-10 md:py-16">
+    <div className="mx-auto max-w-2xl px-6 py-8 md:px-10 md:py-10">
       <Link
         href="/contacts"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Contatos
+        Voltar para contatos
       </Link>
-      <h1 className="mt-4 text-3xl font-medium leading-[1.1] tracking-tight md:text-4xl">
-        Editar{' '}
-        <span className="font-serif italic font-normal text-primary">contato.</span>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight md:text-3xl">
+        Editar contato
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         Alterações ficam logadas em audit. Telefone único por workspace.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6 rounded-xl border border-border bg-card p-6 md:p-8">
         <ContactForm
           mode="edit"
           initial={{

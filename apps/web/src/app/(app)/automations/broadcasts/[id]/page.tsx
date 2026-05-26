@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { prisma } from '@zapai/db';
@@ -45,16 +45,20 @@ export default async function BroadcastDetailPage({
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-12 md:px-10 md:py-16">
+    <div className="mx-auto max-w-6xl px-6 py-8 md:px-10 md:py-10">
       <Link
         href="/automations/broadcasts"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Broadcasts
+        Voltar para broadcasts
       </Link>
 
-      <div className="mt-4 rounded-xl border border-border/60 bg-card/40">
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight md:text-3xl">
+        {broadcast.name}
+      </h1>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
         <BroadcastRow
           broadcast={{
             id: broadcast.id,
@@ -71,45 +75,52 @@ export default async function BroadcastDetailPage({
         />
       </div>
 
-      <section className="mt-10">
-        <h2 className="text-sm uppercase tracking-widest text-muted-foreground">Status</h2>
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold tracking-tight">Status dos envios</h2>
         <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-6">
           <Stat label="Pendentes" value={counts.PENDING} />
           <Stat label="Enviados" value={counts.SENT} />
-          <Stat label="Entregues" value={counts.DELIVERED} />
-          <Stat label="Lidos" value={counts.READ} accent />
-          <Stat label="Falhas" value={counts.FAILED} tone="danger" />
+          <Stat label="Entregues" value={counts.DELIVERED} accent="primary" />
+          <Stat label="Lidos" value={counts.READ} accent="emerald" />
+          <Stat label="Falhas" value={counts.FAILED} accent="destructive" />
           <Stat label="Skipped" value={counts.SKIPPED} />
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-sm uppercase tracking-widest text-muted-foreground">
-          Destinatários ({broadcast._count.recipients}{' '}
-          {broadcast._count.recipients > broadcast.recipients.length
-            ? `— mostrando ${broadcast.recipients.length}`
-            : ''}
-          )
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold tracking-tight">
+          Destinatários
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            ({broadcast._count.recipients}
+            {broadcast._count.recipients > broadcast.recipients.length
+              ? ` — mostrando ${broadcast.recipients.length}`
+              : ''}
+            )
+          </span>
         </h2>
-        <ul className="mt-3 divide-y divide-border/60 rounded-xl border border-border/60 bg-card/40">
+        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
           {broadcast.recipients.map((r) => (
             <li
               key={r.id}
-              className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm"
+              className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm hover:bg-muted/40"
             >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                {(r.contact.name ?? r.contact.phoneE164).slice(0, 2).toUpperCase()}
+              </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
                   {r.contact.name ?? r.contact.phoneE164}
                 </p>
                 <p className="font-mono text-xs text-muted-foreground">
-                  {r.contact.phoneE164}
+                  +{r.contact.phoneE164}
                 </p>
               </div>
-              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                {r.status}
-              </span>
+              <StatusPill status={r.status} />
               {r.errorMessage && (
-                <span className="max-w-xs truncate text-xs text-destructive" title={r.errorMessage}>
+                <span
+                  className="max-w-xs truncate text-xs text-destructive"
+                  title={r.errorMessage}
+                >
                   {r.errorMessage}
                 </span>
               )}
@@ -125,24 +136,45 @@ function Stat({
   label,
   value,
   accent,
-  tone,
 }: {
   label: string;
   value: number;
-  accent?: boolean;
-  tone?: 'danger';
+  accent?: 'primary' | 'emerald' | 'destructive';
 }) {
-  const valueClass = tone === 'danger'
-    ? 'text-destructive'
-    : accent
-      ? 'text-primary'
-      : '';
+  const valueClass =
+    accent === 'destructive'
+      ? 'text-destructive'
+      : accent === 'primary'
+        ? 'text-primary'
+        : accent === 'emerald'
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : '';
   return (
-    <div className="rounded-lg border border-border/60 bg-card/40 p-3">
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-medium tabular-nums tracking-tight ${valueClass}`}>
+    <div className="rounded-lg border border-border bg-card p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className={`mt-1 text-2xl font-semibold tabular-nums tracking-tight ${valueClass}`}>
         {value}
       </p>
     </div>
+  );
+}
+
+function StatusPill({ status }: { status: string }) {
+  const tone =
+    status === 'READ'
+      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+      : status === 'DELIVERED' || status === 'SENT'
+        ? 'bg-primary/10 text-primary'
+        : status === 'FAILED'
+          ? 'bg-destructive/10 text-destructive'
+          : 'bg-muted text-muted-foreground';
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${tone}`}
+    >
+      {status.toLowerCase()}
+    </span>
   );
 }

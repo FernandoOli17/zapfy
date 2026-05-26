@@ -1,4 +1,4 @@
-import { ImageResponse } from 'next/og';
+﻿import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
@@ -16,7 +16,7 @@ export function GET() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 40,
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 60%, #1e0a3c 100%)',
+          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 60%, #0d2547 100%)',
         }}
       >
         <div
@@ -24,8 +24,8 @@ export function GET() {
             width: 180,
             height: 180,
             borderRadius: 999,
-            background: '#7C3AED',
-            boxShadow: '0 0 90px rgba(124, 58, 237, 0.6)',
+            background: '#60A5FA',
+            boxShadow: '0 0 90px rgba(96, 165, 250, 0.7)',
           }}
         />
         <div
@@ -36,7 +36,7 @@ export function GET() {
             letterSpacing: '-0.03em',
           }}
         >
-          ZapAI
+          Orbe
         </div>
       </div>
     ),

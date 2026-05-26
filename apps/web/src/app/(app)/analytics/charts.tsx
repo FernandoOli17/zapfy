@@ -14,8 +14,10 @@ import {
   YAxis,
 } from 'recharts';
 
-const PRIMARY = 'hsl(263 70% 50%)';
-const MUTED = 'hsl(240 5% 64%)';
+const PRIMARY = 'hsl(213 93% 68%)';
+const MUTED = 'hsl(220 8% 65%)';
+const TOOLTIP_BG = 'hsl(225 35% 6%)';
+const TOOLTIP_BORDER = 'hsl(225 20% 14%)';
 
 export function MessagesPerDayChart({
   data,
@@ -48,8 +50,8 @@ export function MessagesPerDayChart({
           />
           <Tooltip
             contentStyle={{
-              background: 'hsl(240 6% 8%)',
-              border: '1px solid hsl(240 3.7% 15.9%)',
+              background: TOOLTIP_BG,
+              border: `1px solid ${TOOLTIP_BORDER}`,
               borderRadius: 8,
               fontSize: 12,
             }}
@@ -153,8 +155,8 @@ export function TopTagsChart({ data }: { data: Array<{ tag: string; count: numbe
           />
           <Tooltip
             contentStyle={{
-              background: 'hsl(240 6% 8%)',
-              border: '1px solid hsl(240 3.7% 15.9%)',
+              background: TOOLTIP_BG,
+              border: `1px solid ${TOOLTIP_BORDER}`,
               borderRadius: 8,
               fontSize: 12,
             }}

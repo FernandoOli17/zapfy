@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+﻿import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@zapai/db';
 import { AppError, createLogger, phoneE164Schema } from '@zapai/shared';
 import { z } from 'zod';

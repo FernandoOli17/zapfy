@@ -1,4 +1,4 @@
-import { BarChart3, Bot, Headset, Inbox, MessageSquare, Users } from 'lucide-react';
+﻿import { BarChart3, Bot, Headset, Inbox, MessageSquare, Users } from 'lucide-react';
 import { prisma, type Prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
@@ -24,7 +24,6 @@ export default async function AnalyticsPage() {
   const { workspace } = await requireWorkspace();
   const since = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000);
 
-  // Métricas em paralelo
   const [
     totalMessages,
     inboundMessages,
@@ -49,9 +48,13 @@ export default async function AnalyticsPage() {
       where: { workspaceId: workspace.id, createdAt: { gte: since }, fromAi: true },
     }),
     prisma.contact.count({ where: { workspaceId: workspace.id, deletedAt: null } }),
-    prisma.conversation.count({ where: { workspaceId: workspace.id, status: { not: 'CLOSED' } } }),
+    prisma.conversation.count({
+      where: { workspaceId: workspace.id, status: { not: 'CLOSED' } },
+    }),
     prisma.conversation.count({ where: { workspaceId: workspace.id, status: 'AI_HANDLING' } }),
-    prisma.conversation.count({ where: { workspaceId: workspace.id, status: 'HUMAN_HANDLING' } }),
+    prisma.conversation.count({
+      where: { workspaceId: workspace.id, status: 'HUMAN_HANDLING' },
+    }),
     prisma.$queryRaw<DailyMessageCount[]>`
       SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day, count(*)::bigint AS count
       FROM "Message"
@@ -75,7 +78,6 @@ export default async function AnalyticsPage() {
     ` as Prisma.PrismaPromise<TagCount[]>,
   ]);
 
-  // Normaliza messagesPerDay pra ter todas as datas (zero-fill)
   const seriesMap = new Map(messagesPerDay.map((r) => [r.day, Number(r.count)]));
   const series: Array<{ date: string; count: number; label: string }> = [];
   for (let i = DAYS - 1; i >= 0; i--) {
@@ -100,71 +102,91 @@ export default async function AnalyticsPage() {
   })();
 
   const statusData = [
-    { name: 'IA', value: aiHandlingConversations, color: 'hsl(263 70% 50%)' },
-    { name: 'Humano', value: humanHandlingConversations, color: 'hsl(240 5% 65%)' },
-    { name: 'Fechadas', value: closedCount, color: 'hsl(240 5% 35%)' },
+    { name: 'IA', value: aiHandlingConversations, color: 'hsl(213 93% 68%)' },
+    { name: 'Humano', value: humanHandlingConversations, color: 'hsl(160 70% 55%)' },
+    { name: 'Fechadas', value: closedCount, color: 'hsl(220 8% 45%)' },
   ];
 
   const topTags = topTagsRaw.map((r) => ({ tag: r.tag, count: Number(r.count) }));
 
-  const handoffRate = totalMessages > 0 ? Math.round((humanHandlingConversations / Math.max(activeConversations, 1)) * 100) : 0;
+  const handoffRate =
+    totalMessages > 0
+      ? Math.round((humanHandlingConversations / Math.max(activeConversations, 1)) * 100)
+      : 0;
+  const aiPercent = totalMessages > 0 ? Math.round((aiMessages / totalMessages) * 100) : 0;
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="bg-radial-fade absolute inset-0 -z-10" aria-hidden />
-      <div className="mx-auto max-w-6xl px-6 py-12 md:px-10 md:py-16">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
-          Analytics · últimos {DAYS} dias
-        </p>
-        <h1 className="mt-3 text-4xl font-medium leading-[1.05] tracking-tight md:text-5xl">
-          O que tá{' '}
-          <span className="font-serif italic font-normal text-primary">acontecendo.</span>
-        </h1>
-
-        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Metric icon={MessageSquare} label="Mensagens" value={totalMessages} sublabel={`${inboundMessages} in · ${outboundMessages} out`} />
-          <Metric icon={Bot} label="Respondidas por IA" value={aiMessages} sublabel={`${totalMessages > 0 ? Math.round((aiMessages / totalMessages) * 100) : 0}% do total`} />
-          <Metric icon={Users} label="Contatos ativos" value={totalContacts} />
-          <Metric icon={Inbox} label="Conversas abertas" value={activeConversations} />
+    <div className="mx-auto max-w-7xl px-6 py-8 md:px-10 md:py-10">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">Últimos {DAYS} dias</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
+            Analytics
+          </h1>
         </div>
-
-        <section className="mt-12 grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card title="Mensagens por dia" subtitle="Volume diário (in + out)">
-            <MessagesPerDayChart data={series} />
-          </Card>
-          <Card title="Conversas por status" subtitle="Distribuição atual">
-            <ConversationsByStatusChart data={statusData} />
-          </Card>
-        </section>
-
-        <section className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card title="Top tags" subtitle="Tags mais usadas em contatos">
-            {topTags.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Nenhuma tag aplicada ainda.
-              </p>
-            ) : (
-              <TopTagsChart data={topTags} />
-            )}
-          </Card>
-          <Card title="Taxa de handoff humano" subtitle="Quantas conversas precisaram de gente">
-            <div className="flex h-48 flex-col items-center justify-center">
-              <p className="font-serif text-7xl font-medium tracking-tight text-primary">
-                {handoffRate}%
-              </p>
-              <p className="mt-2 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-muted-foreground">
-                <Headset className="h-3 w-3" />
-                conversas humanas
-              </p>
-            </div>
-          </Card>
-        </section>
-
-        <p className="mt-10 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground">
           <BarChart3 className="h-3 w-3" />
-          Métricas atualizadas a cada visita. Em breve: filtro por intervalo, exportação CSV.
-        </p>
+          Atualizado em tempo real
+        </div>
       </div>
+
+      {/* Metrics */}
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <Metric
+          icon={MessageSquare}
+          label="Mensagens"
+          value={totalMessages}
+          sublabel={`${inboundMessages} in · ${outboundMessages} out`}
+        />
+        <Metric
+          icon={Bot}
+          label="Respondidas por IA"
+          value={aiMessages}
+          sublabel={`${aiPercent}% do total`}
+          accent
+        />
+        <Metric icon={Users} label="Contatos ativos" value={totalContacts} />
+        <Metric icon={Inbox} label="Conversas abertas" value={activeConversations} />
+      </div>
+
+      {/* Charts row 1 */}
+      <section className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card title="Mensagens por dia" subtitle="Volume diário (in + out)">
+          <MessagesPerDayChart data={series} />
+        </Card>
+        <Card title="Conversas por status" subtitle="Distribuição atual">
+          <ConversationsByStatusChart data={statusData} />
+        </Card>
+      </section>
+
+      {/* Charts row 2 */}
+      <section className="mt-4 grid gap-4 lg:grid-cols-[2fr_1fr]">
+        <Card title="Top tags" subtitle="Tags mais usadas em contatos">
+          {topTags.length === 0 ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Nenhuma tag aplicada ainda.
+            </p>
+          ) : (
+            <TopTagsChart data={topTags} />
+          )}
+        </Card>
+        <Card title="Handoff humano" subtitle="Conversas que precisaram de gente">
+          <div className="flex h-48 flex-col items-center justify-center">
+            <p className="text-6xl font-semibold tracking-tight text-primary tabular-nums">
+              {handoffRate}%
+            </p>
+            <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <Headset className="h-3 w-3" />
+              conversas humanas
+            </p>
+          </div>
+        </Card>
+      </section>
+
+      <p className="mt-6 text-xs text-muted-foreground">
+        Em breve: filtro por intervalo, exportação CSV, comparação período-anterior.
+      </p>
     </div>
   );
 }
@@ -174,22 +196,32 @@ function Metric({
   label,
   value,
   sublabel,
+  accent,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: number;
   sublabel?: string;
+  accent?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-card/40 p-5">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
-        {label}
+    <div className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-primary/30">
+      <div className="flex items-center justify-between">
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+            accent ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
+          }`}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
       </div>
-      <p className="mt-2 text-4xl font-medium tabular-nums tracking-tight">
+      <p className="mt-4 text-3xl font-semibold tabular-nums tracking-tight">
         {value.toLocaleString('pt-BR')}
       </p>
-      {sublabel && <p className="mt-1 text-xs text-muted-foreground">{sublabel}</p>}
+      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
+      {sublabel && (
+        <p className="mt-2 text-[11px] text-muted-foreground/80">{sublabel}</p>
+      )}
     </div>
   );
 }
@@ -204,12 +236,12 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/40 p-5 md:p-6">
+    <div className="rounded-xl border border-border bg-card p-5 md:p-6">
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">{subtitle}</p>
-        <h3 className="mt-1.5 text-lg font-medium tracking-tight">{title}</h3>
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
       </div>
-      <div className="mt-5">{children}</div>
+      <div className="mt-4">{children}</div>
     </div>
   );
 }

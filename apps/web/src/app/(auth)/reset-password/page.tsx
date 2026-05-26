@@ -8,12 +8,11 @@ export const metadata = { title: 'Redefinir senha' };
 export default function ResetPasswordPage() {
   return (
     <div>
-      <p className="text-xs uppercase tracking-widest text-muted-foreground">Nova senha</p>
-      <h1 className="mt-3 text-4xl font-medium leading-[1.05] tracking-tight">
+      <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-[34px]">
         Defina sua{' '}
-        <span className="font-serif italic font-normal text-primary">nova senha.</span>
+        <span className="font-serif italic font-normal text-primary">nova senha</span>
       </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         Escolha algo forte que você lembre. A gente nunca vê.
       </p>
       <div className="mt-8">
@@ -22,7 +21,7 @@ export default function ResetPasswordPage() {
         </Suspense>
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
-        <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:text-primary/80">
           Voltar pro login
         </Link>
       </p>

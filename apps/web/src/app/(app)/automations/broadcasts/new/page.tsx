@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { prisma, TemplateStatus } from '@zapai/db';
@@ -37,25 +37,24 @@ export default async function NewBroadcastPage() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12 md:px-10 md:py-16">
+    <div className="mx-auto max-w-2xl px-6 py-8 md:px-10 md:py-10">
       <Link
         href="/automations/broadcasts"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
-        Broadcasts
+        Voltar para broadcasts
       </Link>
-      <h1 className="mt-4 text-3xl font-medium leading-[1.1] tracking-tight md:text-4xl">
-        Novo{' '}
-        <span className="font-serif italic font-normal text-primary">broadcast.</span>
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight md:text-3xl">
+        Novo broadcast
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-muted-foreground">
         Disparo em massa pra contatos elegíveis. Opt-out e contatos deletados são ignorados.
       </p>
 
-      <div className="mt-8">
+      <div className="mt-6">
         {templates.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/60 p-8 text-center">
+          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
             <p className="font-medium">Nenhum template aprovado.</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Você precisa de pelo menos um template HSM com status APPROVED pra criar um
@@ -63,17 +62,19 @@ export default async function NewBroadcastPage() {
             </p>
             <Link
               href="/automations/templates/new"
-              className="mt-4 inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="mt-4 inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
             >
               Criar template
             </Link>
           </div>
         ) : (
-          <NewBroadcastForm
-            templates={templates}
-            tags={tags}
-            totalContacts={totalContacts}
-          />
+          <div className="rounded-xl border border-border bg-card p-6 md:p-8">
+            <NewBroadcastForm
+              templates={templates}
+              tags={tags}
+              totalContacts={totalContacts}
+            />
+          </div>
         )}
       </div>
     </div>

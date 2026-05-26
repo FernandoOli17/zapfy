@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 /**
  * Templates de email em HTML inline-style (compatível com clientes
@@ -27,7 +27,7 @@ const HEADER_STYLES = `
 
 const BUTTON_STYLES = `
   display: inline-block;
-  background-color: #7C3AED;
+  background-color: #60A5FA;
   color: #ffffff;
   text-decoration: none;
   font-weight: 500;
@@ -50,13 +50,13 @@ function wrap(inner: string): string {
   <div style="${BASE_STYLES}">
     <div style="${CONTAINER_STYLES}">
       <div style="${HEADER_STYLES}; padding-bottom: 12px;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#7C3AED;vertical-align:middle;margin-right:8px"></span>
-        ZapAI
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#60A5FA;vertical-align:middle;margin-right:8px"></span>
+        Orbe
       </div>
       ${inner}
       <div style="${FOOTER_STYLES}">
-        ZapAI · O WhatsApp da sua empresa, com cérebro próprio.<br/>
-        Não esperava esse email? <a href="mailto:oi@zapai.dev" style="color:#7C3AED">avisa pra gente</a>.
+        Orbe · O WhatsApp da sua empresa, com cérebro próprio.<br/>
+        Não esperava esse email? <a href="mailto:oi@Orbe.dev" style="color:#60A5FA">avisa pra gente</a>.
       </div>
     </div>
   </div>
@@ -66,14 +66,14 @@ function wrap(inner: string): string {
 export function magicLinkEmail(input: { url: string; email: string }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px;color:#18181b">Seu link de acesso</h1>
-    <p>Oi! Clique no botão abaixo pra entrar no ZapAI. O link expira em 5 minutos.</p>
-    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no ZapAI</a>
+    <p>Oi! Clique no botão abaixo pra entrar no Orbe. O link expira em 5 minutos.</p>
+    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no Orbe</a>
     <p style="color:#71717a;font-size:13px">Se o botão não funcionar, copia e cola essa URL no navegador:</p>
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu esse link, pode ignorar este email — ele expira sozinho.</p>
   `);
-  const text = `Entre no ZapAI: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
-  return { html, text, subject: 'Seu link de acesso ao ZapAI' };
+  const text = `Entre no Orbe: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
+  return { html, text, subject: 'Seu link de acesso ao Orbe' };
 }
 
 export function welcomeEmail(input: { name: string; workspaceSlug: string; appUrl: string }) {
@@ -89,12 +89,12 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
       <li>Comece a atender 24/7.</li>
     </ol>
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
-    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#7C3AED">dashboard</a>.</p>
+    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#60A5FA">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
-    <p style="color:#71717a;font-size:13px">— Time ZapAI</p>
+    <p style="color:#71717a;font-size:13px">— Time Orbe</p>
   `);
-  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time ZapAI`;
-  return { html, text, subject: `Bem-vindo ao ZapAI, ${input.name}` };
+  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Orbe`;
+  return { html, text, subject: `Bem-vindo ao Orbe, ${input.name}` };
 }
 
 export function contactNotificationEmail(input: {
@@ -107,14 +107,14 @@ export function contactNotificationEmail(input: {
     <h1 style="font-size:20px;margin:24px 0 8px">Novo contato pelo site</h1>
     <table style="width:100%;border-collapse:collapse;margin:16px 0">
       <tr><td style="padding:6px 0;color:#71717a;width:80px">Nome:</td><td>${escapeHtml(input.name)}</td></tr>
-      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#7C3AED">${escapeHtml(input.email)}</a></td></tr>
+      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#60A5FA">${escapeHtml(input.email)}</a></td></tr>
       <tr><td style="padding:6px 0;color:#71717a">Assunto:</td><td>${escapeHtml(input.subject)}</td></tr>
     </table>
-    <div style="border-left:3px solid #7C3AED;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
+    <div style="border-left:3px solid #60A5FA;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
     <p style="color:#71717a;font-size:13px">Responda direto pelo Reply-To deste email.</p>
   `);
   const text = `Novo contato:\n\nNome: ${input.name}\nE-mail: ${input.email}\nAssunto: ${input.subject}\n\n---\n${input.message}`;
-  return { html, text, subject: `[ZapAI Contato] ${input.subject}` };
+  return { html, text, subject: `[Orbe Contato] ${input.subject}` };
 }
 
 export function passwordResetEmail(input: { url: string; email: string }) {
@@ -126,8 +126,8 @@ export function passwordResetEmail(input: { url: string; email: string }) {
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu, pode ignorar — a senha atual continua válida.</p>
   `);
-  const text = `Redefinir senha do ZapAI: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
-  return { html, text, subject: 'Redefinir sua senha do ZapAI' };
+  const text = `Redefinir senha do Orbe: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
+  return { html, text, subject: 'Redefinir sua senha do Orbe' };
 }
 
 export function teamInviteEmail(input: {
@@ -138,13 +138,13 @@ export function teamInviteEmail(input: {
 }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Você foi convidado</h1>
-    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no ZapAI.</p>
+    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no Orbe.</p>
     <a href="${input.inviteUrl}" style="${BUTTON_STYLES}">Aceitar convite</a>
     <p style="color:#71717a;font-size:13px">O convite expira em 7 dias.</p>
     <p style="color:#71717a;font-size:13px">Se você não conhece quem te convidou, pode ignorar este email.</p>
   `);
-  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no ZapAI.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
-  return { html, text, subject: `${input.inviterName} te convidou pro ZapAI` };
+  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no Orbe.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
+  return { html, text, subject: `${input.inviterName} te convidou pro Orbe` };
 }
 
 function escapeHtml(s: string): string {

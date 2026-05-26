@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -10,9 +10,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <header className="flex items-center justify-between px-6 py-5 md:px-10">
           <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight md:hidden">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-              <span className="text-[10px] font-bold text-primary-foreground">Z</span>
+              <span className="text-[10px] font-bold text-primary-foreground">O</span>
             </div>
-            ZapAI
+            Orbe
           </Link>
           <span className="hidden md:block text-sm text-muted-foreground">Falta pouco.</span>
           <ThemeToggle />
@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-sm">{children}</div>
         </main>
         <footer className="px-6 py-5 md:px-10 text-xs text-muted-foreground">
-          ZapAI ©{' '}
+          Orbe ©{' '}
           <span suppressHydrationWarning>{new Date().getFullYear()}</span>
           {' · '}
           <Link href="/termos" className="hover:text-foreground">
@@ -41,13 +41,22 @@ function BrandPanel() {
   return (
     <aside className="relative hidden overflow-hidden bg-zinc-950 text-zinc-100 md:flex md:flex-col md:justify-between md:p-10 lg:p-14">
       <div className="bg-dot-grid absolute inset-0 opacity-20" aria-hidden />
-      {/* radial violet glow */}
+      {/* radial blue glow */}
       <div
         className="absolute inset-0"
         aria-hidden
         style={{
           background:
-            'radial-gradient(ellipse 70% 50% at 20% 100%, color-mix(in srgb, hsl(263 70% 50%) 30%, transparent), transparent 60%)',
+            'radial-gradient(ellipse 70% 50% at 20% 100%, color-mix(in srgb, hsl(213 93% 55%) 30%, transparent), transparent 60%)',
+        }}
+      />
+      {/* secondary nebula glow */}
+      <div
+        className="absolute inset-0"
+        aria-hidden
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, hsl(263 70% 50%) 20%, transparent), transparent 65%)',
         }}
       />
       {/* top accent line */}
@@ -56,19 +65,19 @@ function BrandPanel() {
         aria-hidden
         style={{
           background:
-            'linear-gradient(90deg, transparent, hsl(263 70% 65%), transparent)',
+            'linear-gradient(90deg, transparent, hsl(213 93% 68%), transparent)',
         }}
       />
 
       <Link href="/" className="relative flex items-center gap-2.5 font-semibold tracking-tight">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-          <span className="text-xs font-bold text-white">Z</span>
+          <span className="text-xs font-bold text-white">O</span>
         </div>
-        ZapAI
+        Orbe
       </Link>
 
       <div className="relative">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Por que ZapAI</p>
+        <p className="text-xs uppercase tracking-widest text-zinc-500">Por que Orbe</p>
         <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-tight lg:text-4xl">
           Não é um bot.{' '}
           <span className="font-serif italic font-normal text-primary">

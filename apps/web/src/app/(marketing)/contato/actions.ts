@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { headers } from 'next/headers';
 import { z } from 'zod';
@@ -10,7 +10,7 @@ import { clientIp, enforceRateLimit, RL_CONTACT } from '@/lib/rate-limit';
 
 const log = createLogger('contato');
 
-const TEAM_INBOX = 'oi@zapai.dev';
+const TEAM_INBOX = 'oi@Orbe.dev';
 
 const contactSchema = z.object({
   name: z.string().trim().min(2, 'Nome muito curto').max(80),
@@ -72,7 +72,7 @@ export async function sendContactAction(
   if (!result.ok) {
     return {
       status: 'error',
-      error: 'Falha ao enviar. Manda direto pra oi@zapai.dev ou tenta de novo daqui a pouco.',
+      error: 'Falha ao enviar. Manda direto pra oi@Orbe.dev ou tenta de novo daqui a pouco.',
     };
   }
 

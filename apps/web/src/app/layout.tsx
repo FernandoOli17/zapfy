@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Instrument_Serif } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
@@ -17,8 +17,8 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: 'ZapAI — O WhatsApp da sua empresa, com cérebro próprio',
-    template: '%s · ZapAI',
+    default: 'Orbe — O WhatsApp da sua empresa, com cérebro próprio',
+    template: '%s · Orbe',
   },
   description:
     'Agente IA pra WhatsApp Business que vende, agenda e atende 24/7. Configure conversando — sem formulário.',

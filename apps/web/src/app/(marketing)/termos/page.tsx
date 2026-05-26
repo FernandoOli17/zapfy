@@ -1,10 +1,10 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 import { LegalDt, LegalList, LegalPage, LegalSection } from '@/components/marketing/legal';
 
 export const metadata = {
   title: 'Termos de uso',
-  description: 'Termos e condições de uso da plataforma ZapAI.',
+  description: 'Termos e condições de uso da plataforma Orbe.',
 };
 
 const TOC = [
@@ -32,8 +32,8 @@ export default function TermosPage() {
       toc={TOC}
     >
       <p className="text-lg text-muted-foreground leading-relaxed">
-        Bem-vindo ao ZapAI. Estes Termos de Uso (&quot;Termos&quot;) regem o uso da plataforma
-        ZapAI por você (&quot;Cliente&quot;), pessoa física ou jurídica, ao acessar nosso site,
+        Bem-vindo ao Orbe. Estes Termos de Uso (&quot;Termos&quot;) regem o uso da plataforma
+        Orbe por você (&quot;Cliente&quot;), pessoa física ou jurídica, ao acessar nosso site,
         criar conta ou contratar nossos planos. Ao usar o serviço, você aceita estes Termos na
         íntegra. Se discordar de qualquer ponto, não use a plataforma.
       </p>
@@ -41,15 +41,15 @@ export default function TermosPage() {
       <div className="mt-12 space-y-2">
         <LegalSection id="identificacao" number={1} title="Identificação">
           <p>
-            O ZapAI é uma plataforma de software como serviço (SaaS) operada por{' '}
+            O Orbe é uma plataforma de software como serviço (SaaS) operada por{' '}
             <LegalDt>[Razão Social a ser preenchida]</LegalDt>, inscrita no CNPJ sob nº{' '}
             <LegalDt>[CNPJ a ser preenchido]</LegalDt>, com sede em [endereço], doravante
-            denominada simplesmente &quot;ZapAI&quot; ou &quot;nós&quot;.
+            denominada simplesmente &quot;Orbe&quot; ou &quot;nós&quot;.
           </p>
           <p>
             Contato oficial:{' '}
-            <a href="mailto:oi@zapai.dev" className="text-foreground underline-offset-4 hover:underline">
-              oi@zapai.dev
+            <a href="mailto:oi@Orbe.dev" className="text-foreground underline-offset-4 hover:underline">
+              oi@Orbe.dev
             </a>
             .
           </p>
@@ -58,7 +58,7 @@ export default function TermosPage() {
         <LegalSection id="definicoes" number={2} title="Definições">
           <LegalList>
             <li>
-              <LegalDt>Plataforma:</LegalDt> sistema do ZapAI acessível via web, incluindo
+              <LegalDt>Plataforma:</LegalDt> sistema do Orbe acessível via web, incluindo
               dashboard, APIs internas e integrações.
             </li>
             <li>
@@ -66,7 +66,7 @@ export default function TermosPage() {
               suas conversas no WhatsApp Business.
             </li>
             <li>
-              <LegalDt>Forge:</LegalDt> ferramenta conversacional do ZapAI que entrevista o
+              <LegalDt>Forge:</LegalDt> ferramenta conversacional do Orbe que entrevista o
               Cliente e gera a configuração do Agente.
             </li>
             <li>
@@ -173,8 +173,8 @@ export default function TermosPage() {
 
         <LegalSection id="propriedade-intelectual" number={7} title="Propriedade intelectual">
           <p>
-            O software ZapAI, código, design, marca, documentação e demais elementos da plataforma
-            são de propriedade exclusiva do ZapAI ou de seus licenciantes. Concedemos a você uma
+            O software Orbe, código, design, marca, documentação e demais elementos da plataforma
+            são de propriedade exclusiva do Orbe ou de seus licenciantes. Concedemos a você uma
             licença não exclusiva, intransferível e revogável de uso conforme estes Termos.
           </p>
           <p>
@@ -204,7 +204,7 @@ export default function TermosPage() {
             ininterrupta, livre de erros ou de bugs.
           </p>
           <p>
-            Em nenhuma hipótese o ZapAI será responsável por danos indiretos, lucros cessantes,
+            Em nenhuma hipótese o Orbe será responsável por danos indiretos, lucros cessantes,
             perda de oportunidade de negócio, perda de dados decorrentes de falha de terceiros
             (Meta, provedores de IA, etc.), ou por uso indevido da plataforma pelo Cliente.
           </p>
@@ -245,8 +245,8 @@ export default function TermosPage() {
           <p>
             Antes de qualquer ação judicial, as partes se comprometem a tentar resolução amigável
             por e-mail (
-            <a href="mailto:oi@zapai.dev" className="text-foreground underline-offset-4 hover:underline">
-              oi@zapai.dev
+            <a href="mailto:oi@Orbe.dev" className="text-foreground underline-offset-4 hover:underline">
+              oi@Orbe.dev
             </a>
             ).
           </p>

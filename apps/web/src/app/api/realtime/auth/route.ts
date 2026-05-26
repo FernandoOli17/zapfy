@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+﻿import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@zapai/db';
 
 import { auth } from '@/lib/auth';

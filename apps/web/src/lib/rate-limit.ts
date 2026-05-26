@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
@@ -50,7 +50,7 @@ function getLimiter(name: string, limit: number, windowSec: number): Ratelimit |
     redis: client,
     limiter: Ratelimit.slidingWindow(limit, `${windowSec} s`),
     analytics: true,
-    prefix: `zapai:rl:${name}`,
+    prefix: `Orbe:rl:${name}`,
   });
   limiters.set(key, limiter);
   return limiter;

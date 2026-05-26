@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
@@ -90,7 +90,7 @@ export function CreateWebhookForm() {
           required
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://api.suaempresa.com/webhooks/zapai"
+          placeholder="https://api.suaempresa.com/webhooks/Orbe"
           className="mt-1.5 h-10 font-mono"
         />
       </div>

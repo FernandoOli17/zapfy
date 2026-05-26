@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 import { Resend } from 'resend';
 import { createLogger } from '@zapai/shared';
@@ -24,7 +24,7 @@ export function getResend(): Resend | null {
 }
 
 export function defaultFrom(): string {
-  return env.RESEND_FROM_EMAIL ?? 'ZapAI <noreply@zapai.dev>';
+  return env.RESEND_FROM_EMAIL ?? 'Orbe <noreply@Orbe.dev>';
 }
 
 export function isEmailConfigured(): boolean {

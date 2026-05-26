@@ -1,11 +1,11 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 import { formatPublishedDate, listPosts } from '@/lib/blog';
 
 export const metadata = {
   title: 'Blog',
-  description: 'Como construímos o ZapAI: engenharia, produto, LGPD, e o que aprendemos.',
+  description: 'Como construímos o Orbe: engenharia, produto, LGPD, e o que aprendemos.',
 };
 
 export default async function BlogPage() {
@@ -19,7 +19,7 @@ export default async function BlogPage() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Blog</p>
           <h1 className="mt-4 text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
             Notas sobre construir{' '}
-            <span className="font-serif italic font-normal text-primary">o ZapAI.</span>
+            <span className="font-serif italic font-normal text-primary">o Orbe.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
             Engenharia, produto, design, LGPD, decisões de arquitetura. O que tá funcionando

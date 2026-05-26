@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 import { createHmac, randomBytes } from 'node:crypto';
 
@@ -82,9 +82,9 @@ export async function dispatchOutgoingEvent(
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            'x-zapai-event': event,
-            'x-zapai-signature': signature,
-            'user-agent': 'ZapAI-Webhook/1.0',
+            'x-Orbe-event': event,
+            'x-Orbe-signature': signature,
+            'user-agent': 'Orbe-Webhook/1.0',
           },
           body,
           signal: AbortSignal.timeout(10_000),

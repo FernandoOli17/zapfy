@@ -1,4 +1,4 @@
-import 'server-only';
+﻿import 'server-only';
 
 import Stripe from 'stripe';
 import { createLogger } from '@zapai/shared';
@@ -27,7 +27,7 @@ export function getStripeClient(): Stripe | null {
   }
   cached = new Stripe(env.STRIPE_SECRET_KEY, {
     typescript: true,
-    appInfo: { name: 'ZapAI', version: '0.1.0' },
+    appInfo: { name: 'Orbe', version: '0.1.0' },
   });
   return cached;
 }

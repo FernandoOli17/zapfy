@@ -1,7 +1,7 @@
-import { ImageResponse } from 'next/og';
+﻿import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'ZapAI — O WhatsApp da sua empresa, com cérebro próprio.';
+export const alt = 'Orbe — O WhatsApp da sua empresa, com cérebro próprio.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -12,7 +12,7 @@ export default function OG() {
         style={{
           width: '100%',
           height: '100%',
-          background: 'linear-gradient(160deg, #09090b 0%, #18181b 50%, #1e0a3c 100%)',
+          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 50%, #0d2547 100%)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -36,10 +36,10 @@ export default function OG() {
               width: 14,
               height: 14,
               borderRadius: 999,
-              background: '#7C3AED',
+              background: '#60A5FA',
             }}
           />
-          ZapAI
+          Orbe
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -57,7 +57,7 @@ export default function OG() {
             <span
               style={{
                 fontStyle: 'italic',
-                color: '#7C3AED',
+                color: '#60A5FA',
                 fontWeight: 400,
                 fontFamily: 'serif',
               }}
@@ -82,7 +82,7 @@ export default function OG() {
           }}
         >
           <div>Cloud API oficial · LGPD-friendly</div>
-          <div style={{ color: '#7C3AED' }}>zapai.dev</div>
+          <div style={{ color: '#60A5FA' }}>Orbe.dev</div>
         </div>
       </div>
     ),

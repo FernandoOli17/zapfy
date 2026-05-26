@@ -7,12 +7,11 @@ export const metadata = { title: 'Esqueci minha senha' };
 export default function ForgotPasswordPage() {
   return (
     <div>
-      <p className="text-xs uppercase tracking-widest text-muted-foreground">Recuperar acesso</p>
-      <h1 className="mt-3 text-4xl font-medium leading-[1.05] tracking-tight">
+      <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-[34px]">
         Esqueceu a{' '}
         <span className="font-serif italic font-normal text-primary">senha?</span>
       </h1>
-      <p className="mt-3 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         Informe seu e-mail e a gente envia um link pra você definir uma nova.
       </p>
       <div className="mt-8">
@@ -20,7 +19,7 @@ export default function ForgotPasswordPage() {
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
         Lembrou a senha?{' '}
-        <Link href="/login" className="text-foreground underline-offset-4 hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:text-primary/80">
           Voltar pro login
         </Link>
       </p>
