@@ -199,6 +199,9 @@ importers:
       '@ai-sdk/openai':
         specifier: ^3.0.63
         version: 3.0.63(zod@4.4.3)
+      '@zapai/db':
+        specifier: workspace:*
+        version: link:../db
       '@zapai/shared':
         specifier: workspace:*
         version: link:../shared

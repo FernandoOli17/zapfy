@@ -13,6 +13,14 @@ import {
   processOutgoingWebhook,
   type OutgoingWebhookJob,
 } from './jobs/outgoing-webhook';
+import {
+  processMessage,
+  type ProcessMessageJob,
+} from './jobs/process-message';
+import {
+  processSendBroadcast,
+  type SendBroadcastJob,
+} from './jobs/send-broadcast';
 
 const log = createLogger('worker');
 
@@ -26,26 +34,26 @@ connection.on('connect', () => log.info('redis connected'));
 
 const workers: Worker[] = [];
 
-// LGPD hard delete: apaga contatos com hardDeleteAt vencido
+// LGPD hard delete
 workers.push(
   new Worker<LgpdHardDeleteJob>(
     QUEUE_NAMES.lgpdHardDelete,
     async (job: Job<LgpdHardDeleteJob>) => {
-      log.info({ jobId: job.id, contactId: job.data.contactId }, 'processando lgpd hard delete');
+      log.info({ jobId: job.id, contactId: job.data.contactId }, 'lgpd hard delete');
       await processLgpdHardDelete(job.data);
     },
     { connection, concurrency: 5 },
   ),
 );
 
-// Outgoing webhooks com retry exponencial (configurado no producer)
+// Outgoing webhooks
 workers.push(
   new Worker<OutgoingWebhookJob>(
     QUEUE_NAMES.outgoingWebhook,
     async (job: Job<OutgoingWebhookJob>) => {
       log.info(
         { jobId: job.id, webhookId: job.data.webhookId, event: job.data.eventName },
-        'processando outgoing webhook',
+        'outgoing webhook',
       );
       await processOutgoingWebhook(job.data);
     },
@@ -53,32 +61,46 @@ workers.push(
   ),
 );
 
-// Process message: agente IA real entra na Fase 5
+// Process message — agente IA responde WhatsApp
 workers.push(
-  new Worker(
+  new Worker<ProcessMessageJob>(
     QUEUE_NAMES.processMessage,
-    async (job: Job) => {
-      log.info({ jobId: job.id }, 'process-message recebido — agente IA entra na Fase 5');
+    async (job: Job<ProcessMessageJob>) => {
+      log.info(
+        {
+          jobId: job.id,
+          workspaceId: job.data.workspaceId,
+          conversationId: job.data.conversationId,
+        },
+        'processando mensagem',
+      );
+      await processMessage(job.data);
     },
-    { connection, autorun: false },
+    { connection, concurrency: 5 },
   ),
 );
 
-// Send broadcast: handler real entra junto com /automations/broadcasts
+// Send broadcast
 workers.push(
-  new Worker(
+  new Worker<SendBroadcastJob>(
     QUEUE_NAMES.sendBroadcast,
-    async (job: Job) => {
-      log.info({ jobId: job.id }, 'send-broadcast — handler em desenvolvimento');
+    async (job: Job<SendBroadcastJob>) => {
+      log.info(
+        {
+          jobId: job.id,
+          broadcastId: job.data.broadcastId,
+          recipientId: job.data.recipientId,
+        },
+        'enviando broadcast',
+      );
+      await processSendBroadcast(job.data);
     },
-    { connection, autorun: false },
+    { connection, concurrency: 3 }, // throttle pra não estourar rate limit da Meta
   ),
 );
 
 /**
  * Repeatable: LGPD hard delete sweep a cada hora.
- * Em produção, ideal é Vercel Cron / Railway Scheduler chamando uma rota interna —
- * mas o setInterval funciona pra worker persistente.
  */
 const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -86,16 +108,11 @@ function startRepeatables(): void {
   setInterval(() => {
     void sweepExpiredHardDeletes()
       .then((count) => {
-        if (count > 0) {
-          log.info({ count }, 'lgpd sweep — contatos processados');
-        }
+        if (count > 0) log.info({ count }, 'lgpd sweep — contatos processados');
       })
-      .catch((err: unknown) => {
-        log.error({ err: String(err) }, 'lgpd sweep falhou');
-      });
+      .catch((err: unknown) => log.error({ err: String(err) }, 'lgpd sweep falhou'));
   }, SWEEP_INTERVAL_MS);
 
-  // sweep imediato no startup
   void sweepExpiredHardDeletes().catch((err: unknown) =>
     log.error({ err: String(err) }, 'lgpd sweep inicial falhou'),
   );
@@ -106,9 +123,10 @@ startRepeatables();
 log.info(
   {
     queues: workers.map((w) => w.name),
+    mockAi: process.env['MOCK_AI'] === 'true',
     redisHost: env.REDIS_URL.split('@')[1] ?? 'configured',
   },
-  'ZapAI worker pronto',
+  'Orbe worker pronto',
 );
 
 async function shutdown(signal: string): Promise<void> {

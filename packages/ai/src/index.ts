@@ -9,3 +9,4 @@ export const EMBEDDING_MODEL = 'voyage-3' as const;
 
 export * from './provider';
 export * from './forge';
+export * from './agent';

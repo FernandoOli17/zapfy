@@ -64,3 +64,12 @@ export function getAiModels(): AiModels {
 export function describeProvider(p: AiModels): string {
   return `${p.provider}`;
 }
+
+/**
+ * Mock mode — quando MOCK_AI=true nenhuma API de IA é chamada.
+ * O agente e o classifier devolvem respostas canned/determinísticas.
+ * Ideal pra testar o pipeline completo sem gastar tokens.
+ */
+export function isMockMode(): boolean {
+  return process.env['MOCK_AI'] === 'true';
+}

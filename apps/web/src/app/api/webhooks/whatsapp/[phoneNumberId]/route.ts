@@ -24,6 +24,7 @@ import { env } from '@/env';
 import { publishInboxEvent } from '@/lib/realtime/pusher-server';
 import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
+import { enqueue, QUEUE_NAMES } from '@/lib/queues';
 
 const log = createLogger('wa-webhook');
 
@@ -306,6 +307,18 @@ async function persistInboundMessage(input: {
       typeof content === 'object' && content && 'text' in (content as Record<string, unknown>)
         ? String((content as Record<string, unknown>)['text'] ?? '')
         : `[${messageType.toLowerCase()}]`;
+
+    // Enfileira processamento pelo agente IA no worker
+    void enqueue(QUEUE_NAMES.processMessage, {
+      workspaceId,
+      messageId: result.messageId,
+      conversationId: result.conversationId,
+      contactId: result.contactId,
+    }, {
+      jobId: `msg-${result.messageId}`, // dedup
+      attempts: 3,
+    });
+
     await publishInboxEvent(workspaceId, {
       name: 'message.new',
       data: {

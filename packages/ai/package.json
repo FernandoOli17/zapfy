@@ -19,7 +19,8 @@
     "@ai-sdk/openai": "^3.0.63",
     "@zapai/shared": "workspace:*",
     "ai": "^6.0.177",
-    "zod": "^4.0.0"
+    "zod": "^4.0.0",
+    "@zapai/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
