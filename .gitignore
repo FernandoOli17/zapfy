@@ -44,3 +44,16 @@ test-results
 
 # uploads locais
 uploads
+
+# Obsidian — workspace state (UI específico do usuário, não versionar)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/obsidian-git/main.js
+.obsidian/plugins/obsidian-git/styles.css
+
+# Vault PARA — pessoal do user, fora os do projeto Trato
+02 - Áreas/
+03 - Recursos/
+04 - Arquivo/
+
