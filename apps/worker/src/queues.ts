@@ -7,6 +7,7 @@ export const QUEUE_NAMES = {
   sendBroadcast: 'send-broadcast',
   outgoingWebhook: 'outgoing-webhook',
   lgpdHardDelete: 'lgpd-hard-delete',
+  processKnowledge: 'process-knowledge',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

@@ -36,7 +36,7 @@ export function GET() {
             letterSpacing: '-0.03em',
           }}
         >
-          Orbe
+          Trato
         </div>
       </div>
     ),

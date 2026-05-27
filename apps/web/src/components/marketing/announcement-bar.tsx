@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { X, Sparkles } from 'lucide-react';
 
-const DISMISS_KEY = 'orbe-announcement-v1';
+const DISMISS_KEY = 'trato-announcement-v1';
 
 export function AnnouncementBar() {
   const [visible, setVisible] = useState(false);

@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
               <span className="text-[10px] font-bold text-primary-foreground">O</span>
             </div>
-            Orbe
+            Trato
           </Link>
           <span className="hidden md:block text-sm text-muted-foreground">Falta pouco.</span>
           <ThemeToggle />
@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="w-full max-w-sm">{children}</div>
         </main>
         <footer className="px-6 py-5 md:px-10 text-xs text-muted-foreground">
-          Orbe ©{' '}
+          Trato ©{' '}
           <span suppressHydrationWarning>{new Date().getFullYear()}</span>
           {' · '}
           <Link href="/termos" className="hover:text-foreground">
@@ -73,11 +73,11 @@ function BrandPanel() {
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
           <span className="text-xs font-bold text-white">O</span>
         </div>
-        Orbe
+        Trato
       </Link>
 
       <div className="relative">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Por que Orbe</p>
+        <p className="text-xs uppercase tracking-widest text-zinc-500">Por que Trato</p>
         <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-tight lg:text-4xl">
           Não é um bot.{' '}
           <span className="font-serif italic font-normal text-primary">

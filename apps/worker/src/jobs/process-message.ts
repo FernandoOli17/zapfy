@@ -9,6 +9,7 @@ import { createLogger, decrypt } from '@zapai/shared';
 import { createWaClient, splitText, isWithin24hWindow, type WaTemplateComponent } from '@zapai/wa';
 import {
   classifyMessage,
+  executeFlow,
   searchKnowledge,
   runAgent,
   type AgentToolDeps,
@@ -83,7 +84,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   const agentVersion = agent?.currentVersion;
   if (!agent || !agentVersion) {
     log.warn({ workspaceId }, 'workspace sem agente publicado — usando resposta padrão');
-    await sendFallbackMessage(waAccount, contact.phoneE164, workspaceId, conversationId);
+    await sendFallbackMessage(waAccount, contact, workspaceId, conversationId);
     return;
   }
 
@@ -107,10 +108,12 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   }
 
   // ─── 4. Janela de 24h ────────────────────────────────────────────────────
-  const lastIncoming = conversation.lastIncomingMessageAt ?? new Date();
-  const within24h = isWithin24hWindow(lastIncoming);
+  // Bug-fix: usar `lastIncomingMessageAt` direto, NÃO substituir por `new Date()`
+  // que sempre disparava "dentro da janela" mesmo quando não havia nenhuma msg
+  // inbound. `isWithin24hWindow(null) === false`, comportamento desejado.
+  const within24h = isWithin24hWindow(conversation.lastIncomingMessageAt);
   if (!within24h) {
-    log.info({ conversationId }, 'fora da janela 24h — enviando template de reengajamento');
+    log.info({ conversationId }, 'fora da janela 24h — exige template HSM');
     // Sem template configurado: apenas loga. Em produção, envia HSM.
     return;
   }
@@ -205,19 +208,77 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   };
 
   // ─── 10. Rodar agente ────────────────────────────────────────────────────
-  const result = await runAgent({
-    systemPrompt: agentVersion.systemPrompt,
-    vertical: agent.vertical,
-    messageHistory,
-    inboundText,
-    ragChunks,
-    globalDeps,
-    verticalDeps,
-    maxSteps: 5,
-  });
+  // Blacklist de tópicos vem de handoffRules.keywords do agente — palavras que
+  // disparam transferência automática pra humano. É a melhor camada por hora,
+  // até termos workspace.settings dedicado pra moderação.
+  const handoffRules = (agentVersion.handoffRules as Record<string, unknown>) ?? {};
+  const topicBlacklist = Array.isArray(handoffRules['keywords'])
+    ? (handoffRules['keywords'] as string[]).filter((s): s is string => typeof s === 'string')
+    : [];
+
+  // Se a versão atual tem flowGraph customizado (modo desenvolvedor), executa
+  // o pipeline custom. Caso contrário cai no runAgent default.
+  // Fallback gracioso: se executor lançar (graph inválido, ciclo, etc.),
+  // logamos e voltamos pra runAgent default — agente nunca fica mudo.
+  let result;
+  if (agentVersion.flowGraph) {
+    try {
+      result = await executeFlow({
+        systemPrompt: agentVersion.systemPrompt,
+        vertical: agent.vertical,
+        messageHistory,
+        inboundText,
+        ragChunks,
+        globalDeps,
+        verticalDeps,
+        maxSteps: 5,
+        timeoutMs: 30_000,
+        topicBlacklist,
+        flowGraph: agentVersion.flowGraph,
+        messageType: 'text',
+      });
+      log.info(
+        { conversationId, nodesExecuted: result.trace.length, customFlow: true },
+        'flow customizado executado',
+      );
+    } catch (err) {
+      log.warn(
+        { conversationId, err: String(err) },
+        'executor de flow falhou — fallback pra runAgent default',
+      );
+      result = await runAgent({
+        systemPrompt: agentVersion.systemPrompt,
+        vertical: agent.vertical,
+        messageHistory,
+        inboundText,
+        ragChunks,
+        globalDeps,
+        verticalDeps,
+        maxSteps: 5,
+        timeoutMs: 30_000,
+        topicBlacklist,
+      });
+    }
+  } else {
+    result = await runAgent({
+      systemPrompt: agentVersion.systemPrompt,
+      vertical: agent.vertical,
+      messageHistory,
+      inboundText,
+      ragChunks,
+      globalDeps,
+      verticalDeps,
+      maxSteps: 5,
+      timeoutMs: 30_000,
+      topicBlacklist,
+    });
+  }
 
   if (result.handedOff) {
-    log.info({ conversationId }, 'agente transferiu para humano');
+    log.info(
+      { conversationId, guardTriggered: result.guardTriggered, reasons: result.guardReasons },
+      'agente transferiu para humano',
+    );
     return;
   }
 
@@ -305,15 +366,22 @@ async function handleHandoff(
   try {
     const accessToken = decrypt(waAccount.accessTokenEncrypted, env.ENCRYPTION_KEY);
     const waClient = createWaClient({ phoneNumberId: waAccount.phoneNumberId, accessToken });
-    await waClient.sendText(contact.phoneE164, 'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌');
-  } catch {
-    // Não-crítico: a transferência já ocorreu no DB
+    await waClient.sendText(
+      contact.phoneE164,
+      'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌',
+    );
+  } catch (err) {
+    // Não-crítico: a transferência já ocorreu no DB. Mas loga pra debug.
+    log.warn(
+      { conversationId, workspaceId, err: String(err) },
+      'mensagem-ponte de handoff falhou — handoff em DB já registrado',
+    );
   }
 }
 
 async function sendFallbackMessage(
   waAccount: { phoneNumberId: string; accessTokenEncrypted: string },
-  phoneE164: string,
+  contact: { id: string; phoneE164: string },
   workspaceId: string,
   conversationId: string,
 ): Promise<void> {
@@ -321,14 +389,13 @@ async function sendFallbackMessage(
     const accessToken = decrypt(waAccount.accessTokenEncrypted, env.ENCRYPTION_KEY);
     const waClient = createWaClient({ phoneNumberId: waAccount.phoneNumberId, accessToken });
     const fallbackText = 'Olá! Recebemos sua mensagem e em breve um atendente irá te responder. 😊';
-    const msg = await waClient.sendText(phoneE164, fallbackText);
-    const cId = (await prisma.contact.findFirst({ where: { phoneE164, workspaceId } }))?.id ?? '';
+    const msg = await waClient.sendText(contact.phoneE164, fallbackText);
     const waId = msg.messages[0]?.id;
     await prisma.message.create({
       data: {
         workspaceId,
         conversationId,
-        contactId: cId,
+        contactId: contact.id,
         direction: MessageDirection.OUTBOUND,
         type: MessageType.TEXT,
         content: { text: fallbackText },
@@ -338,7 +405,7 @@ async function sendFallbackMessage(
       },
     });
   } catch (err) {
-    log.error({ err: String(err) }, 'fallback message falhou');
+    log.error({ workspaceId, conversationId, err: String(err) }, 'fallback message falhou');
   }
 }
 

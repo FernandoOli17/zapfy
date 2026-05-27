@@ -7,25 +7,48 @@ import {
   type ForgeAnswers,
   type VerticalId,
 } from '@zapai/ai';
-import { createLogger } from '@zapai/shared';
+import { createLogger, assertSafeUrl, SsrfError } from '@zapai/shared';
 
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 
 const log = createLogger('forge-io');
 
-/** Fetch leve de uma URL pública, extrai title + texto-corpo resumido. */
-export async function scrapeUrlForForge(url: string): Promise<{ title: string; excerpt: string }> {
+export type ScrapeResult =
+  | { ok: true; title: string; excerpt: string }
+  | { ok: false; reason: 'ssrf' | 'redirect' | 'http' | 'fetch' | 'empty'; message: string };
+
+/**
+ * Fetch leve de uma URL pública, extrai title + texto-corpo resumido.
+ *
+ * Retorna `Result` tipado em vez de string-com-erro — assim o caller não
+ * acaba indexando "(URL bloqueada por segurança: ...)" como se fosse
+ * conteúdo legítimo de knowledge base.
+ */
+export async function scrapeUrlForForge(url: string): Promise<ScrapeResult> {
+  // SSRF guard antes de qualquer fetch externo.
+  let safe: URL;
   try {
-    const res = await fetch(url, {
+    safe = await assertSafeUrl(url);
+  } catch (err) {
+    const msg = err instanceof SsrfError ? err.message : String(err);
+    log.warn({ url, err: msg }, 'scrape_url bloqueado por SSRF guard');
+    return { ok: false, reason: 'ssrf', message: msg };
+  }
+
+  try {
+    const res = await fetch(safe.href, {
       headers: {
-        'user-agent': 'Orbe-Forge/1.0 (+https://Orbe.dev)',
+        'user-agent': 'Trato-Forge/1.0 (+https://trato.dev)',
         accept: 'text/html,application/xhtml+xml',
       },
-      // Limita tempo de espera. Cloud API timeout < 30s; aqui usamos AbortController curto.
       signal: AbortSignal.timeout(8000),
+      redirect: 'manual',
     });
+    if (res.status >= 300 && res.status < 400) {
+      return { ok: false, reason: 'redirect', message: `Redirect HTTP ${res.status} bloqueado` };
+    }
     if (!res.ok) {
-      return { title: url, excerpt: `(falha ao buscar ${url}: HTTP ${res.status})` };
+      return { ok: false, reason: 'http', message: `HTTP ${res.status}` };
     }
     const html = await res.text();
     const title =
@@ -39,12 +62,17 @@ export async function scrapeUrlForForge(url: string): Promise<{ title: string; e
       .replace(/\s+/g, ' ')
       .trim();
 
+    if (cleaned.length === 0) {
+      return { ok: false, reason: 'empty', message: 'Conteúdo extraído vazio' };
+    }
+
     const excerpt = cleaned.slice(0, 1500) + (cleaned.length > 1500 ? '…' : '');
 
-    return { title: title.slice(0, 200), excerpt };
+    return { ok: true, title: title.slice(0, 200), excerpt };
   } catch (err) {
-    log.warn({ url, err: String(err) }, 'scrape_url failed');
-    return { title: url, excerpt: `(não foi possível extrair ${url})` };
+    const msg = err instanceof Error ? err.message : String(err);
+    log.warn({ url, err: msg }, 'scrape_url failed');
+    return { ok: false, reason: 'fetch', message: msg };
   }
 }
 
@@ -81,6 +109,7 @@ export async function publishAgentVersionIo(
     // Procura agent existente no workspace com mesmo nome (1 agente por workspace no MVP)
     let agent = await tx.agent.findFirst({
       where: { workspaceId, name: agentName },
+      include: { currentVersion: true },
     });
     if (!agent) {
       agent = await tx.agent.create({
@@ -89,11 +118,13 @@ export async function publishAgentVersionIo(
           name: agentName,
           vertical,
         },
+        include: { currentVersion: true },
       });
     } else if (agent.vertical !== vertical) {
       agent = await tx.agent.update({
         where: { id: agent.id },
         data: { vertical },
+        include: { currentVersion: true },
       });
     }
 
@@ -102,6 +133,12 @@ export async function publishAgentVersionIo(
       orderBy: { versionNumber: 'desc' },
     });
     const versionNumber = (last?.versionNumber ?? 0) + 1;
+
+    // Preserva customizações do dev mode (flowGraph, customToolNames) que
+    // já existem na versão atual — Forge não deve destruí-las ao re-publicar.
+    // Usuário pode reset pelo /developer se quiser voltar ao default.
+    const preservedFlowGraph = agent.currentVersion?.flowGraph ?? null;
+    const preservedCustomTools = agent.currentVersion?.customToolNames ?? [];
 
     const version = await tx.agentVersion.create({
       data: {
@@ -112,8 +149,16 @@ export async function publishAgentVersionIo(
         toolsEnabled: answers.tools ?? [],
         handoffRules: (answers.handoff ?? {}) as Prisma.InputJsonValue,
         businessHours: Prisma.JsonNull,
+        ...(preservedFlowGraph
+          ? { flowGraph: preservedFlowGraph as Prisma.InputJsonValue }
+          : {}),
+        customToolNames: preservedCustomTools,
         changeNotes:
-          versionNumber === 1 ? 'Versão inicial publicada via Forge' : 'Refinamento via Forge',
+          versionNumber === 1
+            ? 'Versão inicial publicada via Forge'
+            : preservedFlowGraph
+              ? 'Refinamento via Forge (flowGraph customizado preservado)'
+              : 'Refinamento via Forge',
         ...(userId ? { createdByUserId: userId } : {}),
         forgeSessionId,
       },

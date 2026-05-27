@@ -14,6 +14,7 @@ import {
   Tag,
   Undo2,
   UserCheck,
+  Wrench,
 } from 'lucide-react';
 import { Button, cn } from '@zapai/ui';
 
@@ -43,6 +44,7 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
   const [busy, startSendTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const replyRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     const node = scrollerRef.current;
@@ -89,6 +91,40 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
   const isClosed = detail.status === 'CLOSED';
   const isHuman = detail.status === 'HUMAN_HANDLING';
   const initials = (detail.contact.name ?? detail.contact.phoneE164).slice(0, 2).toUpperCase();
+
+  // Atalhos: R = focar resposta, A = assumir, E = encerrar
+  // Refs estáveis pras callbacks (assume/close) — evita re-bind do listener.
+  const actionsRef = useRef({ onAssume, onClose });
+  actionsRef.current = { onAssume, onClose };
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
+      if (isTyping) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key.toLowerCase() === 'r' && isHuman && !isClosed) {
+        e.preventDefault();
+        replyRef.current?.focus();
+        return;
+      }
+      if (e.key.toLowerCase() === 'a' && !isHuman && !isClosed) {
+        e.preventDefault();
+        actionsRef.current.onAssume();
+        return;
+      }
+      if (e.key.toLowerCase() === 'e' && !isClosed) {
+        e.preventDefault();
+        actionsRef.current.onClose();
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isHuman, isClosed]);
 
   return (
     <section className="flex h-full min-h-0 flex-col bg-muted/20">
@@ -201,12 +237,15 @@ function ChatColumn({ detail }: { detail: InboxConversationDetail }) {
           ) : (
             <div className="flex items-end gap-2 rounded-2xl border border-border bg-background p-1.5 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
               <textarea
+                ref={replyRef}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey && !busy) {
                     e.preventDefault();
                     onSend();
+                  } else if (e.key === 'Escape') {
+                    e.currentTarget.blur();
                   }
                 }}
                 rows={1}
@@ -258,9 +297,22 @@ function MessageBubble({ message }: { message: InboxMessage }) {
         )}
       >
         {message.fromAi && (
-          <p className="mb-1 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-primary">
-            <Bot className="h-3 w-3" /> Agente IA
-          </p>
+          <div className="mb-1 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-primary">
+              <Bot className="h-3 w-3" /> Agente IA
+            </span>
+            {message.toolsUsed.length > 0 && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                title={`Tools: ${message.toolsUsed.join(', ')}`}
+              >
+                <Wrench className="h-2.5 w-2.5" />
+                {message.toolsUsed.length === 1
+                  ? message.toolsUsed[0]
+                  : `${message.toolsUsed.length} tools`}
+              </span>
+            )}
+          </div>
         )}
         <p className="whitespace-pre-wrap leading-relaxed">{text}</p>
         <div className="mt-1 flex items-center justify-end gap-1 text-[10px] opacity-70">

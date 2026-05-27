@@ -50,7 +50,7 @@ function getLimiter(name: string, limit: number, windowSec: number): Ratelimit |
     redis: client,
     limiter: Ratelimit.slidingWindow(limit, `${windowSec} s`),
     analytics: true,
-    prefix: `Orbe:rl:${name}`,
+    prefix: `Trato:rl:${name}`,
   });
   limiters.set(key, limiter);
   return limiter;
@@ -95,6 +95,10 @@ export const RL_SIGNUP = { name: 'signup', limit: 10, windowSec: 60 * 60 } as co
 export const RL_CONTACT = { name: 'contact', limit: 5, windowSec: 60 } as const;
 export const RL_LGPD_API = { name: 'lgpd-api', limit: 30, windowSec: 60 } as const;
 export const RL_FORGE = { name: 'forge', limit: 30, windowSec: 60 } as const;
+/** Envio manual do agente humano no Inbox — generoso, mas evita scripts. */
+export const RL_INBOX_SEND = { name: 'inbox-send', limit: 60, windowSec: 60 } as const;
+/** Conexão / teste de número WhatsApp — Meta API tem rate dela. */
+export const RL_WHATSAPP_CONNECT = { name: 'wa-connect', limit: 10, windowSec: 60 * 5 } as const;
 
 /** Extrai IP da request (tolera proxies). */
 export function clientIp(headers: Headers): string {

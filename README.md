@@ -1,4 +1,4 @@
-# ZapAI
+# Trato
 
 > SaaS multi-tenant de agente IA pra WhatsApp Business, com **Forge** — builder
 > conversacional que entrevista o cliente e gera todo o agente automaticamente

@@ -43,7 +43,7 @@ export default async function InvitePage({ params }: PageProps) {
       <header className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="inline-block h-2 w-2 rounded-full bg-primary" aria-hidden />
-          Orbe
+          Trato
         </Link>
         <ThemeToggle />
       </header>

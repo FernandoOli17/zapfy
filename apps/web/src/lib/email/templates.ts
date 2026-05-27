@@ -51,12 +51,12 @@ function wrap(inner: string): string {
     <div style="${CONTAINER_STYLES}">
       <div style="${HEADER_STYLES}; padding-bottom: 12px;">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#60A5FA;vertical-align:middle;margin-right:8px"></span>
-        Orbe
+        Trato
       </div>
       ${inner}
       <div style="${FOOTER_STYLES}">
-        Orbe · O WhatsApp da sua empresa, com cérebro próprio.<br/>
-        Não esperava esse email? <a href="mailto:oi@Orbe.dev" style="color:#60A5FA">avisa pra gente</a>.
+        Trato · O WhatsApp da sua empresa, com cérebro próprio.<br/>
+        Não esperava esse email? <a href="mailto:oi@Trato.dev" style="color:#60A5FA">avisa pra gente</a>.
       </div>
     </div>
   </div>
@@ -66,14 +66,14 @@ function wrap(inner: string): string {
 export function magicLinkEmail(input: { url: string; email: string }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px;color:#18181b">Seu link de acesso</h1>
-    <p>Oi! Clique no botão abaixo pra entrar no Orbe. O link expira em 5 minutos.</p>
-    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no Orbe</a>
+    <p>Oi! Clique no botão abaixo pra entrar no Trato. O link expira em 5 minutos.</p>
+    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no Trato</a>
     <p style="color:#71717a;font-size:13px">Se o botão não funcionar, copia e cola essa URL no navegador:</p>
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu esse link, pode ignorar este email — ele expira sozinho.</p>
   `);
-  const text = `Entre no Orbe: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
-  return { html, text, subject: 'Seu link de acesso ao Orbe' };
+  const text = `Entre no Trato: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
+  return { html, text, subject: 'Seu link de acesso ao Trato' };
 }
 
 export function welcomeEmail(input: { name: string; workspaceSlug: string; appUrl: string }) {
@@ -91,10 +91,10 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
     <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#60A5FA">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
-    <p style="color:#71717a;font-size:13px">— Time Orbe</p>
+    <p style="color:#71717a;font-size:13px">— Time Trato</p>
   `);
-  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Orbe`;
-  return { html, text, subject: `Bem-vindo ao Orbe, ${input.name}` };
+  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Trato`;
+  return { html, text, subject: `Bem-vindo ao Trato, ${input.name}` };
 }
 
 export function contactNotificationEmail(input: {
@@ -114,7 +114,7 @@ export function contactNotificationEmail(input: {
     <p style="color:#71717a;font-size:13px">Responda direto pelo Reply-To deste email.</p>
   `);
   const text = `Novo contato:\n\nNome: ${input.name}\nE-mail: ${input.email}\nAssunto: ${input.subject}\n\n---\n${input.message}`;
-  return { html, text, subject: `[Orbe Contato] ${input.subject}` };
+  return { html, text, subject: `[Trato Contato] ${input.subject}` };
 }
 
 export function passwordResetEmail(input: { url: string; email: string }) {
@@ -126,8 +126,8 @@ export function passwordResetEmail(input: { url: string; email: string }) {
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu, pode ignorar — a senha atual continua válida.</p>
   `);
-  const text = `Redefinir senha do Orbe: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
-  return { html, text, subject: 'Redefinir sua senha do Orbe' };
+  const text = `Redefinir senha do Trato: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
+  return { html, text, subject: 'Redefinir sua senha do Trato' };
 }
 
 export function teamInviteEmail(input: {
@@ -138,13 +138,13 @@ export function teamInviteEmail(input: {
 }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Você foi convidado</h1>
-    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no Orbe.</p>
+    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no Trato.</p>
     <a href="${input.inviteUrl}" style="${BUTTON_STYLES}">Aceitar convite</a>
     <p style="color:#71717a;font-size:13px">O convite expira em 7 dias.</p>
     <p style="color:#71717a;font-size:13px">Se você não conhece quem te convidou, pode ignorar este email.</p>
   `);
-  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no Orbe.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
-  return { html, text, subject: `${input.inviterName} te convidou pro Orbe` };
+  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no Trato.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
+  return { html, text, subject: `${input.inviterName} te convidou pro Trato` };
 }
 
 function escapeHtml(s: string): string {

@@ -56,6 +56,46 @@ export async function renameWorkspace(raw: z.infer<typeof renameInput>) {
   return { status: 'ok' as const };
 }
 
+const devModeInput = z.object({ enabled: z.boolean() });
+
+/**
+ * Liga/desliga o modo desenvolvedor pro workspace. OWNER only.
+ *
+ * Quando desliga, o flowGraph customizado das AgentVersions continua salvo
+ * (versionado), mas o worker volta a usar o pipeline default. Isso é por
+ * design: ligar de novo restaura o customizado sem perder trabalho.
+ */
+export async function toggleDeveloperMode(raw: z.infer<typeof devModeInput>) {
+  const ctx = await requireOwner();
+  if ('error' in ctx) return { status: 'error' as const, error: ctx.error };
+  const parsed = devModeInput.safeParse(raw);
+  if (!parsed.success) {
+    return { status: 'error' as const, error: parsed.error.issues[0]?.message ?? 'Inválido' };
+  }
+  await prisma.workspace.update({
+    where: { id: ctx.workspace.id },
+    data: { developerModeEnabled: parsed.data.enabled },
+  });
+  await prisma.auditLog.create({
+    data: {
+      workspaceId: ctx.workspace.id,
+      userId: ctx.user.id,
+      action: parsed.data.enabled ? 'workspace.dev_mode.enable' : 'workspace.dev_mode.disable',
+      targetType: 'Workspace',
+      targetId: ctx.workspace.id,
+    },
+  });
+  log.info(
+    { workspaceId: ctx.workspace.id, enabled: parsed.data.enabled },
+    'developer mode toggled',
+  );
+  revalidatePath('/settings');
+  revalidatePath('/developer');
+  // O layout principal recarrega a sidebar (mostra/esconde Developer).
+  revalidatePath('/dashboard');
+  return { status: 'ok' as const };
+}
+
 const slugInput = z.object({ slug: workspaceSlugSchema });
 
 export async function changeSlug(raw: z.infer<typeof slugInput>) {

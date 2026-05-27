@@ -46,7 +46,7 @@ export function MarketingFooter() {
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white shadow-lg shadow-violet-900/40">
                 O
               </span>
-              Orbe
+              Trato
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
               O WhatsApp da sua empresa, com cérebro próprio. Configure conversando, atenda
@@ -87,7 +87,7 @@ export function MarketingFooter() {
         </div>
 
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-white/[0.06] pt-6 md:flex-row md:items-center">
-          <p className="text-xs text-zinc-600">© {year} Orbe · Todos os direitos reservados</p>
+          <p className="text-xs text-zinc-600">© {year} Trato · Todos os direitos reservados</p>
           <p className="text-xs text-zinc-600">Feito no Brasil 🇧🇷</p>
         </div>
       </div>

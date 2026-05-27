@@ -2,6 +2,7 @@ import { generateText, stepCountIs, type ModelMessage } from 'ai';
 import { randomUUID } from 'node:crypto';
 
 import { getAiModels } from '../provider';
+import { systemMessage } from '../caching';
 
 import { getPhaseSystemPrompt } from './prompts/phases';
 import { buildMetaPromptUserMessage, META_PROMPT_SYSTEM } from './prompts/meta-prompt';
@@ -66,6 +67,7 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
     setAnswer: (patch) => {
       answers = mergeAnswers(answers, patch);
     },
+    getAnswersSnapshot: () => answers,
     appendKnowledge: (item: KnowledgeItem) => {
       answers = { ...answers, knowledge: [...(answers.knowledge ?? []), item] };
     },
@@ -76,36 +78,47 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
     generateSystemPrompt: async () => {
       const result = await generateText({
         model: models.chat,
-        system: META_PROMPT_SYSTEM,
-        prompt: buildMetaPromptUserMessage(answers),
+        messages: [
+          systemMessage(META_PROMPT_SYSTEM),
+          { role: 'user', content: buildMetaPromptUserMessage(answers) },
+        ],
       });
       return result.text.trim();
     },
     refineSystemPrompt: async (instruction) => {
       const current = answers.systemPromptDraft ?? '';
       if (!current) {
-        // sem draft ainda, gera do zero
         const result = await generateText({
           model: models.chat,
-          system: META_PROMPT_SYSTEM,
-          prompt: buildMetaPromptUserMessage(answers),
+          messages: [
+            systemMessage(META_PROMPT_SYSTEM),
+            { role: 'user', content: buildMetaPromptUserMessage(answers) },
+          ],
         });
         return result.text.trim();
       }
+      const REFINE_SYSTEM =
+        `Você recebe um system prompt atual de um agente de IA pro WhatsApp e uma instrução do dono pra ajustar. Aplique a mudança de forma cirúrgica — mude SÓ o que a instrução pede, preserve o resto literal. Devolva APENAS o system prompt revisado, sem preâmbulo, sem markdown wrapper.`;
       const result = await generateText({
         model: models.chat,
-        system: `Você recebe um system prompt atual de um agente de IA pro WhatsApp e uma instrução do dono pra ajustar. Aplique a mudança de forma cirúrgica — mude SÓ o que a instrução pede, preserve o resto literal. Devolva APENAS o system prompt revisado, sem preâmbulo, sem markdown wrapper.`,
-        prompt: `INSTRUÇÃO: ${instruction}\n\n---\n\nSYSTEM PROMPT ATUAL:\n\n${current}`,
+        messages: [
+          systemMessage(REFINE_SYSTEM),
+          {
+            role: 'user',
+            content: `INSTRUÇÃO: ${instruction}\n\n---\n\nSYSTEM PROMPT ATUAL:\n\n${current}`,
+          },
+        ],
       });
       return result.text.trim();
     },
     publishAgentVersion: async ({ agentName }) => {
       if (!answers.systemPromptDraft) {
-        // gera antes de publicar se não tiver draft
         const result = await generateText({
           model: models.chat,
-          system: META_PROMPT_SYSTEM,
-          prompt: buildMetaPromptUserMessage({ ...answers, agentName }),
+          messages: [
+            systemMessage(META_PROMPT_SYSTEM),
+            { role: 'user', content: buildMetaPromptUserMessage({ ...answers, agentName }) },
+          ],
         });
         answers = { ...answers, systemPromptDraft: result.text.trim() };
       }
@@ -130,18 +143,20 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
   };
   const transcriptWithUser = [...state.transcript, userMsg];
 
-  // --- chamada LLM ---
+  // --- chamada LLM (system cacheável + transcript) ---
   const systemPrompt = getPhaseSystemPrompt(state.currentPhase, answers);
-  const messages: ModelMessage[] = transcriptWithUser
-    .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+  const messages: ModelMessage[] = [
+    systemMessage(systemPrompt),
+    ...transcriptWithUser
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map<ModelMessage>((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      })),
+  ];
 
   const result = await generateText({
     model: models.chat,
-    system: systemPrompt,
     messages,
     tools: phaseTools,
     stopWhen: stepCountIs(maxSteps),

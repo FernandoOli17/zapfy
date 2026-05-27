@@ -1,23 +1,7 @@
 ﻿import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import {
-  BarChart3,
-  BookOpen,
-  CreditCard,
-  Headset,
-  Inbox,
-  KeyRound,
-  LayoutDashboard,
-  LogOut,
-  Megaphone,
-  MessageSquareText,
-  Phone,
-  Radio,
-  Settings,
-  Sparkles,
-  Users,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { prisma } from '@zapai/db';
 
 import { auth } from '@/lib/auth';
@@ -26,42 +10,58 @@ import { ThemeToggle } from '@/components/theme-toggle';
 
 import { SidebarNav, type NavSection } from './sidebar-nav';
 
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: 'Principal',
-    items: [
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/forge', label: 'Forge', icon: Sparkles, badge: 'IA' },
-      { href: '/inbox', label: 'Inbox', icon: Inbox },
-      { href: '/contacts', label: 'Contatos', icon: Users },
-    ],
-  },
-  {
-    label: 'Agente IA',
-    items: [
-      { href: '/agent', label: 'Configurar agente', icon: MessageSquareText },
-      { href: '/knowledge', label: 'Base de conhecimento', icon: BookOpen },
-      { href: '/whatsapp', label: 'WhatsApp', icon: Phone },
-    ],
-  },
-  {
-    label: 'Automações',
-    items: [
-      { href: '/automations/templates', label: 'Templates HSM', icon: Megaphone },
-      { href: '/automations/broadcasts', label: 'Broadcasts', icon: Radio },
-    ],
-  },
-  {
-    label: 'Gestão',
-    items: [
-      { href: '/analytics', label: 'Analytics', icon: BarChart3 },
-      { href: '/team', label: 'Time', icon: Headset },
-      { href: '/integrations', label: 'Integrações', icon: KeyRound },
-      { href: '/billing', label: 'Billing', icon: CreditCard },
-      { href: '/settings', label: 'Configurações', icon: Settings },
-    ],
-  },
-];
+// Importante: nada de componentes Lucide aqui — eles seriam serializados de
+// Server→Client e Next 15 rejeita (icon: forwardRef object). O `SidebarNav`
+// resolve `iconName` via mapa interno.
+function buildNavSections(opts: { devMode: boolean; isOwnerOrAdmin: boolean }): NavSection[] {
+  const sections: NavSection[] = [
+    {
+      label: 'Principal',
+      items: [
+        { href: '/dashboard', label: 'Dashboard', iconName: 'dashboard' },
+        { href: '/forge', label: 'Forge', iconName: 'sparkles', badge: 'IA' },
+        { href: '/inbox', label: 'Inbox', iconName: 'inbox' },
+        { href: '/contacts', label: 'Contatos', iconName: 'users' },
+      ],
+    },
+    {
+      label: 'Agente IA',
+      items: [
+        { href: '/agent', label: 'Configurar agente', iconName: 'message-square-text' },
+        { href: '/knowledge', label: 'Base de conhecimento', iconName: 'book-open' },
+        { href: '/whatsapp', label: 'WhatsApp', iconName: 'phone' },
+      ],
+    },
+    {
+      label: 'Automações',
+      items: [
+        { href: '/automations/templates', label: 'Templates HSM', iconName: 'megaphone' },
+        { href: '/automations/broadcasts', label: 'Broadcasts', iconName: 'radio' },
+      ],
+    },
+    {
+      label: 'Gestão',
+      items: [
+        { href: '/analytics', label: 'Analytics', iconName: 'bar-chart-3' },
+        { href: '/team', label: 'Time', iconName: 'headset' },
+        { href: '/integrations', label: 'Integrações', iconName: 'key-round' },
+        { href: '/billing', label: 'Billing', iconName: 'credit-card' },
+        { href: '/settings', label: 'Configurações', iconName: 'settings' },
+      ],
+    },
+  ];
+
+  // Modo desenvolvedor — só pra OWNER/ADMIN com flag ON.
+  if (opts.devMode && opts.isOwnerOrAdmin) {
+    sections.push({
+      label: 'Developer',
+      items: [
+        { href: '/developer', label: 'Flow / Tools / Prompt', iconName: 'code-2', badge: 'DEV' },
+      ],
+    });
+  }
+  return sections;
+}
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -75,6 +75,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!member) redirect('/onboarding');
 
   const workspace = member.workspace;
+  const isOwnerOrAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
+  const NAV_SECTIONS = buildNavSections({
+    devMode: workspace.developerModeEnabled,
+    isOwnerOrAdmin,
+  });
   const initials =
     workspace.name
       .split(/\s+/)
@@ -96,7 +101,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <span className="text-xs font-bold text-primary-foreground">O</span>
           </div>
-          <span className="text-base font-semibold tracking-tight">Orbe</span>
+          <span className="text-base font-semibold tracking-tight">Trato</span>
         </div>
 
         {/* Workspace card */}
@@ -108,7 +113,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="min-w-0">
               <p className="truncate text-sm font-medium leading-tight">{workspace.name}</p>
               <p className="truncate text-[11px] text-muted-foreground">
-                Orbe.dev/{workspace.slug}
+                Trato.dev/{workspace.slug}
               </p>
             </div>
           </div>
@@ -148,7 +153,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
               <span className="text-[10px] font-bold text-primary-foreground">O</span>
             </div>
-            Orbe
+            Trato
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

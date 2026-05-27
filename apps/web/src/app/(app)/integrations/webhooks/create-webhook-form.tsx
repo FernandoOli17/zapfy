@@ -5,7 +5,10 @@ import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
 import { Button, Input, Label, cn } from '@zapai/ui';
 
 import { createWebhook } from './actions';
-import { OUTGOING_EVENT_DESCRIPTIONS, OUTGOING_EVENT_NAMES } from '@/lib/webhooks-outgoing';
+import {
+  OUTGOING_EVENT_DESCRIPTIONS,
+  OUTGOING_EVENT_NAMES,
+} from '@/lib/webhooks-outgoing-events';
 
 export function CreateWebhookForm() {
   const [pending, startTransition] = useTransition();
@@ -90,7 +93,7 @@ export function CreateWebhookForm() {
           required
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://api.suaempresa.com/webhooks/Orbe"
+          placeholder="https://api.suaempresa.com/webhooks/Trato"
           className="mt-1.5 h-10 font-mono"
         />
       </div>

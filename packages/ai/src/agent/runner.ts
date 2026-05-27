@@ -1,6 +1,8 @@
 import { generateText, stepCountIs, type ModelMessage, type Tool } from 'ai';
 import { createLogger } from '@zapai/shared';
 import { getAiModels, isMockMode } from '../provider';
+import { systemMessage } from '../caching';
+import { detectPromptInjection, detectBlockedTopics } from '../guards';
 import { buildGlobalTools, type AgentToolDeps } from './tools/global';
 import { buildVerticalTools, type VerticalToolDeps } from './tools/verticals';
 import type { RagChunk } from './rag';
@@ -16,6 +18,10 @@ export interface RunAgentInput {
   globalDeps: AgentToolDeps;
   verticalDeps: VerticalToolDeps;
   maxSteps?: number;
+  /** Timeout em ms para o turn completo (tool calls + texto). Default 30s. */
+  timeoutMs?: number;
+  /** Blacklist de tópicos por workspace — caller pega de WorkspaceSettings. */
+  topicBlacklist?: string[];
 }
 
 export interface RunAgentResult {
@@ -24,10 +30,16 @@ export interface RunAgentResult {
   tokensIn: number;
   tokensOut: number;
   handedOff: boolean;
+  /** True quando o input bateu em detector de injection ou blacklist. */
+  guardTriggered: boolean;
+  guardReasons: string[];
 }
 
 const MOCK_RESPONSE =
   'Olá! Recebi sua mensagem. Em breve um atendente irá te ajudar. Como posso te chamar? 😊';
+
+const HANDOFF_ON_GUARD =
+  'Recebi sua mensagem. Pra garantir o melhor atendimento, vou transferir você para um atendente humano em instantes. 🙌';
 
 export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
   const {
@@ -39,40 +51,86 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
     globalDeps,
     verticalDeps,
     maxSteps = 5,
+    timeoutMs = 30_000,
+    topicBlacklist = [],
   } = input;
 
   if (isMockMode()) {
     log.info('mock mode — retornando resposta canned');
-    return { text: MOCK_RESPONSE, toolsUsed: [], tokensIn: 0, tokensOut: 0, handedOff: false };
+    return {
+      text: MOCK_RESPONSE,
+      toolsUsed: [],
+      tokensIn: 0,
+      tokensOut: 0,
+      handedOff: false,
+      guardTriggered: false,
+      guardReasons: [],
+    };
   }
 
+  // ── 1. Guardrails de input ────────────────────────────────────────────────
+  const injection = detectPromptInjection(inboundText);
+  const blockedTopics = detectBlockedTopics(inboundText, { keywords: topicBlacklist });
+  const guardTriggered = injection.injection || blockedTopics.length > 0;
+  const guardReasons = [...injection.reasons, ...blockedTopics.map((t) => `topic:${t}`)];
+
+  if (guardTriggered) {
+    log.warn({ reasons: guardReasons }, 'guardrails dispararam — handoff automático');
+    try {
+      await globalDeps.transferToHuman(`Guardrail: ${guardReasons.join(', ')}`);
+    } catch (err) {
+      log.warn({ err: String(err) }, 'transferToHuman falhou após guardrail');
+    }
+    return {
+      text: HANDOFF_ON_GUARD,
+      toolsUsed: ['transfer_to_human'],
+      tokensIn: 0,
+      tokensOut: 0,
+      handedOff: true,
+      guardTriggered: true,
+      guardReasons,
+    };
+  }
+
+  // ── 2. Montar tools ───────────────────────────────────────────────────────
   const globalTools = buildGlobalTools(globalDeps);
   const verticalToolsMap = buildVerticalTools(vertical, verticalDeps);
   const tools: Record<string, Tool> = { ...globalTools, ...verticalToolsMap };
 
-  // Injeta contexto RAG no system prompt
+  // ── 3. Montar prompt com RAG ──────────────────────────────────────────────
   const ragSection =
     ragChunks.length > 0
-      ? `\n\n---\n## Base de conhecimento (use quando relevante)\n${ragChunks.map((c, i) => `[${i + 1}] **${c.title}**: ${c.content}`).join('\n\n')}\n---`
+      ? `\n\n---\n## Base de conhecimento (use quando relevante)\n${ragChunks
+          .map((c, i) => `[${i + 1}] **${c.title}**: ${c.content}`)
+          .join('\n\n')}\n---`
       : '';
 
   const fullSystem = systemPrompt + ragSection;
 
+  // ── 4. Mensagens — system cacheável + histórico + inbound ────────────────
   const messages: ModelMessage[] = [
-    ...messageHistory.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.text })),
+    systemMessage(fullSystem),
+    ...messageHistory.map<ModelMessage>((m) => ({
+      role: m.role,
+      content: m.text,
+    })),
     { role: 'user', content: inboundText },
   ];
 
   const toolsUsed: string[] = [];
   let handedOff = false;
 
+  // ── 5. Timeout via AbortController ────────────────────────────────────────
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const { text, totalUsage, steps } = await generateText({
       model: getAiModels().chat,
-      system: fullSystem,
       messages,
       tools,
       stopWhen: stepCountIs(maxSteps),
+      abortSignal: controller.signal,
     });
 
     for (const step of steps) {
@@ -86,6 +144,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       {
         tokensIn: totalUsage.inputTokens ?? 0,
         tokensOut: totalUsage.outputTokens ?? 0,
+        cacheRead: totalUsage.cachedInputTokens ?? 0,
         steps: steps.length,
         toolsUsed,
       },
@@ -98,15 +157,27 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       tokensIn: totalUsage.inputTokens ?? 0,
       tokensOut: totalUsage.outputTokens ?? 0,
       handedOff,
+      guardTriggered: false,
+      guardReasons: [],
     };
   } catch (err) {
-    log.error({ err: String(err) }, 'agent run falhou — retornando fallback');
+    const aborted = controller.signal.aborted;
+    log.error(
+      { err: String(err), aborted, timeoutMs },
+      aborted ? 'agent run timeout' : 'agent run falhou',
+    );
     return {
-      text: 'Desculpe, tive um problema técnico. Por favor, tente novamente em instantes.',
-      toolsUsed: [],
+      text: aborted
+        ? 'Desculpe, levei tempo demais pra responder. Pode tentar de novo em instantes?'
+        : 'Desculpe, tive um problema técnico. Por favor, tente novamente em instantes.',
+      toolsUsed,
       tokensIn: 0,
       tokensOut: 0,
-      handedOff: false,
+      handedOff,
+      guardTriggered: false,
+      guardReasons: [],
     };
+  } finally {
+    clearTimeout(timer);
   }
 }

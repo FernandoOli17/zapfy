@@ -27,15 +27,15 @@ export default async function KnowledgePage() {
             Base de conhecimento
           </h1>
         </div>
-        <div className="rounded-md bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-          Indexação RAG · em breve
+        <div className="rounded-md bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+          Indexação RAG ativa
         </div>
       </div>
 
       <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-        Adicione URLs e textos. Quando o agente IA não souber responder direto, ele consulta
-        essa base via RAG. Indexação semântica entra na Fase 5 — por ora, armazenamos o
-        conteúdo em formato pronto pra indexar.
+        Adicione URLs e textos. O agente IA consulta essa base via RAG híbrido (vetor +
+        busca textual) sempre que precisar de contexto. Cada documento é dividido em
+        chunks e indexado automaticamente — leva alguns segundos por página.
       </p>
 
       {/* Add forms */}

@@ -52,7 +52,7 @@ export function OnboardingForm() {
         <Label htmlFor="slug">Slug (URL)</Label>
         <div className="mt-1.5 flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition">
           <span className="px-3 text-sm text-muted-foreground select-none border-r border-border/60">
-            Orbe.dev/
+            Trato.dev/
           </span>
           <input
             id="slug"

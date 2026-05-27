@@ -92,7 +92,7 @@ export default async function IntegrationsPage() {
               <h2 className="text-sm font-semibold tracking-tight">Webhooks de saída</h2>
               <p className="text-xs text-muted-foreground">
                 {webhooksCount === 0
-                  ? 'Nenhum endpoint configurado. Receba eventos do Orbe no seu sistema.'
+                  ? 'Nenhum endpoint configurado. Receba eventos do Trato no seu sistema.'
                   : `${activeWebhooks} ativo${activeWebhooks === 1 ? '' : 's'} de ${webhooksCount} configurado${webhooksCount === 1 ? '' : 's'}.`}
               </p>
             </div>

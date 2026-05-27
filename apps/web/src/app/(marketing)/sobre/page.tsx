@@ -4,7 +4,7 @@ import { Button } from '@zapai/ui';
 
 export const metadata = {
   title: 'Sobre',
-  description: 'O Orbe nasce de uma irritação simples: por que configurar um agente IA tem que parecer planilha?',
+  description: 'O Trato nasce de uma irritação simples: por que configurar um agente IA tem que parecer planilha?',
 };
 
 const PRINCIPLES = [
@@ -69,7 +69,7 @@ export default function SobrePage() {
             marca fala.
           </p>
           <p>
-            <span className="text-foreground">Isso é o Orbe.</span>
+            <span className="text-foreground">Isso é o Trato.</span>
           </p>
         </div>
       </section>
@@ -101,7 +101,7 @@ export default function SobrePage() {
             <span className="font-serif italic font-normal text-muted-foreground">obsessivo.</span>
           </h2>
           <p className="mt-5 text-lg text-muted-foreground leading-relaxed">
-            Orbe é construído por um time enxuto no Brasil, com obsessão por qualidade de produto
+            Trato é construído por um time enxuto no Brasil, com obsessão por qualidade de produto
             e atendimento. Cada feature passa pelo crivo de "isso melhora um único atendimento real"
             antes de virar release.
           </p>

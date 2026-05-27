@@ -2,6 +2,13 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 
 import {
+  TEMPLATES,
+  getTemplateById,
+  getTemplatesForVertical,
+  mergeTemplate,
+  renderTemplatePrompt,
+} from '../playbooks/templates';
+import {
   FORGE_PHASE_IDS,
   VERTICAL_IDS,
   handoffRulesSchema,
@@ -22,12 +29,21 @@ import {
 export interface ForgeToolDeps {
   /** Merge raso no answers (overwrite por campo). Pra arrays append use callbacks específicos. */
   setAnswer: (patch: Partial<ForgeAnswers>) => void;
+  /** Snapshot read-only do estado atual de answers — usado pelas tools que precisam ler. */
+  getAnswersSnapshot: () => ForgeAnswers;
   /** Append em answers.knowledge. */
   appendKnowledge: (item: KnowledgeItem) => void;
   /** Anota intenção de mudar de fase. Engine confirma no fim do step. */
   setNextPhase: (phase: ForgePhaseId) => void;
-  /** IO: faz fetch da URL e retorna título + texto extraído. */
-  scrapeUrl: (url: string) => Promise<{ title: string; excerpt: string }>;
+  /**
+   * IO: faz fetch da URL e retorna título + texto extraído (ok=true), ou
+   * razão da falha (ok=false). NUNCA retorna mensagem de erro como excerpt
+   * — caller decide se exibe pro LLM ou persiste como falha.
+   */
+  scrapeUrl: (url: string) => Promise<
+    | { ok: true; title: string; excerpt: string }
+    | { ok: false; reason: 'ssrf' | 'redirect' | 'http' | 'fetch' | 'empty'; message: string }
+  >;
   /** IO: roda meta-prompt sobre os answers atuais e retorna o system prompt. */
   generateSystemPrompt: () => Promise<string>;
   /** IO: aplica patch natural language no system prompt atual e retorna a versão revisada. */
@@ -99,12 +115,19 @@ export function createForgeTools(deps: ForgeToolDeps): Record<string, Tool> {
 
     scrape_url: tool({
       description:
-        'Faz fetch de uma URL pública do cliente (site, FAQ, catálogo) e retorna título + excerpt resumido.',
+        'Faz fetch de uma URL pública do cliente (site, FAQ, catálogo) e retorna título + excerpt resumido. Em caso de falha, retorna ok:false — não invente conteúdo nesse caso, peça outra URL.',
       inputSchema: z.object({
         url: z.string().url(),
       }),
       execute: async ({ url }) => {
-        return deps.scrapeUrl(url);
+        const result = await deps.scrapeUrl(url);
+        if (!result.ok) {
+          return {
+            ok: false as const,
+            error: `Não consegui buscar a URL (${result.reason}): ${result.message}`,
+          };
+        }
+        return { ok: true as const, title: result.title, excerpt: result.excerpt };
       },
     }),
 
@@ -207,13 +230,73 @@ export function createForgeTools(deps: ForgeToolDeps): Record<string, Tool> {
         return { ok: true, newPhase: to };
       },
     }),
+
+    list_templates_for_vertical: tool({
+      description:
+        'Lista templates prontos disponíveis pro vertical já classificado. Use APENAS depois de VERTICAL_DETECTION ter chamado classify_business_vertical. Retorna id + nome + descrição + emoji.',
+      inputSchema: z.object({
+        vertical: z.enum(VERTICAL_IDS),
+      }),
+      execute: async ({ vertical }) => {
+        const list = getTemplatesForVertical(vertical);
+        return {
+          ok: true,
+          templates: list.map((t) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            emoji: t.emoji,
+            goalsCount: t.defaultAnswers.goals?.length ?? 0,
+            toolsCount: t.defaultAnswers.tools?.length ?? 0,
+          })),
+        };
+      },
+    }),
+
+    apply_template: tool({
+      description:
+        'Aplica um template pronto: preenche goals, tom, tools e handoff de uma vez, e ALÉM disso já gera o system prompt do template (sem chamar meta-prompt). Use SÓ se o cliente concordar explicitamente com o template oferecido. Depois, advance_phase(REVIEW) pra mostrar o resultado.',
+      inputSchema: z.object({
+        templateId: z.string().min(2),
+      }),
+      execute: async ({ templateId }) => {
+        const tpl = getTemplateById(templateId);
+        if (!tpl) {
+          return { ok: false as const, error: `Template "${templateId}" não existe` };
+        }
+        const newAnswers = mergeTemplate(deps.getAnswersSnapshot(), tpl);
+        const draft = renderTemplatePrompt(tpl, newAnswers);
+        deps.setAnswer({
+          vertical: newAnswers.vertical,
+          ...(newAnswers.goals ? { goals: newAnswers.goals } : {}),
+          ...(newAnswers.tone ? { tone: newAnswers.tone } : {}),
+          ...(newAnswers.tools ? { tools: newAnswers.tools } : {}),
+          ...(newAnswers.handoff ? { handoff: newAnswers.handoff } : {}),
+          systemPromptDraft: draft,
+        });
+        return {
+          ok: true as const,
+          templateName: tpl.name,
+          fieldsFilled: ['goals', 'tone', 'tools', 'handoff', 'systemPromptDraft'],
+          systemPromptPreview: draft.slice(0, 280) + (draft.length > 280 ? '…' : ''),
+        };
+      },
+    }),
   };
 }
+
+void TEMPLATES; // mantém import vivo pra docgen futura
 
 /** Quais tools estão disponíveis em cada fase (filtro). */
 export const PHASE_TOOLS: Record<ForgePhaseId, string[]> = {
   DISCOVERY: ['set_business_info', 'advance_phase'],
-  VERTICAL_DETECTION: ['classify_business_vertical', 'advance_phase'],
+  // VERTICAL_DETECTION: classifica + oferece template pronto (atalho via apply_template)
+  VERTICAL_DETECTION: [
+    'classify_business_vertical',
+    'list_templates_for_vertical',
+    'apply_template',
+    'advance_phase',
+  ],
   GOALS: ['set_goals', 'advance_phase'],
   TONE: ['set_tone', 'advance_phase'],
   KNOWLEDGE: ['scrape_url', 'add_knowledge_item', 'advance_phase'],

@@ -8,10 +8,29 @@ import { Button, Input, Label } from '@zapai/ui';
 
 import { signIn } from '@/lib/auth-client';
 
+/**
+ * Sanitiza o `next` param contra open-redirect.
+ * Aceita SOMENTE paths relativos começando com `/` e que NÃO sejam protocol-relative
+ * (`//evil.com` é interpretado como URL absoluta pelo browser).
+ */
+function sanitizeNext(raw: string | null): string {
+  if (!raw) return '/dashboard';
+  // Bloqueia: URLs absolutas (http://, https://), protocol-relative (//evil),
+  // schemes maliciosos (javascript:, data:), e paths sem `/` inicial.
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) {
+    return '/dashboard';
+  }
+  // Bloqueia caracteres de controle / NUL injection (CRLF header injection etc.)
+  for (let i = 0; i < raw.length; i++) {
+    if (raw.charCodeAt(i) < 32) return '/dashboard';
+  }
+  return raw;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const nextPath = params.get('next') ?? '/dashboard';
+  const nextPath = sanitizeNext(params.get('next'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

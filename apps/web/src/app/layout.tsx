@@ -17,8 +17,8 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Orbe — O WhatsApp da sua empresa, com cérebro próprio',
-    template: '%s · Orbe',
+    default: 'Trato — O WhatsApp da sua empresa, com cérebro próprio',
+    template: '%s · Trato',
   },
   description:
     'Agente IA pra WhatsApp Business que vende, agenda e atende 24/7. Configure conversando — sem formulário.',

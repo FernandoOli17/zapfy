@@ -52,6 +52,7 @@ export const QUEUE_NAMES = {
   sendBroadcast: 'send-broadcast',
   outgoingWebhook: 'outgoing-webhook',
   lgpdHardDelete: 'lgpd-hard-delete',
+  processKnowledge: 'process-knowledge',
 } as const;
 
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];
@@ -110,6 +111,8 @@ export interface OutgoingWebhookJob {
   url: string;
   secret: string;
   bodyJson: string;
+  /** Já calculada pelo producer (HMAC SHA-256 do bodyJson). */
+  signature: string;
   eventName: string;
   attempt: number;
 }
@@ -117,4 +120,9 @@ export interface OutgoingWebhookJob {
 export interface LgpdHardDeleteJob {
   workspaceId: string;
   contactId: string;
+}
+
+export interface ProcessKnowledgeJob {
+  workspaceId: string;
+  documentId: string;
 }

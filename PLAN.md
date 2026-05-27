@@ -1,4 +1,4 @@
-# ZapAI — Plano de Execução
+# Trato — Plano de Execução
 
 > Atualize este arquivo ao final de cada fase. Marque o que ficou feito, anote desvios,
 > registre decisões novas. Ele é a memória viva entre sessões.
@@ -12,8 +12,20 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 5 ✅ — Agente IA de produção + RAG implementados
-- **Próxima ação:** adicionar `MOCK_AI=true` no `.env` e testar pipeline inteiro sem custo de API. Com `ANTHROPIC_API_KEY` real: agente de produção ativo. Fases 6-9 pendentes (ver abaixo).
+- **Fase atual:** 5.5 ✅ — Hardening pós-auditoria (prompt caching, guardrails, RAG real, fila de webhooks, atalhos inbox)
+- **Próxima ação:** adicionar `MOCK_AI=true` + `VOYAGE_API_KEY` no `.env` e testar pipeline inteiro. Com `ANTHROPIC_API_KEY` real: agente de produção ativo. Fases 7-9 pendentes (ver abaixo).
+
+### Auditoria de 2026-05-26 (fixes aplicados)
+- ✅ **RAG real:** chunker com overlap + embedding batch via Voyage AI + RRF híbrido. Job `process-knowledge` em BullMQ, fallback inline se Redis down. UI de reprocessar erros.
+- ✅ **Prompt caching:** system + RAG cacheáveis via `providerOptions.anthropic.cacheControl` em todo `generateText` do agente e Forge.
+- ✅ **Guardrails:** `detectPromptInjection` + `detectBlockedTopics` rodam antes do agente; handoff automático se disparar. Timeout de 30s por turno via AbortController.
+- ✅ **Bugs críticos:** catch swallow removido em handoff; classifier loga em vez de silenciar; `sendFallbackMessage` recebe contact tipado (sem string vazia); 24h-window deixa de aceitar `lastIncomingMessageAt: null`.
+- ✅ **Outgoing webhooks:** `dispatchOutgoingEvent` enfileira em BullMQ `outgoingWebhook` (não bloqueia request); fallback inline em background.
+- ✅ **Inbox UX:** atalhos `J`/`K` navegam conversas, `/` foca busca, `Esc` blur, `R` foca resposta, `A` assume, `E` encerra. Bubble de mensagem mostra tools usadas pela IA.
+- ✅ **Rate limit:** `RL_INBOX_SEND` (60/min/user) aplicado em `sendInboxMessage`. Presets novos: `RL_WHATSAPP_CONNECT`.
+- ✅ **Mobile menu:** drawer no `MarketingHeader` com `aria-controls`/scroll-lock/Esc-to-close.
+- ✅ **SEO:** JSON-LD (Organization + SoftwareApplication) em `(marketing)/layout.tsx`.
+- ✅ **Limpeza:** `/contato` removeu telefone fake, blog vazio agora explica próximos passos.
 
 ---
 
@@ -157,10 +169,14 @@ de não-invenção (admite + handoff), rate limit por contato.
 
 **Depende de:** Fases 1, 3, 4.
 
-### Fase 6 — Inbox real-time
-3 colunas (lista | chat | painel contato). Filtros, busca, atalhos J/K/R/A.
+### Fase 6 — Inbox real-time ✅ IMPLEMENTADA
+3 colunas (lista | chat | painel contato). Filtros, busca, atalhos `J`/`K` (navegar),
+`/` (buscar), `R` (responder), `A` (assumir), `E` (encerrar), `Esc` (blur).
 Pusher Channels pra real-time. Botões: Assumir (pausa IA), Devolver pra IA, Encerrar,
-Tags, Notas internas. Mostra tools usadas pela IA em cada resposta (debug).
+Tags, Notas internas. Bubble mostra `toolsUsed[]` da IA por mensagem.
+
+**Pendente:** paginação cursor-based (lista limita em 100), histórico de status por
+mensagem (timeline de SENT→DELIVERED→READ).
 
 **Depende de:** Fase 5.
 
@@ -245,3 +261,9 @@ README + deploy guide (Vercel + Railway).
   esbarrou em virtualização. Plugado Neon HTTP driver pra runtime via porta 443. Plugado
   dotenv no next.config.ts pra ler `.env` do monorepo root. **Validação E2E completa:**
   signup → workspace "Granvilla" → dashboard. Fase 1 ✅ fechada.
+- **2026-05-26** — Auditoria profunda + hardening: novo módulo `@zapai/ai/knowledge`
+  (chunker + embeddings batch + processador idempotente), job BullMQ `process-knowledge`,
+  prompt caching cross-provider em agente e Forge, guardrails de prompt injection,
+  webhooks outgoing migrados pra fila BullMQ, atalhos J/K/R/A/E no inbox, mobile menu no
+  marketing, JSON-LD pra SEO, fix de bugs (catch swallow, classifier silencioso, 24h null,
+  contactId vazio em fallback). Lint/typecheck/test verdes em 7 packages. Fase 6 fechada.

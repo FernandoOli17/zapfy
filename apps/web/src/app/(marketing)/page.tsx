@@ -132,7 +132,7 @@ function Hero() {
             <span className="h-3 w-3 rounded-full bg-zinc-700" />
             <div className="mx-auto flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-800 px-3 py-1 text-[11px] text-zinc-500">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              orbe.dev/forge
+              trato.dev/forge
             </div>
           </div>
           {/* Chat content */}
@@ -501,9 +501,9 @@ function Comparison() {
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Sem Orbe */}
+          {/* Sem Trato */}
           <div className="rounded-2xl border border-white/[0.06] bg-zinc-900/50 p-8">
-            <h3 className="mb-6 text-lg font-semibold text-zinc-500">Sem Orbe</h3>
+            <h3 className="mb-6 text-lg font-semibold text-zinc-500">Sem Trato</h3>
             <ul className="space-y-4">
               {WITHOUT_ITEMS.map((item) => (
                 <li key={item} className="flex items-center gap-3">
@@ -515,13 +515,13 @@ function Comparison() {
               ))}
             </ul>
           </div>
-          {/* Com Orbe */}
+          {/* Com Trato */}
           <div className="rounded-2xl border border-violet-500/25 bg-violet-950/20 p-8">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600">
                 <span className="text-xs font-bold text-white">O</span>
               </div>
-              <h3 className="text-lg font-semibold text-white">Com Orbe</h3>
+              <h3 className="text-lg font-semibold text-white">Com Trato</h3>
             </div>
             <ul className="space-y-4">
               {WITH_ITEMS.map((item) => (

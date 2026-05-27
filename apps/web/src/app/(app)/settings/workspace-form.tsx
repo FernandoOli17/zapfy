@@ -74,7 +74,7 @@ export function WorkspaceForm({ workspace, isOwner }: Props) {
         <Label htmlFor="slug">Slug</Label>
         <div className="flex items-center rounded-md border border-input bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition">
           <span className="px-3 text-sm text-muted-foreground select-none border-r border-border/60">
-            Orbe.dev/
+            Trato.dev/
           </span>
           <input
             id="slug"

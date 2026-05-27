@@ -1,7 +1,7 @@
 ﻿import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'Orbe — O WhatsApp da sua empresa, com cérebro próprio.';
+export const alt = 'Trato — O WhatsApp da sua empresa, com cérebro próprio.';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -39,7 +39,7 @@ export default function OG() {
               background: '#60A5FA',
             }}
           />
-          Orbe
+          Trato
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -82,7 +82,7 @@ export default function OG() {
           }}
         >
           <div>Cloud API oficial · LGPD-friendly</div>
-          <div style={{ color: '#60A5FA' }}>Orbe.dev</div>
+          <div style={{ color: '#60A5FA' }}>Trato.dev</div>
         </div>
       </div>
     ),

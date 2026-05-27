@@ -1,9 +1,10 @@
 ﻿import Link from 'next/link';
-import { ArrowRight, Bot, GitBranch, Sparkles } from 'lucide-react';
+import { ArrowRight, Bot, Code2, GitBranch, Sparkles } from 'lucide-react';
 import { prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 
+import { TestAgent } from './test-agent';
 import { VersionRow } from './version-row';
 
 export const metadata = { title: 'Agente' };
@@ -12,6 +13,13 @@ export const dynamic = 'force-dynamic';
 export default async function AgentPage() {
   const { workspace, member } = await requireWorkspace();
   const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
+
+  // Fetch dev mode flag (workspace pode estar com cache stale via requireWorkspace)
+  const workspaceFull = await prisma.workspace.findUnique({
+    where: { id: workspace.id },
+    select: { developerModeEnabled: true },
+  });
+  const devMode = workspaceFull?.developerModeEnabled ?? false;
 
   const agent = await prisma.agent.findFirst({
     where: { workspaceId: workspace.id },
@@ -86,14 +94,37 @@ export default async function AgentPage() {
             </span>
           </div>
         </div>
-        <Link
-          href="/forge"
-          className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
-        >
-          <Sparkles className="h-4 w-4" />
-          Refinar no Forge
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {devMode && isAdmin && (
+            <Link
+              href="/developer"
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
+            >
+              <Code2 className="h-4 w-4" />
+              Editor avançado
+            </Link>
+          )}
+          <Link
+            href="/forge"
+            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+          >
+            <Sparkles className="h-4 w-4" />
+            Refinar no Forge
+          </Link>
+        </div>
       </div>
+
+      {/* Aviso quando há flowGraph customizado preservado */}
+      {current?.flowGraph && devMode && (
+        <div className="mt-4 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <Code2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            Essa versão tem um <strong>flow customizado</strong> ativo (do editor avançado).
+            O Forge preserva customizações ao refinar — pra resetar pro pipeline padrão,
+            abra o editor avançado e clique em "Resetar pro default".
+          </span>
+        </div>
+      )}
 
       {current && (
         <section className="mt-6 overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm">
@@ -175,6 +206,12 @@ export default async function AgentPage() {
               </pre>
             </details>
           </div>
+        </section>
+      )}
+
+      {current && (
+        <section className="mt-8">
+          <TestAgent agentId={agent.id} vertical={agent.vertical} />
         </section>
       )}
 

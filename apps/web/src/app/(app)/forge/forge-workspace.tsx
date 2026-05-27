@@ -16,9 +16,10 @@ import {
   FORGE_PHASE_IDS,
   type ForgePhaseId,
   type ForgeState,
-} from '@zapai/ai';
+} from '@zapai/ai/forge/types';
 
 import { resetForgeSession, sendForgeMessage } from './actions';
+import { AudioRecorder } from './audio-recorder';
 
 const PHASE_LABELS: Record<ForgePhaseId, string> = {
   DISCOVERY: 'Descobrir',
@@ -60,9 +61,11 @@ const MAIN_FLOW: ForgePhaseId[] = [
 
 interface Props {
   initialState: ForgeState;
+  /** Mostra CTA "Editor avançado" no header (devMode ON + OWNER/ADMIN). */
+  showDevHandoff?: boolean;
 }
 
-export function ForgeWorkspace({ initialState }: Props) {
+export function ForgeWorkspace({ initialState, showDevHandoff = false }: Props) {
   const [state, setState] = useState<ForgeState>(initialState);
   const [draft, setDraft] = useState('');
   const [busy, startTransition] = useTransition();
@@ -127,6 +130,7 @@ export function ForgeWorkspace({ initialState }: Props) {
           phase={state.currentPhase}
           onReset={onReset}
           busy={busy}
+          showDevHandoff={showDevHandoff}
         />
 
         <div
@@ -190,6 +194,13 @@ export function ForgeWorkspace({ initialState }: Props) {
                 className="flex-1 max-h-40 resize-none bg-transparent px-3 py-2 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
                 style={{ minHeight: '40px' }}
               />
+              <AudioRecorder
+                disabled={busy || isPublished}
+                onTranscribed={(text) => {
+                  // Concatena com o que já está no draft (caso usuário tenha começado a escrever)
+                  setDraft((prev) => (prev.trim() ? prev + ' ' + text : text));
+                }}
+              />
               <Button
                 type="button"
                 size="icon"
@@ -206,8 +217,9 @@ export function ForgeWorkspace({ initialState }: Props) {
               </Button>
             </div>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Pressione <kbd className="rounded bg-secondary px-1.5">Enter</kbd> pra enviar,{' '}
-              <kbd className="rounded bg-secondary px-1.5">Shift+Enter</kbd> pra nova linha.
+              <kbd className="rounded bg-secondary px-1.5">Enter</kbd> envia ·{' '}
+              <kbd className="rounded bg-secondary px-1.5">Shift+Enter</kbd> nova linha ·{' '}
+              clique no mic pra falar em vez de digitar
             </p>
           </div>
         </div>
@@ -225,10 +237,12 @@ function ChatHeader({
   phase,
   onReset,
   busy,
+  showDevHandoff,
 }: {
   phase: ForgePhaseId;
   onReset: () => void;
   busy: boolean;
+  showDevHandoff: boolean;
 }) {
   return (
     <header className="flex items-center justify-between border-b border-border/60 bg-background/60 px-6 py-4 backdrop-blur md:px-10">
@@ -243,17 +257,29 @@ function ChatHeader({
           </p>
         </div>
       </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onReset}
-        disabled={busy}
-        className="text-xs"
-      >
-        <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-        Resetar
-      </Button>
+      <div className="flex items-center gap-2">
+        {showDevHandoff && (
+          <a
+            href="/developer"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
+            title="Editor avançado (flow visual + tools custom + prompt raw)"
+          >
+            <Wrench className="h-3 w-3" />
+            Editor avançado
+          </a>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onReset}
+          disabled={busy}
+          className="text-xs"
+        >
+          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+          Resetar
+        </Button>
+      </div>
     </header>
   );
 }

@@ -36,7 +36,7 @@ export default function AppleIcon() {
             letterSpacing: '-0.03em',
           }}
         >
-          Orbe
+          Trato
         </div>
       </div>
     ),

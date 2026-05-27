@@ -19,8 +19,8 @@ export function ContactForm() {
           <p className="font-medium">Recebido!</p>
           <p className="mt-1 text-muted-foreground">
             A gente te responde em até 24h úteis. Em emergência, manda direto pra{' '}
-            <a href="mailto:oi@Orbe.dev" className="underline-offset-4 hover:underline">
-              oi@Orbe.dev
+            <a href="mailto:oi@Trato.dev" className="underline-offset-4 hover:underline">
+              oi@Trato.dev
             </a>
             .
           </p>

@@ -122,7 +122,7 @@ const FAQ = [
   },
   {
     q: 'Preciso do meu próprio Meta App pro WhatsApp?',
-    a: 'No MVP, sim — você cria um Meta App de graça na Meta Business Suite, ativa o WhatsApp Cloud API, e cola as credenciais (cifradas no nosso DB com AES-256-GCM). Quando o Orbe virar Meta Tech Provider oficial, esse passo some.',
+    a: 'No MVP, sim — você cria um Meta App de graça na Meta Business Suite, ativa o WhatsApp Cloud API, e cola as credenciais (cifradas no nosso DB com AES-256-GCM). Quando o Trato virar Meta Tech Provider oficial, esse passo some.',
   },
   {
     q: 'A IA aprende com as conversas dos meus clientes?',
@@ -130,7 +130,7 @@ const FAQ = [
   },
   {
     q: 'Posso usar meu próprio modelo de IA?',
-    a: 'No Premium, sim — vamos abrir suporte a Anthropic, OpenAI, ou modelo on-prem (Llama, etc.) por workspace. No Starter e Pro usamos os modelos otimizados pelo Orbe (Claude Sonnet 4.5 + Haiku 4.5).',
+    a: 'No Premium, sim — vamos abrir suporte a Anthropic, OpenAI, ou modelo on-prem (Llama, etc.) por workspace. No Starter e Pro usamos os modelos otimizados pelo Trato (Claude Sonnet 4.5 + Haiku 4.5).',
   },
   {
     q: 'Como funciona o handoff humano?',

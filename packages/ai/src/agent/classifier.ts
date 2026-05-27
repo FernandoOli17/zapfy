@@ -1,6 +1,9 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { createLogger } from '@zapai/shared';
 import { getAiModels, isMockMode } from '../provider';
+
+const log = createLogger('classifier');
 
 const classificationSchema = z.object({
   intent: z.enum(['greeting', 'question', 'complaint', 'request', 'order', 'cancel', 'other']),
@@ -11,6 +14,14 @@ const classificationSchema = z.object({
 });
 
 export type MessageClassification = z.infer<typeof classificationSchema>;
+
+const FALLBACK_RESULT: MessageClassification = {
+  intent: 'other',
+  sentiment: 'neutral',
+  needs_handoff: false,
+  language: 'pt-BR',
+  topics: [],
+};
 
 const MOCK_RESULT: MessageClassification = {
   intent: 'question',
@@ -34,7 +45,10 @@ Responda APENAS com JSON válido, sem markdown.
 Mensagem: "${text.slice(0, 800)}"`,
     });
     return object;
-  } catch {
-    return MOCK_RESULT;
+  } catch (err) {
+    // Não silenciamos — classifier falho ≠ classifier "tudo neutro".
+    // Loga + retorna fallback explícito pra caller saber que veio sem confiança.
+    log.warn({ err: String(err) }, 'classifier falhou — usando fallback neutro');
+    return FALLBACK_RESULT;
   }
 }

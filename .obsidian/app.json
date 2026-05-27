@@ -1,1 +1,30 @@
-{}
+{
+  "userIgnoreFilters": [
+    "apps/",
+    "packages/",
+    "node_modules/",
+    ".next/",
+    ".turbo/",
+    ".git/",
+    ".vscode/",
+    ".claude/",
+    "scripts/",
+    "pnpm-lock.yaml"
+  ],
+  "showInlineTitle": true,
+  "showLineNumber": true,
+  "useTab": false,
+  "tabSize": 2,
+  "readableLineLength": true,
+  "strictLineBreaks": false,
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "attachmentFolderPath": "03 - Recursos/anexos",
+  "alwaysUpdateLinks": true,
+  "promptDelete": true,
+  "spellcheck": false,
+  "showFrontmatter": true,
+  "foldHeading": true,
+  "foldIndent": true,
+  "showUnsupportedFiles": false
+}

@@ -42,7 +42,7 @@ const FAQS: FaqItem[] = [
   {
     question: 'Posso conectar meu CRM, ERP ou ferramenta interna?',
     answer:
-      'No plano Pro e Premium você tem webhooks de saída pra notificar seus sistemas (CRM, ERP, planilha, qualquer endpoint HTTP). Premium ainda tem API pública pra puxar dados do Orbe ou empurrar contatos/mensagens. Tools customizadas no agente IA (Pro+) chamam qualquer endpoint seu durante a conversa — perfeito pra consultar estoque, criar pedido, agendar consulta, etc.',
+      'No plano Pro e Premium você tem webhooks de saída pra notificar seus sistemas (CRM, ERP, planilha, qualquer endpoint HTTP). Premium ainda tem API pública pra puxar dados do Trato ou empurrar contatos/mensagens. Tools customizadas no agente IA (Pro+) chamam qualquer endpoint seu durante a conversa — perfeito pra consultar estoque, criar pedido, agendar consulta, etc.',
   },
   {
     question: 'Posso treinar o agente com meus próprios documentos?',

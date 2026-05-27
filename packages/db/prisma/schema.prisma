@@ -106,6 +106,11 @@ model Workspace {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  /// Quando true, libera a página /developer (flow editor, custom tools,
+  /// raw prompt). Toggle só por OWNER/ADMIN. Default false: experiência
+  /// guiada via Forge.
+  developerModeEnabled Boolean @default(false)
+
   members           WorkspaceMember[]
   subscription      Subscription?
   whatsappAccounts  WhatsAppAccount[]
@@ -123,6 +128,7 @@ model Workspace {
   usageRecords      UsageRecord[]
   messageTemplates  MessageTemplate[]
   broadcasts        Broadcast[]
+  customTools       CustomTool[]
 }
 
 model WorkspaceMember {
@@ -379,6 +385,14 @@ model AgentVersion {
   changeNotes     String?
   createdByUserId String?
   forgeSessionId  String?
+  /// Grafo de fluxo customizado (modo desenvolvedor). Quando preenchido,
+  /// substitui o pipeline default (classifier → RAG → agent). Formato:
+  /// { nodes: FlowNode[], edges: FlowEdge[] }. Validação Zod em
+  /// `@zapai/ai/flow`.
+  flowGraph       Json?
+  /// IDs de CustomTool habilitadas nessa versão. Cada nome é resolvido
+  /// pelo worker contra Workspace.customTools.
+  customToolNames String[] @default([])
   createdAt       DateTime @default(now())
 
   agent       Agent          @relation("agentVersions", fields: [agentId], references: [id], onDelete: Cascade)
@@ -387,6 +401,39 @@ model AgentVersion {
 
   @@unique([agentId, versionNumber])
   @@index([agentId])
+}
+
+/// Ferramenta customizada criada pelo dev. Quando o agente invoca,
+/// fazemos POST HTTP no `endpoint` com HMAC SHA-256 assinado pelo
+/// `secretHash` (hash do segredo cru — o segredo só aparece pro usuário
+/// uma vez na criação).
+model CustomTool {
+  id            String   @id @default(cuid())
+  workspaceId   String
+  /// Nome usado pelo agente IA — letras minúsculas, underscores. Único por workspace.
+  name          String
+  /// Descrição que o LLM lê pra decidir quando invocar.
+  description   String
+  /// JSON Schema dos argumentos. Validado em runtime.
+  inputSchema   Json
+  /// URL HTTPS que recebe POST quando a tool é chamada.
+  endpoint      String
+  /// SHA-256 do secret HMAC. Segredo cru nunca persistido.
+  secretHash    String
+  /// Prefixo visível pra identificar (ex: `cs_a1b2c3`).
+  secretPrefix  String
+  /// Header HTTP que carrega a assinatura (default `x-trato-signature`).
+  signatureHeader String  @default("x-trato-signature")
+  /// Timeout em ms pra resposta. Default 10s.
+  timeoutMs     Int      @default(10000)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, active])
 }
 
 enum ForgePhase {

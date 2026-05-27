@@ -1,39 +1,23 @@
 ﻿import 'server-only';
 
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
+import { enqueue, QUEUE_NAMES, type OutgoingWebhookJob } from '@/lib/queues';
+
+// Re-exporta constantes/tipos (também disponíveis em webhooks-outgoing-events
+// pra client components que não podem importar server-only).
+export {
+  OUTGOING_EVENT_NAMES,
+  OUTGOING_EVENT_DESCRIPTIONS,
+  type OutgoingEventName,
+  type OutgoingEventPayload,
+} from './webhooks-outgoing-events';
+import type { OutgoingEventName, OutgoingEventPayload } from './webhooks-outgoing-events';
+
 const log = createLogger('webhooks-outgoing');
-
-/**
- * Lista canônica de eventos que clientes podem se inscrever via OutgoingWebhook.
- * Cada evento tem schema fixo no payload — clientes esperam isso.
- */
-export const OUTGOING_EVENT_NAMES = [
-  'message.received',
-  'message.sent',
-  'message.failed',
-  'message.delivered',
-  'message.read',
-  'conversation.assumed',
-  'conversation.returned',
-  'conversation.closed',
-  'agent.published',
-  'whatsapp.connected',
-  'whatsapp.disconnected',
-  'lgpd.opt_out',
-] as const;
-
-export type OutgoingEventName = (typeof OUTGOING_EVENT_NAMES)[number];
-
-export interface OutgoingEventPayload {
-  event: OutgoingEventName;
-  workspaceId: string;
-  timestamp: string;
-  data: Record<string, unknown>;
-}
 
 /** Gera um secret novo (cliente vê uma vez no momento de criar). */
 export function generateWebhookSecret(): string {
@@ -47,8 +31,11 @@ export function signWebhookBody(body: string, secret: string): string {
 
 /**
  * Dispara o evento pra todos os webhooks ativos do workspace que estão
- * inscritos no evento. Não bloqueia — best-effort com retry simples.
- * Em produção real, enfileiraria no BullMQ pra processar fora do request.
+ * inscritos no evento. **Não-bloqueante** — enfileira no BullMQ
+ * `outgoingWebhook` que tem retry com backoff exponencial + dead letter.
+ *
+ * Se Redis estiver indisponível (dev sem worker), faz fallback inline
+ * em background com Promise.allSettled — não bloqueia a request original.
  */
 export async function dispatchOutgoingEvent(
   workspaceId: string,
@@ -74,50 +61,64 @@ export async function dispatchOutgoingEvent(
   };
   const body = JSON.stringify(payload);
 
-  await Promise.allSettled(
-    subscribers.map(async (sub) => {
-      const signature = signWebhookBody(body, sub.secret);
-      try {
-        const res = await fetch(sub.url, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            'x-Orbe-event': event,
-            'x-Orbe-signature': signature,
-            'user-agent': 'Orbe-Webhook/1.0',
-          },
-          body,
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!res.ok) {
-          log.warn(
-            { webhookId: sub.id, event, status: res.status },
-            'webhook entrega retornou non-2xx',
-          );
-        } else {
-          log.debug({ webhookId: sub.id, event, status: res.status }, 'webhook entregue');
-        }
-      } catch (err) {
-        log.warn(
-          { webhookId: sub.id, event, err: String(err) },
-          'webhook entrega falhou',
-        );
-      }
-    }),
-  );
+  for (const sub of subscribers) {
+    const signature = signWebhookBody(body, sub.secret);
+    const job: OutgoingWebhookJob = {
+      webhookId: sub.id,
+      url: sub.url,
+      secret: sub.secret,
+      bodyJson: body,
+      signature,
+      eventName: event,
+      attempt: 1,
+    };
+
+    // jobId precisa ser único — randomUUID em vez de Date.now() pra evitar
+    // colisão quando o mesmo subscriber recebe 2 eventos no mesmo ms (ex:
+    // message.sent + message.delivered em rápida sucessão).
+    const result = await enqueue(QUEUE_NAMES.outgoingWebhook, job, {
+      jobId: `wh-${sub.id}-${randomUUID()}`,
+      attempts: 5,
+    });
+
+    if (!result.ok) {
+      // Fila indisponível: fallback inline em background — best-effort, não
+      // bloqueia o request original.
+      log.warn({ webhookId: sub.id, event }, 'fila indisponível — entregando inline');
+      void deliverInline(sub.id, sub.url, body, signature, event);
+    }
+  }
 }
 
-export const OUTGOING_EVENT_DESCRIPTIONS: Record<OutgoingEventName, string> = {
-  'message.received': 'Cliente final enviou mensagem (INBOUND)',
-  'message.sent': 'Mensagem enviada pelo agente ou humano',
-  'message.failed': 'Falha ao enviar mensagem',
-  'message.delivered': 'Mensagem entregue ao cliente',
-  'message.read': 'Mensagem lida pelo cliente (2 ticks azuis)',
-  'conversation.assumed': 'Atendente humano assumiu a conversa',
-  'conversation.returned': 'Conversa devolvida ao agente IA',
-  'conversation.closed': 'Conversa encerrada',
-  'agent.published': 'Nova versão do agente publicada',
-  'whatsapp.connected': 'Número WhatsApp conectado',
-  'whatsapp.disconnected': 'Número WhatsApp desconectado',
-  'lgpd.opt_out': 'Contato fez opt-out',
-};
+async function deliverInline(
+  webhookId: string,
+  url: string,
+  body: string,
+  signature: string,
+  event: string,
+): Promise<void> {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-trato-event': event,
+        'x-trato-signature': signature,
+        // attempt=1 inline (esse path só roda quando o BullMQ está down,
+        // então não há retries do nosso lado — sempre primeira tentativa).
+        'x-trato-attempt': '1',
+        'user-agent': 'Trato-Webhook/1.0',
+      },
+      body,
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      log.warn({ webhookId, event, status: res.status }, 'inline webhook non-2xx');
+    } else {
+      log.debug({ webhookId, event, status: res.status }, 'inline webhook entregue');
+    }
+  } catch (err) {
+    log.warn({ webhookId, event, err: String(err) }, 'inline webhook falhou');
+  }
+}
+

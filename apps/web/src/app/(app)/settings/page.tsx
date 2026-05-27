@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowUpRight, Building2, ScrollText } from 'lucide-react';
 
+import { prisma } from '@zapai/db';
 import { requireWorkspace } from '@/lib/inbox';
 
 import { DangerZone } from './danger-zone';
+import { DevModeToggle } from './dev-mode-toggle';
 import { WorkspaceForm } from './workspace-form';
 
 export const metadata = { title: 'Configurações' };
@@ -12,6 +14,13 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
   const { workspace, member } = await requireWorkspace();
   const isOwner = member.role === 'OWNER';
+
+  // Fetch fresh dev-mode flag (requireWorkspace pode estar com cache)
+  const devModeRow = await prisma.workspace.findUnique({
+    where: { id: workspace.id },
+    select: { developerModeEnabled: true },
+  });
+  const devModeEnabled = devModeRow?.developerModeEnabled ?? false;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 md:px-10 md:py-10">
@@ -52,6 +61,12 @@ export default async function SettingsPage() {
           />
         </div>
       </section>
+
+      {isOwner && (
+        <section className="mt-4">
+          <DevModeToggle initialEnabled={devModeEnabled} />
+        </section>
+      )}
 
       <section className="mt-4 rounded-xl border border-border bg-card p-6 md:p-8">
         <div className="flex items-center gap-2">

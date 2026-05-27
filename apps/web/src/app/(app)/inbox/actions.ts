@@ -21,6 +21,7 @@ import { env } from '@/env';
 import { publishInboxEvent, workspaceChannel } from '@/lib/realtime/pusher-server';
 import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
+import { enforceRateLimit, RL_INBOX_SEND } from '@/lib/rate-limit';
 
 const log = createLogger('inbox-actions');
 
@@ -65,9 +66,18 @@ export async function sendInboxMessage(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Dados inválidos' };
   }
-  const { conversation, workspace } = await requireWorkspaceAndConversation(
+  const { user, conversation, workspace } = await requireWorkspaceAndConversation(
     parsed.data.conversationId,
   );
+
+  // Rate limit: 60 sends/min por usuário (evita script/loop, generoso pra humano)
+  const rl = await enforceRateLimit(`user:${user.id}`, RL_INBOX_SEND);
+  if (!rl.success) {
+    return {
+      status: 'error',
+      error: 'Muitas mensagens em pouco tempo. Tente novamente em alguns segundos.',
+    };
+  }
 
   // Janela de 24h
   if (!isWithin24hWindow(conversation.lastIncomingMessageAt)) {

@@ -1,4 +1,4 @@
-﻿'use server';
+'use server';
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -8,12 +8,13 @@ import {
   KnowledgeSource,
   prisma,
 } from '@zapai/db';
+import { processKnowledgeDocument } from '@zapai/ai';
 import { createLogger, PlanLimitError } from '@zapai/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
-import { scrapeUrlForForge } from '@/lib/forge/io';
 import { assertPlanLimit } from '@/lib/plans';
+import { enqueue, QUEUE_NAMES, type ProcessKnowledgeJob } from '@/lib/queues';
 
 const log = createLogger('knowledge-actions');
 
@@ -40,6 +41,26 @@ async function requireWorkspace() {
   return { user: session.user, workspace: member.workspace };
 }
 
+/**
+ * Enfileira processamento (chunk + embed). Se Redis indisponível (dev sem
+ * worker), faz processamento inline em background — não bloqueia o request
+ * mas roda imediatamente.
+ */
+async function dispatchProcessing(workspaceId: string, documentId: string): Promise<void> {
+  const job: ProcessKnowledgeJob = { workspaceId, documentId };
+  const result = await enqueue(QUEUE_NAMES.processKnowledge, job, {
+    jobId: `knowledge-${documentId}`,
+    attempts: 3,
+  });
+  if (!result.ok) {
+    log.warn({ documentId }, 'fila indisponível — processando inline em background');
+    // não-await: deixa a request retornar; promise corre em paralelo.
+    void processKnowledgeDocument(documentId).catch((err) => {
+      log.error({ documentId, err: String(err) }, 'inline process falhou');
+    });
+  }
+}
+
 const manualInput = z.object({
   title: z.string().trim().min(2).max(200),
   text: z.string().trim().min(10).max(50_000),
@@ -53,12 +74,14 @@ export async function addManualKnowledge(raw: z.infer<typeof manualInput>) {
   }
   const limit = await checkKnowledgeLimit(ctx.workspace.id);
   if (limit) return { status: 'error' as const, error: limit };
-  await prisma.knowledgeDocument.create({
+
+  // Cria PROCESSING com 1 chunk "raw" — o worker vai re-chunkar e embedar.
+  const doc = await prisma.knowledgeDocument.create({
     data: {
       workspaceId: ctx.workspace.id,
       title: parsed.data.title,
       source: KnowledgeSource.MANUAL,
-      status: KnowledgeDocStatus.READY,
+      status: KnowledgeDocStatus.PROCESSING,
       chunks: {
         create: [
           {
@@ -69,6 +92,8 @@ export async function addManualKnowledge(raw: z.infer<typeof manualInput>) {
       },
     },
   });
+
+  await dispatchProcessing(ctx.workspace.id, doc.id);
   revalidatePath('/knowledge');
   return { status: 'ok' as const };
 }
@@ -86,7 +111,8 @@ export async function addUrlKnowledge(raw: z.infer<typeof urlInput>) {
   }
   const limit = await checkKnowledgeLimit(ctx.workspace.id);
   if (limit) return { status: 'error' as const, error: limit };
-  // cria PROCESSING, scrape, marca READY ou ERROR
+
+  // Cria PROCESSING vazio — o worker faz scrape + chunk + embed.
   const doc = await prisma.knowledgeDocument.create({
     data: {
       workspaceId: ctx.workspace.id,
@@ -96,38 +122,10 @@ export async function addUrlKnowledge(raw: z.infer<typeof urlInput>) {
       status: KnowledgeDocStatus.PROCESSING,
     },
   });
-  try {
-    const { title, excerpt } = await scrapeUrlForForge(parsed.data.url);
-    await prisma.$transaction([
-      prisma.knowledgeDocument.update({
-        where: { id: doc.id },
-        data: {
-          title: parsed.data.customTitle ?? title,
-          status: KnowledgeDocStatus.READY,
-        },
-      }),
-      prisma.knowledgeChunk.create({
-        data: {
-          documentId: doc.id,
-          content: excerpt,
-          tokens: Math.ceil(excerpt.length / 4),
-        },
-      }),
-    ]);
-    revalidatePath('/knowledge');
-    return { status: 'ok' as const };
-  } catch (err) {
-    log.warn({ docId: doc.id, err: String(err) }, 'scrape falhou');
-    await prisma.knowledgeDocument.update({
-      where: { id: doc.id },
-      data: {
-        status: KnowledgeDocStatus.ERROR,
-        errorMessage: err instanceof Error ? err.message.slice(0, 500) : 'falha desconhecida',
-      },
-    });
-    revalidatePath('/knowledge');
-    return { status: 'error' as const, error: 'Falha ao baixar a URL. Confira se está pública.' };
-  }
+
+  await dispatchProcessing(ctx.workspace.id, doc.id);
+  revalidatePath('/knowledge');
+  return { status: 'ok' as const };
 }
 
 export async function deleteKnowledgeDocument(docId: string) {
@@ -142,6 +140,24 @@ export async function deleteKnowledgeDocument(docId: string) {
     prisma.knowledgeChunk.deleteMany({ where: { documentId: doc.id } }),
     prisma.knowledgeDocument.delete({ where: { id: doc.id } }),
   ]);
+  revalidatePath('/knowledge');
+  return { status: 'ok' as const };
+}
+
+/** Re-processa um doc que ficou em ERROR ou PROCESSING travado. */
+export async function reprocessKnowledgeDocument(docId: string) {
+  const ctx = await requireWorkspace();
+  const doc = await prisma.knowledgeDocument.findFirst({
+    where: { id: docId, workspaceId: ctx.workspace.id },
+  });
+  if (!doc) {
+    return { status: 'error' as const, error: 'Documento não encontrado' };
+  }
+  await prisma.knowledgeDocument.update({
+    where: { id: doc.id },
+    data: { status: KnowledgeDocStatus.PROCESSING, errorMessage: null },
+  });
+  await dispatchProcessing(ctx.workspace.id, doc.id);
   revalidatePath('/knowledge');
   return { status: 'ok' as const };
 }

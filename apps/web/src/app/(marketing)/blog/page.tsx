@@ -5,7 +5,7 @@ import { formatPublishedDate, listPosts } from '@/lib/blog';
 
 export const metadata = {
   title: 'Blog',
-  description: 'Como construímos o Orbe: engenharia, produto, LGPD, e o que aprendemos.',
+  description: 'Como construímos o Trato: engenharia, produto, LGPD, e o que aprendemos.',
 };
 
 export default async function BlogPage() {
@@ -19,7 +19,7 @@ export default async function BlogPage() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Blog</p>
           <h1 className="mt-4 text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
             Notas sobre construir{' '}
-            <span className="font-serif italic font-normal text-primary">o Orbe.</span>
+            <span className="font-serif italic font-normal text-primary">o Trato.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
             Engenharia, produto, design, LGPD, decisões de arquitetura. O que tá funcionando
@@ -31,7 +31,18 @@ export default async function BlogPage() {
       <section className="pb-28">
         <div className="mx-auto max-w-3xl px-6">
           {posts.length === 0 ? (
-            <p className="text-muted-foreground">Em breve, primeiros posts.</p>
+            <div className="rounded-xl border border-dashed border-border/60 bg-card/30 p-10 text-center">
+              <p className="text-base font-medium">Em breve, os primeiros posts.</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Estamos escrevendo sobre como funciona o Forge por dentro, a arquitetura
+                multi-tenant, e o que aprendemos colocando agentes IA no WhatsApp de empresas
+                reais. Avisamos por e-mail quando publicar — ou siga{' '}
+                <a href="mailto:oi@trato.dev" className="text-primary underline">
+                  oi@trato.dev
+                </a>{' '}
+                pra entrar na lista.
+              </p>
+            </div>
           ) : (
             <ol className="divide-y divide-border/60">
               {posts.map((post) => (

@@ -1,4 +1,4 @@
-# ZapAI — Convenções do Projeto
+# Trato — Convenções do Projeto
 
 Este arquivo é a referência viva. Leia antes de começar qualquer fase. Atualize quando
 uma convenção mudar.

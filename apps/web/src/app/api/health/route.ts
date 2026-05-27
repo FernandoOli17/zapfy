@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@zapai/db';
 
 import { isStripeConfigured } from '@/lib/stripe';
@@ -6,64 +6,96 @@ import { env } from '@/env';
 
 /**
  * GET /api/health
- * Verifica conectividade básica: DB, env crítico, e flags opcionais.
- * Retorna 200 sempre que o serviço está vivo (mesmo com integrações
- * opcionais desligadas). Retorna 503 se DB está fora.
+ *
+ * Modo público (default): só retorna `{ status, timestamp }`. Suficiente pra
+ * uptime monitors (Better Stack, UptimeRobot, Pingdom). NÃO vaza presença
+ * de integrações nem versões.
+ *
+ * Modo detalhado: requer header `Authorization: Bearer <HEALTH_DETAIL_TOKEN>`
+ * ou query `?token=...`. Mostra status de cada integração e DB latency.
+ * Útil pra dashboards internos. Se HEALTH_DETAIL_TOKEN não estiver setado,
+ * modo detalhado fica indisponível.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const startedAt = Date.now();
-  const checks: Record<
-    string,
-    { status: 'ok' | 'down' | 'disabled'; detail?: string; ms?: number }
-  > = {};
 
-  // DB ping
+  // DB ping sempre — é o "vivo ou morto"
+  let dbOk = false;
+  let dbMs = 0;
   const t0 = Date.now();
   try {
     await prisma.$queryRaw`SELECT 1`;
-    checks['db'] = { status: 'ok', ms: Date.now() - t0 };
-  } catch (err) {
-    checks['db'] = {
-      status: 'down',
-      detail: err instanceof Error ? err.message.slice(0, 200) : 'unknown',
-      ms: Date.now() - t0,
-    };
+    dbOk = true;
+    dbMs = Date.now() - t0;
+  } catch {
+    dbOk = false;
+    dbMs = Date.now() - t0;
   }
 
-  // Env críticos (presença, não validade)
-  checks['env_encryption_key'] = {
-    status: env.ENCRYPTION_KEY ? 'ok' : 'down',
-  };
-  checks['env_auth_secret'] = {
-    status: env.BETTER_AUTH_SECRET ? 'ok' : 'down',
-  };
+  // Modo detalhado: gateado por token validado pelo schema (>= 24 chars).
+  const detailToken = env.HEALTH_DETAIL_TOKEN;
+  const provided =
+    req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ||
+    req.nextUrl.searchParams.get('token') ||
+    '';
+  const wantDetail =
+    detailToken !== undefined && provided.length > 0 && constantTimeEqual(provided, detailToken);
 
-  // Integrações opcionais
-  checks['stripe'] = { status: isStripeConfigured() ? 'ok' : 'disabled' };
-  checks['pusher'] = {
-    status: env.PUSHER_APP_ID ? 'ok' : 'disabled',
+  if (!wantDetail) {
+    // Resposta pública mínima
+    return NextResponse.json(
+      {
+        status: dbOk ? 'ok' : 'degraded',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        status: dbOk ? 200 : 503,
+        headers: { 'cache-control': 'no-store' },
+      },
+    );
+  }
+
+  // Modo detalhado (token válido)
+  const checks: Record<
+    string,
+    { status: 'ok' | 'down' | 'disabled'; detail?: string; ms?: number }
+  > = {
+    db: { status: dbOk ? 'ok' : 'down', ms: dbMs },
+    env_encryption_key: { status: env.ENCRYPTION_KEY ? 'ok' : 'down' },
+    env_auth_secret: { status: env.BETTER_AUTH_SECRET ? 'ok' : 'down' },
+    stripe: { status: isStripeConfigured() ? 'ok' : 'disabled' },
+    pusher: { status: env.PUSHER_APP_ID ? 'ok' : 'disabled' },
+    upstash: { status: env.UPSTASH_REDIS_REST_URL ? 'ok' : 'disabled' },
+    resend: { status: env.RESEND_API_KEY ? 'ok' : 'disabled' },
+    sentry: { status: env.SENTRY_DSN ? 'ok' : 'disabled' },
+    anthropic: { status: env.ANTHROPIC_API_KEY ? 'ok' : 'disabled' },
   };
-  checks['upstash'] = {
-    status: env.UPSTASH_REDIS_REST_URL ? 'ok' : 'disabled',
-  };
-  checks['resend'] = {
-    status: env.RESEND_API_KEY ? 'ok' : 'disabled',
-  };
-  checks['sentry'] = { status: env.SENTRY_DSN ? 'ok' : 'disabled' };
-  checks['anthropic'] = { status: env.ANTHROPIC_API_KEY ? 'ok' : 'disabled' };
 
   const critical = ['db', 'env_encryption_key', 'env_auth_secret'];
   const allCriticalOk = critical.every((k) => checks[k]?.status === 'ok');
 
-  const body = {
-    status: allCriticalOk ? 'ok' : 'degraded',
-    uptime: process.uptime(),
-    env: env.NODE_ENV,
-    region: process.env['VERCEL_REGION'] ?? process.env['RAILWAY_REGION'] ?? null,
-    timestamp: new Date().toISOString(),
-    tookMs: Date.now() - startedAt,
-    checks,
-  };
+  return NextResponse.json(
+    {
+      status: allCriticalOk ? 'ok' : 'degraded',
+      uptime: process.uptime(),
+      env: env.NODE_ENV,
+      region: process.env['VERCEL_REGION'] ?? process.env['RAILWAY_REGION'] ?? null,
+      timestamp: new Date().toISOString(),
+      tookMs: Date.now() - startedAt,
+      checks,
+    },
+    {
+      status: allCriticalOk ? 200 : 503,
+      headers: { 'cache-control': 'no-store' },
+    },
+  );
+}
 
-  return NextResponse.json(body, { status: allCriticalOk ? 200 : 503 });
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return mismatch === 0;
 }

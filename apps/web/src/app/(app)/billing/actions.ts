@@ -26,7 +26,20 @@ async function requireWorkspace() {
     orderBy: { createdAt: 'asc' },
   });
   if (!member) redirect('/onboarding');
-  return { user: session.user, workspace: member.workspace };
+  return { user: session.user, workspace: member.workspace, role: member.role };
+}
+
+/**
+ * Billing é restrito a OWNER/ADMIN. Um AGENT não deve poder abrir checkout,
+ * mudar plano ou acessar o customer portal (que permite cancelar a assinatura
+ * inteira).
+ */
+function assertBillingPermission(role: 'OWNER' | 'ADMIN' | 'AGENT'): { ok: true } | { ok: false; error: string } {
+  if (role === 'OWNER' || role === 'ADMIN') return { ok: true };
+  return {
+    ok: false,
+    error: 'Apenas OWNER ou ADMIN do workspace podem gerenciar billing. Peça pra um deles.',
+  };
 }
 
 const checkoutInput = z.object({
@@ -64,7 +77,9 @@ export async function createCheckoutSession(
     };
   }
 
-  const { user, workspace } = await requireWorkspace();
+  const { user, workspace, role } = await requireWorkspace();
+  const perm = assertBillingPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
   const sub = workspace.subscription;
   const successUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?success=1`;
   const cancelUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?canceled=1`;
@@ -120,7 +135,9 @@ export async function createPortalSession(): Promise<PortalResult> {
     return { status: 'error', error: 'Stripe indisponível' };
   }
 
-  const { workspace } = await requireWorkspace();
+  const { workspace, role } = await requireWorkspace();
+  const perm = assertBillingPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
   if (!workspace.subscription?.stripeCustomerId) {
     return { status: 'error', error: 'Sem assinatura ativa pra gerenciar' };
   }

@@ -28,7 +28,16 @@ async function requireSessionAndWorkspace() {
     orderBy: { createdAt: 'asc' },
   });
   if (!member) redirect('/onboarding');
-  return { user: session.user, workspace: member.workspace };
+  return { user: session.user, workspace: member.workspace, role: member.role };
+}
+
+/** WhatsApp connect/disconnect/test são ações administrativas. */
+function assertAdminPermission(role: 'OWNER' | 'ADMIN' | 'AGENT'): { ok: true } | { ok: false; error: string } {
+  if (role === 'OWNER' || role === 'ADMIN') return { ok: true };
+  return {
+    ok: false,
+    error: 'Apenas OWNER ou ADMIN do workspace podem gerenciar o WhatsApp.',
+  };
 }
 
 const connectInput = z.object({
@@ -67,7 +76,9 @@ export async function connectWhatsAppAction(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Dados inválidos' };
   }
-  const { workspace } = await requireSessionAndWorkspace();
+  const { workspace, role } = await requireSessionAndWorkspace();
+  const perm = assertAdminPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
   const data = parsed.data;
 
   // 0) plan limit: número de WhatsAppAccounts (skip se for reconexão do mesmo number)
@@ -198,7 +209,9 @@ export async function connectWhatsAppAction(
 export async function testWhatsAppConnectionAction(
   accountId: string,
 ): Promise<{ status: 'ok'; displayPhone: string } | { status: 'error'; error: string }> {
-  const { workspace } = await requireSessionAndWorkspace();
+  const { workspace, role } = await requireSessionAndWorkspace();
+  const perm = assertAdminPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
   const account = await prisma.whatsAppAccount.findFirst({
     where: { id: accountId, workspaceId: workspace.id },
   });
@@ -232,7 +245,9 @@ export async function testWhatsAppConnectionAction(
 export async function disconnectWhatsAppAction(
   accountId: string,
 ): Promise<{ status: 'ok' } | { status: 'error'; error: string }> {
-  const { workspace } = await requireSessionAndWorkspace();
+  const { workspace, role } = await requireSessionAndWorkspace();
+  const perm = assertAdminPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
   const account = await prisma.whatsAppAccount.findFirst({
     where: { id: accountId, workspaceId: workspace.id },
   });

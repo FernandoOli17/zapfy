@@ -14,6 +14,10 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().optional(),
 
     ANTHROPIC_API_KEY: z.string().optional(),
+    /** OpenAI: usado pra Whisper (transcrição de áudio do Forge). Opcional. */
+    OPENAI_API_KEY: z.string().optional(),
+    /** Modelo Whisper (default whisper-1). gpt-4o-transcribe quando GA. */
+    WHISPER_MODEL: z.string().optional(),
     VOYAGE_API_KEY: z.string().optional(),
 
     META_APP_ID: z.string().optional(),
@@ -43,6 +47,14 @@ export const env = createEnv({
 
     SENTRY_DSN: z.string().url().optional(),
     SENTRY_AUTH_TOKEN: z.string().optional(),
+
+    /**
+     * Token opcional pra liberar o modo detalhado de `/api/health`. Sem ele,
+     * o endpoint só responde `{status, timestamp}`. Útil pra ops sem expor
+     * presença de integrações publicamente.
+     * Min 24 chars pra ter entropia razoável.
+     */
+    HEALTH_DETAIL_TOKEN: z.string().min(24).optional(),
   },
   client: {
     NEXT_PUBLIC_APP_URL: z.string().url(),

@@ -52,6 +52,7 @@ export interface InboxMessage {
   content: Record<string, unknown>;
   status: 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   fromAi: boolean;
+  toolsUsed: string[];
   createdAt: string;
   errorMessage: string | null;
 }
@@ -172,6 +173,7 @@ export async function getConversationDetail(
         content: contentObj,
         status: m.status,
         fromAi: m.fromAi,
+        toolsUsed: m.toolsUsed ?? [],
         createdAt: m.createdAt.toISOString(),
         errorMessage: m.errorMessage,
       };

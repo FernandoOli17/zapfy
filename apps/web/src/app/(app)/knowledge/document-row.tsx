@@ -1,10 +1,20 @@
 ﻿'use client';
 
 import { useTransition } from 'react';
-import { AlertCircle, CheckCircle2, Clock, Globe, Loader2, Pencil, Trash2, Upload } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Globe,
+  Loader2,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { Button, cn } from '@zapai/ui';
 
-import { deleteKnowledgeDocument } from './actions';
+import { deleteKnowledgeDocument, reprocessKnowledgeDocument } from './actions';
 
 interface DocProps {
   doc: {
@@ -26,6 +36,12 @@ export function DocumentRow({ doc }: DocProps) {
     if (!confirm(`Apagar "${doc.title}"?`)) return;
     startTransition(async () => {
       await deleteKnowledgeDocument(doc.id);
+    });
+  }
+
+  function onReprocess() {
+    startTransition(async () => {
+      await reprocessKnowledgeDocument(doc.id);
     });
   }
 
@@ -61,20 +77,40 @@ export function DocumentRow({ doc }: DocProps) {
             )}
           </div>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onDelete}
-          disabled={pending}
-          className="text-muted-foreground hover:text-destructive"
-        >
-          {pending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-1">
+          {doc.status === 'ERROR' && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onReprocess}
+              disabled={pending}
+              className="text-muted-foreground hover:text-primary"
+              title="Reprocessar"
+            >
+              {pending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5" />
+              )}
+            </Button>
           )}
-        </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            disabled={pending}
+            className="text-muted-foreground hover:text-destructive"
+            title="Apagar"
+          >
+            {pending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
       </div>
     </div>
   );

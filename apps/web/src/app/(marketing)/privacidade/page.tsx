@@ -4,7 +4,7 @@ import { LegalDt, LegalList, LegalPage, LegalSection } from '@/components/market
 
 export const metadata = {
   title: 'Política de privacidade',
-  description: 'Como o Orbe coleta, usa e protege dados pessoais — conforme LGPD.',
+  description: 'Como o Trato coleta, usa e protege dados pessoais — conforme LGPD.',
 };
 
 const TOC = [
@@ -34,26 +34,26 @@ export default function PrivacidadePage() {
       toc={TOC}
     >
       <p className="text-lg leading-relaxed text-muted-foreground">
-        Esta Política de Privacidade descreve como o Orbe coleta, usa, compartilha e protege
+        Esta Política de Privacidade descreve como o Trato coleta, usa, compartilha e protege
         dados pessoais. Está em conformidade com a Lei Geral de Proteção de Dados Pessoais
         (Lei nº 13.709/2018 — LGPD) e demais regulamentações aplicáveis.
       </p>
       <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
         Esta política trata de <LegalDt>dois grupos</LegalDt> de titulares: (a){' '}
-        <LegalDt>clientes do Orbe</LegalDt> (você que contrata a plataforma) e (b){' '}
+        <LegalDt>clientes do Trato</LegalDt> (você que contrata a plataforma) e (b){' '}
         <LegalDt>contatos finais dos clientes</LegalDt> (pessoas que conversam com o agente IA
-        no WhatsApp). Em (b), o Orbe atua como{' '}
+        no WhatsApp). Em (b), o Trato atua como{' '}
         <LegalDt>operador</LegalDt> dos dados — o cliente é o controlador.
       </p>
 
       <div className="mt-12 space-y-2">
         <LegalSection id="quem-somos" number={1} title="Quem somos">
           <p>
-            Orbe é uma plataforma SaaS operada por <LegalDt>[Razão Social]</LegalDt>, CNPJ{' '}
+            Trato é uma plataforma SaaS operada por <LegalDt>[Razão Social]</LegalDt>, CNPJ{' '}
             <LegalDt>[CNPJ]</LegalDt>. Encarregado de Proteção de Dados (DPO):{' '}
             <LegalDt>[Nome do DPO a ser nomeado]</LegalDt> —{' '}
-            <a href="mailto:dpo@Orbe.dev" className="text-foreground underline-offset-4 hover:underline">
-              dpo@Orbe.dev
+            <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
+              dpo@Trato.dev
             </a>
             .
           </p>
@@ -61,7 +61,7 @@ export default function PrivacidadePage() {
 
         <LegalSection id="dados-coletados" number={2} title="Dados que coletamos">
           <p>
-            <LegalDt>Cliente Orbe (controlador):</LegalDt>
+            <LegalDt>Cliente Trato (controlador):</LegalDt>
           </p>
           <LegalList>
             <li>Identificação: nome, e-mail, foto de perfil (OAuth Google), idioma preferido.</li>
@@ -263,7 +263,7 @@ export default function PrivacidadePage() {
 
         <LegalSection id="criancas" number={12} title="Crianças e adolescentes">
           <p>
-            O Orbe não é dirigido a menores de 18 anos como Clientes da plataforma. Em relação a
+            O Trato não é dirigido a menores de 18 anos como Clientes da plataforma. Em relação a
             contatos finais, o tratamento de dados de crianças e adolescentes é de responsabilidade
             do Cliente controlador, que deve obter consentimento específico dos responsáveis
             legais quando aplicável (art. 14 da LGPD).
@@ -282,8 +282,8 @@ export default function PrivacidadePage() {
           <p>
             Para exercer seus direitos, esclarecer dúvidas sobre tratamento de dados, ou notificar
             incidentes, escreva para o DPO em{' '}
-            <a href="mailto:dpo@Orbe.dev" className="text-foreground underline-offset-4 hover:underline">
-              dpo@Orbe.dev
+            <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
+              dpo@Trato.dev
             </a>
             .
           </p>

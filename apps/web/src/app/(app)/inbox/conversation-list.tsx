@@ -1,9 +1,9 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { Bot, Headset, Inbox as InboxIcon, Search, X } from 'lucide-react';
+import { Bot, Headset, Inbox as InboxIcon, Keyboard, Search, X } from 'lucide-react';
 import { cn } from '@zapai/ui';
 
 import { useInboxChannel } from '@/lib/realtime/pusher-client';
@@ -30,6 +30,7 @@ export function ConversationListClient({ initialConversations }: Props) {
   const [filter, setFilter] = useState<InboxFilter>('all');
   const [query, setQuery] = useState('');
   const [, startTransition] = useTransition();
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setConversations(initialConversations);
@@ -51,9 +52,46 @@ export function ConversationListClient({ initialConversations }: Props) {
     });
   }, [conversations, filter, query]);
 
-  function handleClick(id: string) {
-    startTransition(() => router.push(`/inbox/${id}`));
-  }
+  const handleClick = useCallback(
+    (id: string) => {
+      startTransition(() => router.push(`/inbox/${id}`));
+    },
+    [router, startTransition],
+  );
+
+  // Atalhos: J/K navega, Esc volta pra lista, / foca busca
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      // Ignora se usuário está digitando em campo de texto
+      const target = e.target as HTMLElement | null;
+      const isTyping =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
+      if (isTyping && e.key !== 'Escape') return;
+
+      if (e.key === '/' && !isTyping) {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === 'Escape' && isTyping) {
+        (target as HTMLInputElement | HTMLTextAreaElement | null)?.blur();
+        return;
+      }
+      if (e.key !== 'j' && e.key !== 'k') return;
+      if (filtered.length === 0) return;
+      e.preventDefault();
+      const idx = filtered.findIndex((c) => c.id === selected);
+      let nextIdx: number;
+      if (e.key === 'j') nextIdx = idx < 0 ? 0 : Math.min(idx + 1, filtered.length - 1);
+      else nextIdx = idx <= 0 ? 0 : idx - 1;
+      const next = filtered[nextIdx];
+      if (next) handleClick(next.id);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [filtered, selected, handleClick]);
 
   return (
     <aside className="flex min-h-0 flex-col border-r border-border bg-card">
@@ -68,6 +106,7 @@ export function ConversationListClient({ initialConversations }: Props) {
         <div className="relative mt-3">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
+            ref={searchRef}
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -104,7 +143,7 @@ export function ConversationListClient({ initialConversations }: Props) {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" role="listbox" aria-label="Conversas">
         {filtered.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-muted-foreground">
             {query
@@ -182,6 +221,21 @@ export function ConversationListClient({ initialConversations }: Props) {
           </ul>
         )}
       </div>
+
+      <footer className="hidden border-t border-border px-4 py-2 lg:flex lg:items-center lg:gap-3 text-[11px] text-muted-foreground">
+        <Keyboard className="h-3 w-3" aria-hidden />
+        <span>
+          <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">J</kbd>
+          <kbd className="ml-1 rounded border border-border bg-muted px-1 font-mono text-[10px]">K</kbd>{' '}
+          navegar
+        </span>
+        <span>
+          <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">/</kbd> buscar
+        </span>
+        <span>
+          <kbd className="rounded border border-border bg-muted px-1 font-mono text-[10px]">R</kbd> responder
+        </span>
+      </footer>
     </aside>
   );
 }

@@ -27,7 +27,7 @@ export function getStripeClient(): Stripe | null {
   }
   cached = new Stripe(env.STRIPE_SECRET_KEY, {
     typescript: true,
-    appInfo: { name: 'Orbe', version: '0.1.0' },
+    appInfo: { name: 'Trato', version: '0.1.0' },
   });
   return cached;
 }

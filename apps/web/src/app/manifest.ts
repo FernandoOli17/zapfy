@@ -2,8 +2,8 @@
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Orbe',
-    short_name: 'Orbe',
+    name: 'Trato',
+    short_name: 'Trato',
     description: 'O WhatsApp da sua empresa, com cérebro próprio.',
     start_url: '/dashboard',
     display: 'standalone',

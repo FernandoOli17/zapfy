@@ -21,6 +21,10 @@ import {
   processSendBroadcast,
   type SendBroadcastJob,
 } from './jobs/send-broadcast';
+import {
+  processKnowledge,
+  type ProcessKnowledgeJob,
+} from './jobs/process-knowledge';
 
 const log = createLogger('worker');
 
@@ -99,6 +103,21 @@ workers.push(
   ),
 );
 
+// Process knowledge — chunk + embed + index documento de RAG
+workers.push(
+  new Worker<ProcessKnowledgeJob>(
+    QUEUE_NAMES.processKnowledge,
+    async (job: Job<ProcessKnowledgeJob>) => {
+      log.info(
+        { jobId: job.id, documentId: job.data.documentId, workspaceId: job.data.workspaceId },
+        'processando documento de conhecimento',
+      );
+      await processKnowledge(job.data);
+    },
+    { connection, concurrency: 2 }, // embedding API é caro, throttle baixo
+  ),
+);
+
 /**
  * Repeatable: LGPD hard delete sweep a cada hora.
  */
@@ -126,7 +145,7 @@ log.info(
     mockAi: process.env['MOCK_AI'] === 'true',
     redisHost: env.REDIS_URL.split('@')[1] ?? 'configured',
   },
-  'Orbe worker pronto',
+  'Trato worker pronto',
 );
 
 async function shutdown(signal: string): Promise<void> {

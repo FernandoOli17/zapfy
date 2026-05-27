@@ -1,0 +1,68 @@
+{
+  "items": [
+    {
+      "type": "file",
+      "path": "00 - Dashboard/Trato — Projeto ativo.md",
+      "title": "🏠 Trato — Dashboard"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/index.md",
+      "title": "📐 Trato — Projeto"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Arquitetura.md",
+      "title": "🏗️  Arquitetura"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Habilidades.md",
+      "title": "🤖 Habilidades do agente"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Forge.md",
+      "title": "⚒️  Forge"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Modo Desenvolvedor.md",
+      "title": "🛠️  Modo Desenvolvedor"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Decisões.md",
+      "title": "📝 Decisões"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Roadmap.md",
+      "title": "🗺️  Roadmap"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Operações.md",
+      "title": "💻 Operações"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Segurança.md",
+      "title": "🔒 Segurança"
+    },
+    {
+      "type": "file",
+      "path": "01 - Projetos/Trato/Glossário.md",
+      "title": "📖 Glossário"
+    },
+    {
+      "type": "graph",
+      "title": "🌐 Grafo Trato"
+    },
+    {
+      "type": "search",
+      "query": "tag:#trato",
+      "title": "🔍 Tudo do Trato"
+    }
+  ]
+}

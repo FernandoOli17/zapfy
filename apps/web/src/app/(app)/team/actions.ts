@@ -50,6 +50,16 @@ export async function inviteTeamMember(
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
 
+  // Privilege escalation guard: ADMIN não pode convidar outro ADMIN.
+  // Só OWNER pode criar novos ADMINs — evita ADMIN colocar laranja como ADMIN
+  // pra escalar permissão.
+  if (ctx.member.role === 'ADMIN' && parsed.data.role === 'ADMIN') {
+    return {
+      status: 'error',
+      error: 'Apenas o OWNER do workspace pode convidar outro ADMIN. ADMINs convidam AGENTs.',
+    };
+  }
+
   // Já é membro?
   const existingUser = await prisma.user.findUnique({
     where: { email: parsed.data.email },

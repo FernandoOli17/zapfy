@@ -24,7 +24,7 @@ export function getResend(): Resend | null {
 }
 
 export function defaultFrom(): string {
-  return env.RESEND_FROM_EMAIL ?? 'Orbe <noreply@Orbe.dev>';
+  return env.RESEND_FROM_EMAIL ?? 'Trato <noreply@Trato.dev>';
 }
 
 export function isEmailConfigured(): boolean {
