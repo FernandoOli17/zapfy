@@ -35,7 +35,8 @@ import {
   TemplateCategory,
   TemplateStatus,
 } from '@prisma/client';
-import { randomBytes, scryptSync } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { scryptAsync } from '@noble/hashes/scrypt.js';
 
 const prisma = new PrismaClient();
 
@@ -43,11 +44,23 @@ const WORKSPACE_SLUG = 'granvilla-pet-shop';
 const OWNER_EMAIL = 'claudio@granvilla.pet';
 const OWNER_PASSWORD = 'Granvilla2026!';
 
-/** Better Auth scrypt password hashing (compatível com login) */
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const hash = scryptSync(password, salt, 64).toString('hex');
-  return `${salt}:${hash}`;
+/**
+ * Better Auth password hashing — DEVE bater 100% com @better-auth/utils/password.
+ * Params: N=16384, r=16, p=1, dkLen=64. Format: `${saltHex}:${keyHex}`.
+ * NFKC normalization no password é crítica (acentos virariam hash diferente).
+ */
+async function hashPassword(password: string): Promise<string> {
+  const saltBytes = randomBytes(16);
+  const salt = Buffer.from(saltBytes).toString('hex'); // 32 chars hex
+  const key = await scryptAsync(password.normalize('NFKC'), salt, {
+    N: 16384,
+    r: 16,
+    p: 1,
+    dkLen: 64,
+    maxmem: 128 * 16384 * 16 * 2,
+  });
+  const keyHex = Buffer.from(key).toString('hex');
+  return `${salt}:${keyHex}`;
 }
 
 /** Determinístico — mesma seed = mesmos dados (mas com aleatoriedade controlada) */
@@ -157,16 +170,17 @@ async function main() {
 
   // Better Auth: password ficaria na tabela Account. Workaround: cria account
   // password manualmente (sobrescreve se existir).
+  const passwordHash = await hashPassword(OWNER_PASSWORD);
   await prisma.account.upsert({
     where: {
       providerId_accountId: { providerId: 'credential', accountId: user.id },
     },
-    update: { password: hashPassword(OWNER_PASSWORD) },
+    update: { password: passwordHash },
     create: {
       userId: user.id,
       providerId: 'credential',
       accountId: user.id,
-      password: hashPassword(OWNER_PASSWORD),
+      password: passwordHash,
     },
   });
 
