@@ -10,9 +10,12 @@ Ordem por prioridade (crítico → quando puder).
 ## 🔴 CRÍTICO — bloqueiam features grandes
 
 ### [DB] Aplicar schema novo no Neon
-**O que precisa:** rodar `pnpm db:generate && pnpm db:push` numa janela limpa (sem outros processos com `.prisma` aberto, ex: Cursor, VSCode com Prisma extension)
-**Por que:** schema novo tem `Workspace.developerModeEnabled`, `AgentVersion.flowGraph`, `AgentVersion.customToolNames`, modelo `CustomTool`, **e novos modelos da Fase 7** (`Product`, `Quote`, `Appointment`, `MenuItem`, etc.)
-**Status:** schema completo. Sem `db:push`, app dá 500 em `/developer`, `/knowledge`, e todas as features que usam novos modelos.
+**Status:** ✅ **RESOLVIDO em 2026-05-27.**
+- `prisma generate` completo (engine OK desta vez, DLL não estava locked)
+- `prisma db push`: "Your database is now in sync with your Prisma schema. Done in 12.27s"
+- Schema aplicado no Neon com: `Workspace.developerModeEnabled`, `AgentVersion.flowGraph` + `customToolNames`, `CustomTool`, e **5 modelos da Fase 7**: `Order`, `OrderItem`, `Coupon`, `Professional`, `Appointment`, `Quote`
+- `pnpm build` agora passa completo (38 páginas).
+- Comando que funcionou: `cd zapai && export $(grep -E "^DATABASE_URL=" .env | xargs) && cd packages/db && npx prisma db push`
 
 ### [GIT] Repositório remoto
 **O que precisa:** criar repo no GitHub (público ou privado) e me dar a URL
