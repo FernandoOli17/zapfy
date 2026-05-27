@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button, useToast } from '@zapai/ui';
 import type { PlanId } from '@zapai/shared';
 
 import { createCheckoutSession, createPortalSession } from './actions';
@@ -18,6 +18,7 @@ export function ChangePlanButtons({
 }) {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { push } = useToast();
 
   function onUpgrade() {
     setError(null);
@@ -25,6 +26,7 @@ export function ChangePlanButtons({
       const r = await createCheckoutSession({ plan });
       if (r.status === 'error') {
         setError(r.error);
+        push({ type: 'error', message: r.error });
         return;
       }
       window.location.href = r.url;
@@ -67,6 +69,7 @@ export function ChangePlanButtons({
 export function ManageSubscriptionButton() {
   const [busy, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { push } = useToast();
 
   function onClick() {
     setError(null);
@@ -74,6 +77,7 @@ export function ManageSubscriptionButton() {
       const r = await createPortalSession();
       if (r.status === 'error') {
         setError(r.error);
+        push({ type: 'error', message: r.error });
         return;
       }
       window.location.href = r.url;

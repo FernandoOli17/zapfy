@@ -52,6 +52,43 @@ export async function countAiConversationsThisCycle(workspaceId: string): Promis
 }
 
 /**
+ * Conversas IA por dia nos últimos N dias. Pra gráfico de uso na /billing.
+ * Conta UsageRecord do tipo 'ai_message' agrupado por dia.
+ */
+export async function dailyConversationsLastDays(
+  workspaceId: string,
+  days: number,
+): Promise<Array<{ label: string; value: number }>> {
+  const since = new Date();
+  since.setDate(since.getDate() - (days - 1));
+  since.setHours(0, 0, 0, 0);
+
+  const rows = await prisma.usageRecord.findMany({
+    where: { workspaceId, kind: 'ai_message', createdAt: { gte: since } },
+    select: { createdAt: true },
+  });
+
+  const buckets = new Map<string, number>();
+  for (let i = 0; i < days; i++) {
+    const d = new Date(since);
+    d.setDate(d.getDate() + i);
+    buckets.set(d.toISOString().slice(0, 10), 0);
+  }
+  for (const r of rows) {
+    const key = r.createdAt.toISOString().slice(0, 10);
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(buckets.entries()).map(([k, v]) => {
+    const d = new Date(k + 'T00:00:00');
+    return {
+      label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      value: v,
+    };
+  });
+}
+
+/**
  * Garante que o workspace pode usar a feature. Throw PlanLimitError se exceder.
  */
 export async function assertPlanFeature(

@@ -1,13 +1,30 @@
-﻿import { ArrowRight, Check, CheckCircle2, Sparkles, X } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  BarChart3,
+  Check,
+  CheckCircle2,
+  Code2,
+  Info,
+  KeyRound,
+  Lock,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { prisma } from '@zapai/db';
 import { PLANS, type PlanId, type PlanFeature } from '@zapai/shared';
 import { Button, cn } from '@zapai/ui';
 
-import { countAiConversationsThisCycle, getWorkspacePlan } from '@/lib/plans';
-import { isStripeConfigured } from '@/lib/stripe';
+import {
+  countAiConversationsThisCycle,
+  dailyConversationsLastDays,
+  getWorkspacePlan,
+} from '@/lib/plans';
+import { isStripeConfigured, isStripeMock } from '@/lib/stripe';
 import { requireWorkspace } from '@/lib/inbox';
 
 import { ChangePlanButtons, ManageSubscriptionButton } from './billing-buttons';
+import { UsageSparkline } from './usage-sparkline';
 
 export const metadata = { title: 'Billing' };
 export const dynamic = 'force-dynamic';
@@ -24,23 +41,43 @@ const PLAN_BLURBS: Record<PlanId, string> = {
   PREMIUM: 'Pra operação séria com API e onboarding.',
 };
 
+/** Mapeia features bloqueadas pro plano necessário (usado pelo `?upgrade=feature`). */
+const FEATURE_REQUIRES_PLAN: Record<string, { plan: PlanId; label: string; icon: typeof Code2 }> = {
+  customTools: { plan: 'PREMIUM', label: 'Tools customizadas', icon: Code2 },
+  apiAccess: { plan: 'PREMIUM', label: 'API pública', icon: KeyRound },
+};
+
 interface PageProps {
-  searchParams: Promise<{ success?: string; canceled?: string }>;
+  searchParams: Promise<{
+    success?: string;
+    canceled?: string;
+    upgrade?: string;
+    mock_portal?: string;
+    mock_plan?: string;
+  }>;
 }
 
 export default async function BillingPage({ searchParams }: PageProps) {
-  const { workspace } = await requireWorkspace();
-  const subscription = await prisma.subscription.findUnique({
-    where: { workspaceId: workspace.id },
-  });
-  const { plan, features, status, trialEndsAt } = await getWorkspacePlan(workspace.id);
-  const aiUsed = await countAiConversationsThisCycle(workspace.id);
+  const { workspace, member } = await requireWorkspace();
+  const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
+
+  const [subscription, planInfo, aiUsed, usageSeries] = await Promise.all([
+    prisma.subscription.findUnique({ where: { workspaceId: workspace.id } }),
+    getWorkspacePlan(workspace.id),
+    countAiConversationsThisCycle(workspace.id),
+    dailyConversationsLastDays(workspace.id, 14),
+  ]);
+  const { plan, features, status, trialEndsAt } = planInfo;
   const stripeConfigured = isStripeConfigured();
+  const stripeMock = isStripeMock();
   const params = await searchParams;
 
   const trialDaysLeft = trialEndsAt
     ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
     : null;
+
+  const usageTotal = usageSeries.reduce((acc, p) => acc + p.value, 0);
+  const upgradeFeature = params.upgrade ? FEATURE_REQUIRES_PLAN[params.upgrade] : null;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8 md:px-10 md:py-10">
@@ -48,31 +85,59 @@ export default async function BillingPage({ searchParams }: PageProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Gestão</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
-            Billing
-          </h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Billing</h1>
         </div>
       </div>
 
-      {params.success && (
-        <div className="mt-6 flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <span>Assinatura ativada! Pode demorar alguns segundos pra refletir aqui.</span>
-        </div>
-      )}
-      {params.canceled && (
-        <div className="mt-6 rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Checkout cancelado. Você pode tentar de novo a qualquer momento.
-        </div>
-      )}
-      {!stripeConfigured && (
-        <div className="mt-6 rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm">
-          <strong>Modo demo:</strong> Stripe ainda não configurado. Botões de upgrade não vão
-          funcionar até preencher <code className="font-mono text-xs">STRIPE_SECRET_KEY</code> e{' '}
-          <code className="font-mono text-xs">STRIPE_PRICE_*</code> no{' '}
-          <code className="font-mono text-xs">.env</code>.
-        </div>
-      )}
+      {/* Banners de feedback */}
+      <div className="mt-6 space-y-3">
+        {params.success && (
+          <Banner kind="success" icon={CheckCircle2}>
+            {params.mock_plan ? (
+              <>
+                <strong>Modo demo:</strong> assinatura "{params.mock_plan}" ativada localmente.
+                Em produção, isso passaria pelo Stripe.
+              </>
+            ) : (
+              'Assinatura ativada! Pode demorar alguns segundos pra refletir aqui.'
+            )}
+          </Banner>
+        )}
+        {params.canceled && (
+          <Banner kind="info" icon={Info}>
+            Checkout cancelado. Você pode tentar de novo a qualquer momento.
+          </Banner>
+        )}
+        {params.mock_portal && (
+          <Banner kind="warn" icon={Info}>
+            <strong>Modo demo:</strong> customer portal real do Stripe só funciona com{' '}
+            <code className="font-mono text-xs">STRIPE_SECRET_KEY</code> configurada.
+          </Banner>
+        )}
+        {upgradeFeature && plan !== upgradeFeature.plan && (
+          <Banner kind="warn" icon={Lock}>
+            <strong>{upgradeFeature.label}</strong> está disponível no plano{' '}
+            <strong>{PLAN_NAMES[upgradeFeature.plan]}</strong>. Você está no{' '}
+            {PLAN_NAMES[plan]} — faça upgrade abaixo.
+          </Banner>
+        )}
+        {!stripeConfigured && (
+          <Banner kind="warn" icon={AlertCircle}>
+            <strong>Stripe não configurado:</strong> botões de upgrade desativados. Pra ativar
+            billing real, preencha <code className="font-mono text-xs">STRIPE_SECRET_KEY</code> e{' '}
+            <code className="font-mono text-xs">STRIPE_PRICE_*</code> no{' '}
+            <code className="font-mono text-xs">.env</code>. Pra testar a UI, ative{' '}
+            <code className="font-mono text-xs">STRIPE_MOCK=true</code>.
+          </Banner>
+        )}
+        {stripeMock && stripeConfigured && (
+          <Banner kind="info" icon={Info}>
+            <strong>Modo demo ativo</strong> (
+            <code className="font-mono text-xs">STRIPE_MOCK=true</code>). Checkout / portal não
+            chamam Stripe real — atualizam Subscription local.
+          </Banner>
+        )}
+      </div>
 
       <section className="mt-6 grid gap-4 md:grid-cols-[1.6fr_1fr]">
         {/* Card resumo do plano atual */}
@@ -83,9 +148,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
                   Plano atual
                 </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-                  {PLAN_NAMES[plan]}
-                </h2>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">{PLAN_NAMES[plan]}</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">{PLAN_BLURBS[plan]}</p>
               </div>
               <div className="text-right">
@@ -93,10 +156,23 @@ export default async function BillingPage({ searchParams }: PageProps) {
                   <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
                     Trial · {trialDaysLeft} dia{trialDaysLeft === 1 ? '' : 's'}
                   </span>
+                ) : status === 'PAST_DUE' || status === 'UNPAID' ? (
+                  <span className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium uppercase text-destructive">
+                    {status.toLowerCase().replace('_', ' ')}
+                  </span>
+                ) : status === 'CANCELED' ? (
+                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium uppercase text-muted-foreground">
+                    cancelado
+                  </span>
                 ) : (
                   <span className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium uppercase text-emerald-700 dark:text-emerald-400">
                     {status.toLowerCase()}
                   </span>
+                )}
+                {subscription?.cancelAtPeriodEnd && (
+                  <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
+                    cancela no fim do ciclo
+                  </p>
                 )}
               </div>
             </div>
@@ -123,31 +199,56 @@ export default async function BillingPage({ searchParams }: PageProps) {
               />
             </div>
 
+            {subscription?.currentPeriodEnd && (
+              <p className="mt-4 text-[11px] text-muted-foreground">
+                Próxima renovação:{' '}
+                <strong className="text-foreground">
+                  {subscription.currentPeriodEnd.toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </strong>
+              </p>
+            )}
+
             <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
-              {subscription?.stripeCustomerId && <ManageSubscriptionButton />}
+              {subscription?.stripeCustomerId && isAdmin && <ManageSubscriptionButton />}
               {status === 'TRIALING' && (
                 <p className="text-xs text-muted-foreground">
                   Cobramos no fim do trial. Cancele em um clique até lá.
+                </p>
+              )}
+              {!isAdmin && (
+                <p className="text-xs text-muted-foreground">
+                  Apenas OWNER/ADMIN podem mudar plano ou gerenciar assinatura.
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Card highlight do moat */}
+        {/* Card uso histórico — gráfico de 14d */}
         <div className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Sparkles className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <BarChart3 className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold tracking-tight">Uso 14 dias</h3>
+              <p className="text-xs text-muted-foreground">
+                {usageTotal.toLocaleString('pt-BR')} conversa{usageTotal === 1 ? '' : 's'} IA
+              </p>
+            </div>
           </div>
-          <h3 className="mt-3 text-base font-semibold tracking-tight">
-            Sem dark pattern, sem letrinha miúda.
-          </h3>
-          <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-            <Bullet>Trial sem cartão. Sem renovação automática surpresa.</Bullet>
-            <Bullet>Cancele em 1 clique pelo portal Stripe.</Bullet>
-            <Bullet>Limites avisados em 80%. Sem cobrança escondida.</Bullet>
-            <Bullet>Suas conversas nunca treinam modelos de IA.</Bullet>
-          </ul>
+          <div className="mt-5">
+            <UsageSparkline data={usageSeries} height={80} />
+          </div>
+          {usageTotal === 0 && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Conecte o WhatsApp pra começar a registrar uso.
+            </p>
+          )}
         </div>
       </section>
 
@@ -162,12 +263,59 @@ export default async function BillingPage({ searchParams }: PageProps) {
               planId={p}
               features={PLANS[p]}
               isCurrent={plan === p}
-              disabled={!stripeConfigured || plan === p}
+              disabled={!stripeConfigured || plan === p || !isAdmin}
               recommended={p === 'PRO'}
+              highlighted={upgradeFeature?.plan === p && plan !== p}
             />
           ))}
         </div>
+        {!isAdmin && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Você é {member.role.toLowerCase()}. Apenas OWNER/ADMIN podem fazer upgrade.
+          </p>
+        )}
       </section>
+
+      {/* Card moat — anti-dark-pattern */}
+      <section className="mt-10 rounded-2xl border border-border bg-card p-6">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <h3 className="mt-3 text-base font-semibold tracking-tight">
+          Sem dark pattern, sem letrinha miúda.
+        </h3>
+        <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
+          <Bullet>Trial sem cartão. Sem renovação automática surpresa.</Bullet>
+          <Bullet>Cancele em 1 clique pelo portal Stripe.</Bullet>
+          <Bullet>Limites avisados em 80%. Sem cobrança escondida.</Bullet>
+          <Bullet>Suas conversas nunca treinam modelos de IA.</Bullet>
+          <Bullet>Sem cobrança por contato — só por conversa IA atendida.</Bullet>
+          <Bullet>Faturas direto no e-mail, sempre.</Bullet>
+        </ul>
+      </section>
+    </div>
+  );
+}
+
+function Banner({
+  kind,
+  icon: Icon,
+  children,
+}: {
+  kind: 'success' | 'info' | 'warn' | 'error';
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  const cls = {
+    success: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400',
+    info: 'border-border bg-muted/30 text-foreground',
+    warn: 'border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300',
+    error: 'border-destructive/40 bg-destructive/5 text-destructive',
+  }[kind];
+  return (
+    <div className={cn('flex items-start gap-2 rounded-lg border px-4 py-3 text-sm', cls)}>
+      <Icon className="mt-0.5 h-4 w-4 shrink-0" />
+      <div className="min-w-0 flex-1">{children}</div>
     </div>
   );
 }
@@ -184,6 +332,7 @@ function UsageBar({
   const isUnlimited = limit === 'unlimited';
   const pct = isUnlimited ? 0 : Math.min(100, Math.round((used / limit) * 100));
   const isHot = pct >= 80;
+  const isCritical = pct >= 95;
   return (
     <div>
       <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -203,7 +352,11 @@ function UsageBar({
           <span
             className={cn(
               'text-xs font-medium',
-              isHot ? 'text-destructive' : 'text-muted-foreground',
+              isCritical
+                ? 'text-destructive'
+                : isHot
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-muted-foreground',
             )}
           >
             {pct}%
@@ -213,10 +366,25 @@ function UsageBar({
       {!isUnlimited && (
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
-            className={cn('h-full transition-all', isHot ? 'bg-destructive' : 'bg-primary')}
-            style={{ width: `${pct}%` }}
+            className={cn(
+              'h-full transition-all duration-500',
+              isCritical ? 'bg-destructive' : isHot ? 'bg-amber-500' : 'bg-primary',
+            )}
+            style={{ width: `${Math.max(2, pct)}%` }}
           />
         </div>
+      )}
+      {!isUnlimited && isHot && (
+        <p
+          className={cn(
+            'mt-1.5 text-[10px]',
+            isCritical ? 'text-destructive' : 'text-amber-600 dark:text-amber-400',
+          )}
+        >
+          {isCritical
+            ? 'Quase no limite — considere upgrade pra não pausar.'
+            : 'Próximo do limite — fique de olho.'}
+        </p>
       )}
       {isUnlimited && <p className="mt-2 text-xs text-muted-foreground">Sem limite.</p>}
     </div>
@@ -240,18 +408,21 @@ function PlanCard({
   isCurrent,
   disabled,
   recommended,
+  highlighted,
 }: {
   planId: PlanId;
   features: PlanFeature;
   isCurrent: boolean;
   disabled: boolean;
   recommended?: boolean;
+  highlighted?: boolean;
 }) {
   const featureRows: Array<{ has: boolean; text: string }> = [
     { has: true, text: `${limitLabel(features.aiConversations, 'conversa')} IA/mês` },
     { has: true, text: `${limitLabel(features.whatsappNumbers, 'numero')} WhatsApp` },
     { has: true, text: `${limitLabel(features.teamSeats, 'seat')} no time` },
-    { has: features.customTools, text: 'Tools customizadas' },
+    { has: true, text: `${limitLabel(features.knowledgeDocs, 'doc')} de conhecimento` },
+    { has: features.customTools, text: 'Modo desenvolvedor + tools customizadas' },
     { has: features.apiAccess, text: 'API pública' },
   ];
 
@@ -259,14 +430,22 @@ function PlanCard({
     <div
       className={cn(
         'relative flex flex-col rounded-2xl border bg-card p-6 transition-all',
-        recommended && !isCurrent
-          ? 'border-primary/40 shadow-md ring-1 ring-primary/20'
-          : isCurrent
-            ? 'border-primary/40'
-            : 'border-border hover:border-primary/30',
+        highlighted
+          ? 'border-amber-500/60 ring-2 ring-amber-500/30 shadow-lg'
+          : recommended && !isCurrent
+            ? 'border-primary/40 shadow-md ring-1 ring-primary/20'
+            : isCurrent
+              ? 'border-primary/40'
+              : 'border-border hover:border-primary/30',
       )}
     >
-      {recommended && !isCurrent && (
+      {highlighted && (
+        <span className="absolute -top-2.5 left-6 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-50 shadow-sm">
+          <Lock className="h-2.5 w-2.5" />
+          Necessário
+        </span>
+      )}
+      {!highlighted && recommended && !isCurrent && (
         <span className="absolute -top-2.5 left-6 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-sm">
           <Sparkles className="h-2.5 w-2.5" />
           Recomendado
