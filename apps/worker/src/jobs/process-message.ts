@@ -203,8 +203,9 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   const verticalDeps: VerticalToolDeps = {
     workspaceId,
     contactId,
-    // Tools de vertical são opcionais — workspace precisa configurar cada uma.
-    // Em fase futura: cada vertical tool buscará dados do DB do workspace.
+    conversationId,
+    // Fase 7: tools de vertical (em packages/ai/src/tools/) acessam DB
+    // direto via prisma — não precisam mais de callbacks aqui.
   };
 
   // ─── 10. Rodar agente ────────────────────────────────────────────────────

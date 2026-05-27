@@ -129,6 +129,12 @@ model Workspace {
   messageTemplates  MessageTemplate[]
   broadcasts        Broadcast[]
   customTools       CustomTool[]
+  // Fase 7 — Playbooks por vertical
+  orders            Order[]
+  coupons           Coupon[]
+  professionals     Professional[]
+  appointments      Appointment[]
+  quotes            Quote[]
 }
 
 model WorkspaceMember {
@@ -254,6 +260,10 @@ model Contact {
   conversations Conversation[]
   messages      Message[]
   broadcastRecipients BroadcastRecipient[]
+  // Fase 7
+  orders        Order[]
+  appointments  Appointment[]
+  quotes        Quote[]
 
   @@unique([workspaceId, phoneE164])
   @@index([workspaceId])
@@ -282,6 +292,10 @@ model Conversation {
   contact    Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   assignedTo User?     @relation("assignedTo", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   messages   Message[]
+  // Fase 7
+  orders        Order[]
+  appointments  Appointment[]
+  quotes        Quote[]
 
   @@index([workspaceId, status, lastMessageAt])
   @@index([contactId])
@@ -538,15 +552,219 @@ model Product {
   checkoutUrl String?
   sku         String?
   stock       Int?
+  category    String?  // pra filtrar list_products / cardápio
   metadata    Json?
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
+  @@index([workspaceId, category])
+}
+
+// =========================================
+// COMMERCE — Order / Coupon (ECOMMERCE + RESTAURANT)
+// =========================================
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  contactId       String?
+  conversationId  String?
+  /// Número curto exposto ao cliente (#PED-1234)
+  publicNumber    String
+  status          OrderStatus @default(PENDING)
+  /// Total final em centavos (após cupom + frete)
+  totalCents      Int         @default(0)
+  /// Subtotal antes de cupom/frete
+  subtotalCents   Int         @default(0)
+  shippingCents   Int         @default(0)
+  discountCents   Int         @default(0)
+  currency        String      @default("BRL")
+  couponCode      String?
+  /// Endereço de entrega (estruturado)
+  shippingAddress Json?       // { street, number, complement, neighborhood, city, state, zip, reference }
+  paymentMethod   String?     // 'pix' | 'card_on_delivery' | 'card_online'
+  /// ETA estimado em minutos a partir de createdAt
+  etaMinutes      Int?
+  /// Observações do cliente
+  notes           String?
+  externalId      String?     // id do PDV / iFood / Shopify
+  metadata        Json?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+
+  @@unique([workspaceId, publicNumber])
+  @@index([workspaceId, status, createdAt])
+  @@index([contactId])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String?
+  /// Nome no momento da compra (preserva se Product mudar depois)
+  nameSnapshot String
+  unitPriceCents Int
+  quantity    Int
+  notes       String? // observação do item ("sem cebola", "ponto da carne")
+  createdAt   DateTime @default(now())
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+enum CouponDiscountType {
+  PERCENT
+  FIXED_CENTS
+}
+
+model Coupon {
+  id              String              @id @default(cuid())
+  workspaceId     String
+  code            String              // case-insensitive na lookup
+  discountType    CouponDiscountType
+  /// se PERCENT: 1-100; se FIXED_CENTS: valor em centavos
+  discountValue   Int
+  /// Valor mínimo de compra pra aplicar
+  minSubtotalCents Int?
+  /// Quantidade máxima de usos. NULL = ilimitado.
+  maxRedemptions  Int?
+  redeemedCount   Int                 @default(0)
+  expiresAt       DateTime?
+  active          Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId, active])
+}
+
+// =========================================
+// CLINIC — Appointments
+// =========================================
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+  COMPLETED
+}
+
+model Professional {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  specialty   String?
+  email       String?
+  /// Token OAuth Google Calendar cifrado AES-256-GCM
+  googleCalendarTokenEncrypted String?
+  googleCalendarId             String? // ID do calendário no Google
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([workspaceId, active])
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  workspaceId     String
+  professionalId  String
+  contactId       String?
+  conversationId  String?
+  status          AppointmentStatus @default(SCHEDULED)
+  /// Início da consulta (timezone-aware)
+  startsAt        DateTime
+  /// Duração em minutos
+  durationMinutes Int               @default(30)
+  /// Tipo: 'consulta', 'retorno', 'avaliacao', etc.
+  type            String?
+  notes           String?
+  /// ID do evento no Google Calendar (se sincronizado)
+  googleEventId   String?
+  cancellationReason String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  professional Professional  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, status, startsAt])
+  @@index([professionalId, startsAt])
+  @@index([contactId])
+}
+
+// =========================================
+// SERVICE — Quote / Proposal
+// =========================================
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model Quote {
+  id              String      @id @default(cuid())
+  workspaceId     String
+  contactId       String?
+  conversationId  String?
+  publicNumber    String
+  status          QuoteStatus @default(DRAFT)
+  /// Resumo do serviço pedido
+  serviceDescription String
+  /// Endereço de execução
+  serviceAddress  Json?
+  /// Itens da proposta com nome + qty + valor
+  items           Json
+  totalCents      Int         @default(0)
+  currency        String      @default("BRL")
+  validUntil      DateTime?
+  /// URL do PDF (UploadThing)
+  pdfUrl          String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, publicNumber])
+  @@index([workspaceId, status, createdAt])
+  @@index([contactId])
 }
 
 model Tag {

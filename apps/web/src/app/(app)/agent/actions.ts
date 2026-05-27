@@ -159,6 +159,7 @@ export async function testAgent(
     const verticalDeps = {
       workspaceId: member.workspaceId,
       contactId: 'test-contact',
+      conversationId: 'test-conversation',
     };
 
     const ragChunks = await searchKnowledge(
