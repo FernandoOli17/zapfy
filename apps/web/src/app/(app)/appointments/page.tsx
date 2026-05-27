@@ -113,39 +113,41 @@ export default async function AppointmentsPage({
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
             {appointments.map((a) => (
-              <li
-                key={a.id}
-                className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Clock className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">
-                    {a.startsAt.toLocaleString('pt-BR', {
-                      weekday: 'short',
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {a.professional.name}
-                    {a.professional.specialty && ` (${a.professional.specialty})`} ·{' '}
-                    {a.contact?.name ?? a.contact?.phoneE164 ?? 'sem contato'} ·{' '}
-                    {a.durationMinutes}min
-                    {a.type && ` · ${a.type}`}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    'rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                    STATUS_COLOR[a.status],
-                  )}
+              <li key={a.id}>
+                <Link
+                  href={`/appointments/${a.id}`}
+                  className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
                 >
-                  {STATUS_LABEL[a.status]}
-                </span>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">
+                      {a.startsAt.toLocaleString('pt-BR', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {a.professional.name}
+                      {a.professional.specialty && ` (${a.professional.specialty})`} ·{' '}
+                      {a.contact?.name ?? a.contact?.phoneE164 ?? 'sem contato'} ·{' '}
+                      {a.durationMinutes}min
+                      {a.type && ` · ${a.type}`}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                      STATUS_COLOR[a.status],
+                    )}
+                  >
+                    {STATUS_LABEL[a.status]}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

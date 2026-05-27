@@ -113,40 +113,42 @@ export default async function OrdersPage({
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
             {orders.map((o) => (
-              <li
-                key={o.id}
-                className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Package className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-sm font-medium">{o.publicNumber}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {o.contact?.name ?? o.contact?.phoneE164 ?? 'contato anônimo'} ·{' '}
-                    {o.items.length} item{o.items.length === 1 ? '' : 'ns'} ·{' '}
-                    {o.createdAt.toLocaleString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
+              <li key={o.id}>
+                <Link
+                  href={`/orders/${o.id}`}
+                  className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Package className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-sm font-medium">{o.publicNumber}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {o.contact?.name ?? o.contact?.phoneE164 ?? 'contato anônimo'} ·{' '}
+                      {o.items.length} item{o.items.length === 1 ? '' : 'ns'} ·{' '}
+                      {o.createdAt.toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                      STATUS_COLOR[o.status],
+                    )}
+                  >
+                    {STATUS_LABEL[o.status]}
+                  </span>
+                  <p className="text-right text-sm font-semibold">
+                    {(o.totalCents / 100).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: o.currency,
                     })}
                   </p>
-                </div>
-                <span
-                  className={cn(
-                    'rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                    STATUS_COLOR[o.status],
-                  )}
-                >
-                  {STATUS_LABEL[o.status]}
-                </span>
-                <p className="text-right text-sm font-semibold">
-                  {(o.totalCents / 100).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: o.currency,
-                  })}
-                </p>
+                </Link>
               </li>
             ))}
           </ul>
