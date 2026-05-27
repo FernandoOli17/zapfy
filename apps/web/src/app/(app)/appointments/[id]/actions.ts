@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
-import { requireWorkspace } from '@/lib/inbox';
+import { requireOwnerOrAdmin } from '@/lib/inbox';
 
 const log = createLogger('appointments-actions');
 
@@ -34,7 +34,9 @@ export async function updateAppointmentStatus(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user, impersonating } = await requireWorkspace();
+  const guard = await requireOwnerOrAdmin();
+  if (!guard.ok) return { status: 'error', error: guard.error };
+  const { workspace, user, impersonating } = guard.ctx;
 
   const existing = await prisma.appointment.findFirst({
     where: { id: parsed.data.appointmentId, workspaceId: workspace.id },
@@ -44,8 +46,10 @@ export async function updateAppointmentStatus(
 
   if (existing.status === parsed.data.status) return { status: 'ok' };
 
-  // Cancelamento requer razão se fornecida pelo user
+  // Cancelamento requer razão se fornecida pelo user; transição saindo
+  // de CANCELLED limpa o motivo antigo pra não exibir 'Cancelamento' stale.
   const isCancellation = parsed.data.status === 'CANCELLED';
+  const leavingCancellation = existing.status === 'CANCELLED' && !isCancellation;
 
   await prisma.appointment.update({
     where: { id: existing.id },
@@ -54,6 +58,7 @@ export async function updateAppointmentStatus(
       ...(isCancellation && parsed.data.cancellationReason
         ? { cancellationReason: parsed.data.cancellationReason }
         : {}),
+      ...(leavingCancellation && { cancellationReason: null }),
     },
   });
 
@@ -67,7 +72,9 @@ export async function updateAppointmentStatus(
       metadata: {
         from: existing.status,
         to: parsed.data.status,
-        ...(parsed.data.cancellationReason && { reason: parsed.data.cancellationReason }),
+        // cancellationReason intencionalmente NÃO duplicada aqui —
+        // já persiste em Appointment.cancellationReason e o audit log é
+        // imutável (LGPD: erasure não toca audit). Texto vai pra um lugar só.
         ...(impersonating && { impersonating: true, adminEmail: user.email }),
       },
     },
@@ -90,7 +97,9 @@ export async function rescheduleAppointment(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user, impersonating } = await requireWorkspace();
+  const guard = await requireOwnerOrAdmin();
+  if (!guard.ok) return { status: 'error', error: guard.error };
+  const { workspace, user, impersonating } = guard.ctx;
 
   const existing = await prisma.appointment.findFirst({
     where: { id: parsed.data.appointmentId, workspaceId: workspace.id },
@@ -103,10 +112,13 @@ export async function rescheduleAppointment(
     return { status: 'error', error: 'Data inválida' };
   }
 
-  // Conflict check: overlap com outro appointment do mesmo profissional
+  // Conflict check: overlap com OUTROS appointments do mesmo profissional.
+  // Buscamos TODOS os candidatos (que começam antes do novo fim) e checamos
+  // cada um — findFirst() sem orderBy poderia retornar um não-overlap mesmo
+  // existindo um overlap real. Limite 100 pra blindar contra agendas absurdas.
   const newDuration = parsed.data.durationMinutes ?? existing.durationMinutes;
   const newEnd = new Date(newStart.getTime() + newDuration * 60_000);
-  const conflict = await prisma.appointment.findFirst({
+  const candidates = await prisma.appointment.findMany({
     where: {
       workspaceId: workspace.id,
       professionalId: existing.professionalId,
@@ -115,12 +127,11 @@ export async function rescheduleAppointment(
       startsAt: { lt: newEnd },
     },
     select: { id: true, startsAt: true, durationMinutes: true },
+    take: 100,
   });
-  if (conflict) {
-    const conflictEnd = new Date(
-      conflict.startsAt.getTime() + conflict.durationMinutes * 60_000,
-    );
-    if (conflictEnd > newStart) {
+  for (const c of candidates) {
+    const cEnd = new Date(c.startsAt.getTime() + c.durationMinutes * 60_000);
+    if (cEnd > newStart) {
       return { status: 'error', error: 'Conflito com outro agendamento do mesmo profissional' };
     }
   }

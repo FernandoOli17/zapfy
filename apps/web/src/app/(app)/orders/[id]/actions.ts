@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
-import { requireWorkspace } from '@/lib/inbox';
+import { requireOwnerOrAdmin } from '@/lib/inbox';
 
 const log = createLogger('orders-actions');
 
@@ -37,7 +37,9 @@ export async function updateOrderStatus(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user, impersonating } = await requireWorkspace();
+  const guard = await requireOwnerOrAdmin();
+  if (!guard.ok) return { status: 'error', error: guard.error };
+  const { workspace, user, impersonating } = guard.ctx;
 
   const existing = await prisma.order.findFirst({
     where: { id: parsed.data.orderId, workspaceId: workspace.id },

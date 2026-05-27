@@ -195,7 +195,7 @@ export default async function QuoteDetailPage({
                 <p className="text-xs text-muted-foreground">{quote.contact.phoneE164}</p>
                 {quote.conversation && (
                   <Link
-                    href={`/inbox?conv=${quote.conversation.id}`}
+                    href={`/inbox/${quote.conversation.id}`}
                     className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <MessageSquare className="h-3 w-3" /> Abrir conversa →

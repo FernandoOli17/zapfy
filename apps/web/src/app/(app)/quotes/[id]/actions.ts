@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
-import { requireWorkspace } from '@/lib/inbox';
+import { requireOwnerOrAdmin } from '@/lib/inbox';
 
 const log = createLogger('quotes-actions');
 
@@ -42,7 +42,9 @@ export async function saveQuoteDraft(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user, impersonating } = await requireWorkspace();
+  const guard = await requireOwnerOrAdmin();
+  if (!guard.ok) return { status: 'error', error: guard.error };
+  const { workspace, user, impersonating } = guard.ctx;
 
   const existing = await prisma.quote.findFirst({
     where: { id: parsed.data.quoteId, workspaceId: workspace.id },
@@ -57,6 +59,16 @@ export async function saveQuoteDraft(
     (acc, it) => acc + Math.round(it.unitPriceCents * it.quantity),
     0,
   );
+
+  // Postgres int4 ceiling é 2_147_483_647 (R$ 21.474.836,47). Limita ainda
+  // mais conservador pra evitar uncaught Prisma error.
+  const MAX_TOTAL_CENTS = 2_000_000_000;
+  if (totalCents > MAX_TOTAL_CENTS) {
+    return {
+      status: 'error',
+      error: 'Valor total muito alto. Quebre em mais de um orçamento.',
+    };
+  }
 
   const validUntilDate = parsed.data.validUntil
     ? (() => {
@@ -108,7 +120,9 @@ export async function changeQuoteStatus(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user, impersonating } = await requireWorkspace();
+  const guard = await requireOwnerOrAdmin();
+  if (!guard.ok) return { status: 'error', error: guard.error };
+  const { workspace, user, impersonating } = guard.ctx;
 
   const q = await prisma.quote.findFirst({
     where: { id: parsed.data.quoteId, workspaceId: workspace.id },

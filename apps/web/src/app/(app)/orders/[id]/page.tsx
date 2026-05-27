@@ -204,7 +204,7 @@ export default async function OrderDetailPage({
                 <p className="text-xs text-muted-foreground">{order.contact.phoneE164}</p>
                 {order.conversation && (
                   <Link
-                    href={`/inbox?conv=${order.conversation.id}`}
+                    href={`/inbox/${order.conversation.id}`}
                     className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     Abrir conversa →

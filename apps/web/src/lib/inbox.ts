@@ -7,6 +7,25 @@ import { prisma, type Prisma } from '@zapai/db';
 import { auth } from '@/lib/auth';
 import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
 
+/**
+ * Like `requireWorkspace`, mas exige role OWNER ou ADMIN. AGENT (tier mais
+ * baixo) é bloqueado. Super-admin impersonando recebe role 'OWNER' sintético
+ * — passa direto, como esperado.
+ *
+ * Retorna `{ ok: false, error }` em vez de throw pra ser usado em server
+ * actions com error toast no client.
+ */
+export async function requireOwnerOrAdmin(): Promise<
+  | { ok: true; ctx: Awaited<ReturnType<typeof requireWorkspace>> }
+  | { ok: false; error: string }
+> {
+  const ctx = await requireWorkspace();
+  if (ctx.member.role !== 'OWNER' && ctx.member.role !== 'ADMIN') {
+    return { ok: false, error: 'Apenas OWNER ou ADMIN podem fazer esta ação' };
+  }
+  return { ok: true, ctx };
+}
+
 export async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');

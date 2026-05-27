@@ -124,26 +124,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       orderBy: { createdAt: 'asc' },
     });
     if (!member) {
-      if (isSuperAdmin) redirect('/admin');
-      redirect('/onboarding');
+      // Super-admin sem workspace pode acessar /admin diretamente (sem chrome
+      // de workspace). Fora de /admin, manda pra onboarding. Sem redirect pra
+      // /admin pra evitar loop infinito (esta route ESTÁ em (app)/).
+      if (!isSuperAdmin) redirect('/onboarding');
+    } else {
+      workspace = member.workspace;
+      isOwnerOrAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
     }
-    workspace = member.workspace;
-    isOwnerOrAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
   }
 
   const NAV_SECTIONS = buildNavSections({
-    devMode: workspace.developerModeEnabled,
+    devMode: workspace?.developerModeEnabled ?? false,
     isOwnerOrAdmin,
     isSuperAdmin,
   });
-  const initials =
-    workspace.name
-      .split(/\s+/)
-      .map((p) => p[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || 'W';
+  const initials = workspace
+    ? workspace.name
+        .split(/\s+/)
+        .map((p) => p[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || 'W'
+    : 'SA';
 
   const userName = session.user.name ?? session.user.email.split('@')[0] ?? 'Usuário';
   const userEmail = session.user.email;
@@ -167,9 +171,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {initials}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium leading-tight">{workspace.name}</p>
+              <p className="truncate text-sm font-medium leading-tight">
+                {workspace?.name ?? 'Super-admin'}
+              </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                Trato.dev/{workspace.slug}
+                {workspace ? `Trato.dev/${workspace.slug}` : 'Console global'}
               </p>
             </div>
           </div>

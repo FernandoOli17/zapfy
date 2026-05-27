@@ -46,39 +46,51 @@ export default async function AdminPage({
       }
     : {};
 
-  const [workspaces, totalContacts, totalMessages, recentAudit] =
-    await Promise.all([
-      prisma.workspace.findMany({
-        where,
-        include: {
-          subscription: true,
-          _count: { select: { members: true, contacts: true, conversations: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-      }),
-      prisma.contact.count(),
-      prisma.message.count(),
-      prisma.auditLog.findMany({
-        where: { action: { startsWith: 'admin.' } },
-        orderBy: { createdAt: 'desc' },
-        take: 15,
-        include: {
-          user: { select: { email: true } },
-          workspace: { select: { name: true, slug: true } },
-        },
-      }),
-    ]);
+  const [
+    workspaces,
+    totalWorkspaces,
+    totalContacts,
+    totalMessages,
+    recentAudit,
+    activeSubsByPlan,
+  ] = await Promise.all([
+    prisma.workspace.findMany({
+      where,
+      include: {
+        subscription: true,
+        _count: { select: { members: true, contacts: true, conversations: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    }),
+    prisma.workspace.count(),
+    prisma.contact.count(),
+    prisma.message.count(),
+    prisma.auditLog.findMany({
+      where: { action: { startsWith: 'admin.' } },
+      orderBy: { createdAt: 'desc' },
+      take: 15,
+      include: {
+        user: { select: { email: true } },
+        workspace: { select: { name: true, slug: true } },
+      },
+    }),
+    prisma.subscription.groupBy({
+      by: ['plan'],
+      where: { status: 'ACTIVE' },
+      _count: { _all: true },
+    }),
+  ]);
 
-  // MRR estimado = soma das subscriptions ACTIVE de cada plano × priceBRLCents
+  // MRR estimado e plan counts: agregados sobre TODOS os workspaces, não só
+  // os 100 da página (que é uma view paginada/filtrada). Antes contávamos só
+  // os 100 visíveis — subestimava após cruzar esse limite.
   let mrrCents = 0;
   const planCounts: Record<PlanId, number> = { STARTER: 0, PRO: 0, PREMIUM: 0 };
-  for (const w of workspaces) {
-    if (w.subscription?.status === 'ACTIVE') {
-      const p = w.subscription.plan as PlanId;
-      mrrCents += PLANS[p].priceBRLCents;
-      planCounts[p] += 1;
-    }
+  for (const row of activeSubsByPlan) {
+    const p = row.plan as PlanId;
+    planCounts[p] = row._count._all;
+    mrrCents += PLANS[p].priceBRLCents * row._count._all;
   }
 
   const currentImpersonationId = await getImpersonatedWorkspaceId();
@@ -104,7 +116,7 @@ export default async function AdminPage({
       {/* Métricas globais */}
       <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label="MRR estimado" value={formatBRL(mrrCents)} accent="text-emerald-600 dark:text-emerald-400" />
-        <MetricCard label="Workspaces" value={workspaces.length.toString()} />
+        <MetricCard label="Workspaces" value={totalWorkspaces.toLocaleString('pt-BR')} />
         <MetricCard label="Contatos" value={totalContacts.toLocaleString('pt-BR')} />
         <MetricCard label="Mensagens" value={totalMessages.toLocaleString('pt-BR')} />
       </div>

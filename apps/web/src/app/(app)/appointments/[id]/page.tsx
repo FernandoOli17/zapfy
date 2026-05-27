@@ -163,7 +163,7 @@ export default async function AppointmentDetailPage({
                 <p className="text-xs text-muted-foreground">{appt.contact.phoneE164}</p>
                 {appt.conversation && (
                   <Link
-                    href={`/inbox?conv=${appt.conversation.id}`}
+                    href={`/inbox/${appt.conversation.id}`}
                     className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <MessageSquare className="h-3 w-3" /> Abrir conversa →

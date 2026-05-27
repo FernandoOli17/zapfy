@@ -73,7 +73,9 @@ export default async function AnalyticsPage() {
       where: { workspaceId: workspace.id, status: 'HUMAN_HANDLING' },
     }),
     prisma.$queryRaw<DailyMessageCount[]>`
-      SELECT to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day, count(*)::bigint AS count
+      SELECT
+        to_char(date_trunc('day', "createdAt" AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS day,
+        count(*)::bigint AS count
       FROM "Message"
       WHERE "workspaceId" = ${workspace.id} AND "createdAt" >= ${since}
       GROUP BY 1
@@ -100,7 +102,7 @@ export default async function AnalyticsPage() {
     // Handoff por dia: conversas que viraram HUMAN_HANDLING / total iniciadas
     prisma.$queryRaw<DailyHandoffRow[]>`
       SELECT
-        to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
+        to_char(date_trunc('day', "createdAt" AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS day,
         count(*) FILTER (WHERE status = 'HUMAN_HANDLING')::bigint AS handoffs,
         count(*)::bigint AS total
       FROM "Conversation"
@@ -151,7 +153,7 @@ export default async function AnalyticsPage() {
         ) o ON true
       )
       SELECT
-        to_char(date_trunc('day', in_at), 'YYYY-MM-DD') AS day,
+        to_char(date_trunc('day', in_at AT TIME ZONE 'America/Sao_Paulo'), 'YYYY-MM-DD') AS day,
         avg(extract(epoch FROM (out_at - in_at)))::float AS avg_seconds
       FROM paired
       WHERE out_at IS NOT NULL
@@ -162,13 +164,27 @@ export default async function AnalyticsPage() {
 
   const seriesMap = new Map(messagesPerDay.map((r) => [r.day, Number(r.count)]));
   const series: Array<{ date: string; count: number; label: string }> = [];
+  // Series keys precisam bater com o que SQL devolve. SQL bucketeia em BRT
+  // (America/Sao_Paulo), então buildamos as keys em BRT também usando
+  // pt-BR formatter parcial.
+  const fmtKey = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const fmtLabel = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    day: '2-digit',
+    month: '2-digit',
+  });
   for (let i = DAYS - 1; i >= 0; i--) {
     const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-    const key = d.toISOString().slice(0, 10);
+    const key = fmtKey.format(d); // YYYY-MM-DD em BRT
     series.push({
       date: key,
       count: seriesMap.get(key) ?? 0,
-      label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      label: fmtLabel.format(d),
     });
   }
 
