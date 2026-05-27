@@ -9,14 +9,25 @@ import { env } from '@/env';
 const log = createLogger('stripe');
 
 /**
- * Stripe client com graceful fallback: se STRIPE_SECRET_KEY não tiver
- * setada, retorna null. Toda função que chama Stripe checa isso e dá
- * mensagem amigável em vez de explodir.
+ * Stripe client com graceful fallback + STRIPE_MOCK mode:
+ *
+ * - STRIPE_MOCK=true → `getStripeClient()` retorna null mesmo se houver key.
+ *   Actions usam `isStripeMock()` pra trocar pra fluxo mockado (URLs fake,
+ *   estado local). Útil pra dev e testes E2E sem cobrar.
+ * - sem STRIPE_SECRET_KEY → mesma coisa: null + warning. Modo demo.
+ * - com key + sem MOCK → cliente real.
+ *
+ * Toda função que chama Stripe checa `isStripeConfigured()` antes.
  */
 let cached: Stripe | null = null;
 let warned = false;
 
+export function isStripeMock(): boolean {
+  return process.env['STRIPE_MOCK'] === 'true';
+}
+
 export function getStripeClient(): Stripe | null {
+  if (isStripeMock()) return null;
   if (cached) return cached;
   if (!env.STRIPE_SECRET_KEY) {
     if (!warned) {
@@ -33,7 +44,8 @@ export function getStripeClient(): Stripe | null {
 }
 
 export function isStripeConfigured(): boolean {
-  return Boolean(env.STRIPE_SECRET_KEY);
+  // Mock mode é "configurado" — funciona sem credencial real, mas funciona.
+  return isStripeMock() || Boolean(env.STRIPE_SECRET_KEY);
 }
 
 /**

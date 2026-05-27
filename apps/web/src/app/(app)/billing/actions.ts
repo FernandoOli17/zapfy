@@ -13,6 +13,7 @@ import {
   getPriceIdForPlan,
   getStripeClient,
   isStripeConfigured,
+  isStripeMock,
 } from '@/lib/stripe';
 
 const log = createLogger('billing-actions');
@@ -64,11 +65,46 @@ export async function createCheckoutSession(
       error: 'Pagamentos não estão configurados ainda. Avise o admin pra setar STRIPE_SECRET_KEY.',
     };
   }
+
+  const { user, workspace, role } = await requireWorkspace();
+  const perm = assertBillingPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
+  const sub = workspace.subscription;
+  const successUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?success=1&mock_plan=${parsed.data.plan}`;
+  const cancelUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?canceled=1`;
+
+  // STRIPE_MOCK: bypass total, atualiza Subscription local e devolve URL fake.
+  if (isStripeMock()) {
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+    await prisma.subscription.upsert({
+      where: { workspaceId: workspace.id },
+      create: {
+        workspaceId: workspace.id,
+        plan: parsed.data.plan,
+        status: 'ACTIVE',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        stripeCustomerId: `mock_cus_${workspace.id.slice(0, 12)}`,
+        stripeSubscriptionId: `mock_sub_${workspace.id.slice(0, 12)}`,
+      },
+      update: {
+        plan: parsed.data.plan,
+        status: 'ACTIVE',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+      },
+    });
+    log.info({ workspaceId: workspace.id, plan: parsed.data.plan }, 'mock checkout success');
+    return { status: 'ok', url: successUrl };
+  }
+
+  // Stripe real
   const stripe = getStripeClient();
   if (!stripe) {
     return { status: 'error', error: 'Stripe indisponível' };
   }
-
   const priceId = getPriceIdForPlan(parsed.data.plan);
   if (!priceId) {
     return {
@@ -76,13 +112,6 @@ export async function createCheckoutSession(
       error: `Plano ${parsed.data.plan} sem priceId configurado (STRIPE_PRICE_${parsed.data.plan}).`,
     };
   }
-
-  const { user, workspace, role } = await requireWorkspace();
-  const perm = assertBillingPermission(role);
-  if (!perm.ok) return { status: 'error', error: perm.error };
-  const sub = workspace.subscription;
-  const successUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?success=1`;
-  const cancelUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?canceled=1`;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -130,16 +159,24 @@ export async function createPortalSession(): Promise<PortalResult> {
       error: 'Pagamentos não configurados. Aguarde o admin setar STRIPE_SECRET_KEY.',
     };
   }
-  const stripe = getStripeClient();
-  if (!stripe) {
-    return { status: 'error', error: 'Stripe indisponível' };
-  }
-
   const { workspace, role } = await requireWorkspace();
   const perm = assertBillingPermission(role);
   if (!perm.ok) return { status: 'error', error: perm.error };
   if (!workspace.subscription?.stripeCustomerId) {
     return { status: 'error', error: 'Sem assinatura ativa pra gerenciar' };
+  }
+
+  // STRIPE_MOCK: devolve URL fake — UI mostra alerta "modo demo"
+  if (isStripeMock()) {
+    return {
+      status: 'ok',
+      url: `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?mock_portal=1`,
+    };
+  }
+
+  const stripe = getStripeClient();
+  if (!stripe) {
+    return { status: 'error', error: 'Stripe indisponível' };
   }
 
   try {

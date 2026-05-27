@@ -64,6 +64,44 @@ export async function assertPlanFeature(
   }
 }
 
+/**
+ * Server-action / route handler gate por feature de plano.
+ *
+ * Uso:
+ *   const gate = await requirePlan(workspaceId, 'customTools');
+ *   if (!gate.ok) return { status: 'error', error: gate.error, upgradeRequired: gate.plan };
+ *
+ * UI deve detectar `upgradeRequired` e redirecionar pra `/billing?upgrade=customTools`.
+ */
+export async function requirePlan(
+  workspaceId: string,
+  feature: 'customTools' | 'apiAccess',
+): Promise<
+  | { ok: true; plan: PlanId }
+  | { ok: false; plan: PlanId; error: string; requiredPlan: PlanId }
+> {
+  const { plan, features, status } = await getWorkspacePlan(workspaceId);
+  if (features[feature]) {
+    if (status === 'PAST_DUE' || status === 'CANCELED' || status === 'UNPAID') {
+      return {
+        ok: false,
+        plan,
+        requiredPlan: plan,
+        error: `Sua assinatura está ${status.toLowerCase()}. Atualize o pagamento em /billing.`,
+      };
+    }
+    return { ok: true, plan };
+  }
+  // Encontrar o menor plano que tem essa feature
+  const requiredPlan: PlanId = PLANS.PRO[feature] ? 'PRO' : 'PREMIUM';
+  return {
+    ok: false,
+    plan,
+    requiredPlan,
+    error: `${feature} disponível no plano ${requiredPlan} ou superior. Você está no ${plan}.`,
+  };
+}
+
 /** Verifica limites numéricos (numbers, seats, docs). */
 export async function assertPlanLimit(
   workspaceId: string,
