@@ -23,6 +23,7 @@ import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 import { enforceRateLimit, RL_INBOX_SEND } from '@/lib/rate-limit';
 import { requireWorkspace } from '@/lib/inbox';
+import { captureEvent } from '@/lib/posthog';
 
 const log = createLogger('inbox-actions');
 
@@ -190,6 +191,13 @@ export async function sendInboxMessage(
   await prisma.conversation.update({
     where: { id: conversation.id },
     data: { lastMessageAt: new Date() },
+  });
+
+  captureEvent({
+    event: 'inbox.message_sent',
+    distinctId: user.id,
+    workspaceId: workspace.id,
+    properties: { chunks: created.length },
   });
 
   revalidatePath(`/inbox/${conversation.id}`);

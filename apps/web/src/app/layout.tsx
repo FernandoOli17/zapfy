@@ -3,9 +3,12 @@ import { Instrument_Serif } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
+import { Suspense } from 'react';
+
 import { ToastProvider, Toaster } from '@zapai/ui';
 
 import { ThemeProvider } from '@/components/theme-provider';
+import { PostHogProvider } from '@/components/posthog-provider';
 
 import './globals.css';
 
@@ -36,10 +39,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="font-sans antialiased min-h-screen bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          <ToastProvider>
-            {children}
-            <Toaster />
-          </ToastProvider>
+          <Suspense fallback={null}>
+            <PostHogProvider>
+              <ToastProvider>
+                {children}
+                <Toaster />
+              </ToastProvider>
+            </PostHogProvider>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>

@@ -13,6 +13,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { enqueue, type SendBroadcastJob } from '@/lib/queues';
+import { captureEvent } from '@/lib/posthog';
 
 const log = createLogger('broadcasts-actions');
 
@@ -198,6 +199,13 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
     { broadcastId: broadcast.id, enqueued, total: broadcast.recipients.length },
     'broadcast lançado',
   );
+
+  captureEvent({
+    event: 'broadcast.launched',
+    distinctId: ctx.user.id,
+    workspaceId: ctx.workspace.id,
+    properties: { recipientCount: broadcast.recipients.length },
+  });
 
   revalidatePath('/automations/broadcasts');
   revalidatePath(`/automations/broadcasts/${broadcast.id}`);

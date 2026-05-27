@@ -17,6 +17,7 @@ import { requireWorkspace } from '@/lib/inbox';
 import { decrypt } from '@zapai/shared';
 import { createWaClient, WaApiError } from '@zapai/wa';
 import { env } from '@/env';
+import { captureEvent } from '@/lib/posthog';
 
 const log = createLogger('templates-actions');
 
@@ -224,6 +225,12 @@ export async function submitTemplateToMeta(templateId: string): Promise<
     });
 
     log.info({ workspaceId: ctx.workspace.id, templateId: tpl.id, metaId: res.id }, 'template submetido pra Meta');
+    captureEvent({
+      event: 'template.submitted_to_meta',
+      distinctId: ctx.user.id,
+      workspaceId: ctx.workspace.id,
+      properties: { templateName: tpl.name, category: tpl.category },
+    });
     revalidatePath('/automations/templates');
     return { status: 'ok', metaTemplateId: res.id };
   } catch (err) {
