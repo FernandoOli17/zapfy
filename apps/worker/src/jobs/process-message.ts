@@ -16,6 +16,7 @@ import {
   type VerticalToolDeps,
 } from '@zapai/ai';
 import { env } from '../env';
+import { invokeCustomTool } from '../custom-tool-dispatcher';
 
 const log = createLogger('worker:process-message');
 
@@ -237,6 +238,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
         topicBlacklist,
         flowGraph: agentVersion.flowGraph,
         messageType: 'text',
+        invokeCustomTool,
       });
       log.info(
         { conversationId, nodesExecuted: result.trace.length, customFlow: true },

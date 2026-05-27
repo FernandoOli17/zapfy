@@ -23,12 +23,25 @@ export interface FlowExecutionResult {
   trace: Array<{ nodeId: string; kind: string; tookMs: number; outcome: string }>;
 }
 
+/**
+ * Dispatcher de custom tool — caller injeta. Implementação típica em apps/worker:
+ * carrega CustomTool por nome do workspace, valida SSRF do endpoint, POST com
+ * HMAC, parse response, retorna `{ ok, data | error }`.
+ */
+export type CustomToolInvoker = (input: {
+  toolName: string;
+  args: Record<string, unknown>;
+  workspaceId: string;
+}) => Promise<{ ok: true; data: unknown } | { ok: false; error: string }>;
+
 /** Input do executor — superset do RunAgentInput porque precisamos do graph. */
 export interface ExecuteFlowInput extends Omit<RunAgentInput, 'inboundText'> {
   inboundText: string;
   flowGraph: unknown; // será validado por Zod
   /** Tipo da mensagem original (filtra TRIGGER). */
   messageType?: 'text' | 'image' | 'audio' | 'doc' | 'any';
+  /** Dispatcher pra TOOL_CALL nodes invocarem CustomTools de verdade. */
+  invokeCustomTool?: CustomToolInvoker;
 }
 
 /** Limite total de nodes executados por turn — evita loop infinito. */
@@ -72,6 +85,7 @@ export async function executeFlow(input: ExecuteFlowInput): Promise<FlowExecutio
     handoffReason: null,
     visited: new Set<string>(),
     branchOutcomes: new Map<string, 'true' | 'false'>(),
+    toolResults: {},
     trace: [{ nodeId: trigger.id, kind: 'TRIGGER', tookMs: 0, outcome: 'matched' }],
   };
 
@@ -149,6 +163,8 @@ interface ExecutionScope {
   visited: Set<string>;
   /** Outcome de BRANCH nodes, isolado por execução. */
   branchOutcomes: Map<string, 'true' | 'false'>;
+  /** Resultado de TOOL_CALL nodes (por node.id). BRANCH pode ler via $toolResults.{nodeId}. */
+  toolResults: Record<string, { ok: true; data: unknown } | { ok: false; error: string }>;
   trace: FlowExecutionResult['trace'];
 }
 
@@ -188,11 +204,25 @@ async function executeNode(
       return `text.len=${result.text.length} tools=${result.toolsUsed.length}`;
     }
     case 'TOOL_CALL': {
-      // Tool call estático fora do agente — útil pra pré-fetch (ex: buscar produtos
-      // antes de chamar o LLM). Implementação completa requer dispatch
-      // workspace-aware (CustomTool); por ora marca skipped sem quebrar fluxo.
-      // TODO: invocar via dispatcher do worker (issue follow-up).
-      return `skipped(tool=${node.config.toolName})`;
+      // Invocação real de CustomTool por nome. Caller (worker) injeta
+      // `input.invokeCustomTool` quando disponível; se não, marca skipped.
+      if (!input.invokeCustomTool) {
+        return `skipped(tool=${node.config.toolName}, no dispatcher)`;
+      }
+      try {
+        const result = await input.invokeCustomTool({
+          toolName: node.config.toolName,
+          args: node.config.staticArgs ?? {},
+          workspaceId: input.globalDeps.workspaceId,
+        });
+        // Persiste output no scope pra BRANCH/AGENT_RESPONSE poderem ler depois
+        scope.toolResults[node.id] = result;
+        return result.ok ? `tool=${node.config.toolName} ok` : `tool=${node.config.toolName} failed: ${result.error}`;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn({ tool: node.config.toolName, err: msg }, 'TOOL_CALL falhou');
+        return `error(tool=${node.config.toolName}): ${msg}`;
+      }
     }
     case 'BRANCH': {
       // Avalia expressão e marca scope pra picker decidir próximo edge.
