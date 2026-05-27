@@ -18,6 +18,7 @@ import {
   Phone,
   Radio,
   Settings,
+  Shield,
   ShoppingCart,
   Sparkles,
   Stethoscope,
@@ -58,6 +59,8 @@ const ICONS = {
   'shopping-cart': ShoppingCart,
   calendar: Calendar,
   'file-text': FileText,
+  // Super-admin
+  shield: Shield,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

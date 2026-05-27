@@ -30,6 +30,8 @@ model User {
   emailVerified Boolean   @default(false)
   name          String?
   image         String?
+  /// Acesso global a todos os workspaces via /admin. Toggle SÓ manual no DB.
+  isSuperAdmin  Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

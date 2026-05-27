@@ -129,6 +129,7 @@ export const config = {
     '/appointments/:path*',
     '/quotes/:path*',
     '/developer/:path*',
+    '/admin/:path*',
     // Rate-limit em auth endpoints
     '/api/auth/sign-in/:path*',
     '/api/auth/sign-up/:path*',

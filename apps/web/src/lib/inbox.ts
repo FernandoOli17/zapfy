@@ -5,17 +5,48 @@ import { redirect } from 'next/navigation';
 import { prisma, type Prisma } from '@zapai/db';
 
 import { auth } from '@/lib/auth';
+import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
 
 export async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+
+  const fullUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, isSuperAdmin: true },
+  });
+
+  // Super-admin impersonando → carrega workspace alvo, bypassando member check
+  if (fullUser?.isSuperAdmin) {
+    const targetId = await getImpersonatedWorkspaceId();
+    if (targetId) {
+      const ws = await prisma.workspace.findUnique({ where: { id: targetId } });
+      if (ws) {
+        return {
+          user: session.user,
+          member: {
+            id: 'impersonated',
+            userId: session.user.id,
+            workspaceId: ws.id,
+            role: 'OWNER' as const,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            workspace: ws,
+          },
+          workspace: ws,
+          impersonating: true as const,
+        };
+      }
+    }
+  }
+
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
     orderBy: { createdAt: 'asc' },
   });
   if (!member) redirect('/onboarding');
-  return { user: session.user, member, workspace: member.workspace };
+  return { user: session.user, member, workspace: member.workspace, impersonating: false as const };
 }
 
 export interface InboxConversationListItem {

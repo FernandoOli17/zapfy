@@ -7,13 +7,19 @@ import { prisma } from '@zapai/db';
 import { auth } from '@/lib/auth';
 import { SignOutLink } from '@/components/sign-out-link';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
 
 import { SidebarNav, type NavSection } from './sidebar-nav';
+import { ImpersonateBanner } from './impersonate-banner';
 
 // Importante: nada de componentes Lucide aqui — eles seriam serializados de
 // Server→Client e Next 15 rejeita (icon: forwardRef object). O `SidebarNav`
 // resolve `iconName` via mapa interno.
-function buildNavSections(opts: { devMode: boolean; isOwnerOrAdmin: boolean }): NavSection[] {
+function buildNavSections(opts: {
+  devMode: boolean;
+  isOwnerOrAdmin: boolean;
+  isSuperAdmin: boolean;
+}): NavSection[] {
   const sections: NavSection[] = [
     {
       label: 'Principal',
@@ -71,6 +77,16 @@ function buildNavSections(opts: { devMode: boolean; isOwnerOrAdmin: boolean }): 
       ],
     });
   }
+
+  // Super-admin — atalho pra console global. Só aparece pra users com flag.
+  if (opts.isSuperAdmin) {
+    sections.push({
+      label: 'Plataforma',
+      items: [
+        { href: '/admin', label: 'Super-admin', iconName: 'shield', badge: 'SUDO' },
+      ],
+    });
+  }
   return sections;
 }
 
@@ -78,18 +94,47 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
 
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
-    orderBy: { createdAt: 'asc' },
+  const fullUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, isSuperAdmin: true },
   });
-  if (!member) redirect('/onboarding');
+  const isSuperAdmin = fullUser?.isSuperAdmin ?? false;
 
-  const workspace = member.workspace;
-  const isOwnerOrAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
+  // Super-admin impersonando: carrega workspace alvo, pula member check
+  let workspace: Awaited<ReturnType<typeof prisma.workspace.findUnique>> | null = null;
+  let isOwnerOrAdmin = false;
+  let impersonatingName: string | null = null;
+
+  if (isSuperAdmin) {
+    const impersonatedId = await getImpersonatedWorkspaceId();
+    if (impersonatedId) {
+      const ws = await prisma.workspace.findUnique({ where: { id: impersonatedId } });
+      if (ws) {
+        workspace = ws;
+        isOwnerOrAdmin = true;
+        impersonatingName = ws.name;
+      }
+    }
+  }
+
+  if (!workspace) {
+    const member = await prisma.workspaceMember.findFirst({
+      where: { userId: session.user.id },
+      include: { workspace: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!member) {
+      if (isSuperAdmin) redirect('/admin');
+      redirect('/onboarding');
+    }
+    workspace = member.workspace;
+    isOwnerOrAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
+  }
+
   const NAV_SECTIONS = buildNavSections({
     devMode: workspace.developerModeEnabled,
     isOwnerOrAdmin,
+    isSuperAdmin,
   });
   const initials =
     workspace.name
@@ -170,6 +215,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <ThemeToggle />
           </div>
         </header>
+        {impersonatingName && <ImpersonateBanner workspaceName={impersonatingName} />}
         <main className="flex-1">{children}</main>
       </div>
     </div>
