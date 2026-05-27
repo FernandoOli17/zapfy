@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   BookOpen,
+  Calendar,
   Code2,
   CreditCard,
+  FileText,
   Headset,
   Inbox,
   KeyRound,
@@ -16,7 +18,11 @@ import {
   Phone,
   Radio,
   Settings,
+  ShoppingCart,
   Sparkles,
+  Stethoscope,
+  Tag,
+  Ticket,
   Users,
   type LucideIcon,
 } from 'lucide-react';
@@ -45,6 +51,13 @@ const ICONS = {
   'credit-card': CreditCard,
   settings: Settings,
   'code-2': Code2,
+  // Fase 7 — Catálogo / Vendas
+  tag: Tag,
+  stethoscope: Stethoscope,
+  ticket: Ticket,
+  'shopping-cart': ShoppingCart,
+  calendar: Calendar,
+  'file-text': FileText,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

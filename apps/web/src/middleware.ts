@@ -123,6 +123,11 @@ export const config = {
     '/integrations/:path*',
     '/billing/:path*',
     '/products/:path*',
+    '/professionals/:path*',
+    '/coupons/:path*',
+    '/orders/:path*',
+    '/appointments/:path*',
+    '/quotes/:path*',
     '/developer/:path*',
     // Rate-limit em auth endpoints
     '/api/auth/sign-in/:path*',

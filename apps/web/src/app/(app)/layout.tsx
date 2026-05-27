@@ -33,6 +33,17 @@ function buildNavSections(opts: { devMode: boolean; isOwnerOrAdmin: boolean }): 
       ],
     },
     {
+      label: 'Catálogo & Vendas',
+      items: [
+        { href: '/products', label: 'Produtos', iconName: 'tag' },
+        { href: '/coupons', label: 'Cupons', iconName: 'ticket' },
+        { href: '/orders', label: 'Pedidos', iconName: 'shopping-cart' },
+        { href: '/professionals', label: 'Profissionais', iconName: 'stethoscope' },
+        { href: '/appointments', label: 'Agendamentos', iconName: 'calendar' },
+        { href: '/quotes', label: 'Orçamentos', iconName: 'file-text' },
+      ],
+    },
+    {
       label: 'Automações',
       items: [
         { href: '/automations/templates', label: 'Templates HSM', iconName: 'megaphone' },
