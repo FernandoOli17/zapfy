@@ -108,40 +108,42 @@ export default async function QuotesPage({
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
             {quotes.map((q) => (
-              <li
-                key={q.id}
-                className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-sm font-medium">{q.publicNumber}</p>
-                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                    {q.serviceDescription}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground/80">
-                    {q.contact?.name ?? q.contact?.phoneE164 ?? 'sem contato'} ·{' '}
-                    {q.createdAt.toLocaleDateString('pt-BR')}
-                    {q.validUntil && ` · válido até ${q.validUntil.toLocaleDateString('pt-BR')}`}
-                  </p>
-                </div>
-                <span
-                  className={cn(
-                    'rounded-full border px-2 py-0.5 text-[11px] font-medium',
-                    STATUS_COLOR[q.status],
-                  )}
+              <li key={q.id}>
+                <Link
+                  href={`/quotes/${q.id}`}
+                  className="flex flex-wrap items-center gap-4 p-4 hover:bg-muted/30"
                 >
-                  {STATUS_LABEL[q.status]}
-                </span>
-                <p className="text-right text-sm font-semibold">
-                  {q.totalCents > 0
-                    ? (q.totalCents / 100).toLocaleString('pt-BR', {
-                        style: 'currency',
-                        currency: q.currency,
-                      })
-                    : '—'}
-                </p>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-sm font-medium">{q.publicNumber}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {q.serviceDescription}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground/80">
+                      {q.contact?.name ?? q.contact?.phoneE164 ?? 'sem contato'} ·{' '}
+                      {q.createdAt.toLocaleDateString('pt-BR')}
+                      {q.validUntil && ` · válido até ${q.validUntil.toLocaleDateString('pt-BR')}`}
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      'rounded-full border px-2 py-0.5 text-[11px] font-medium',
+                      STATUS_COLOR[q.status],
+                    )}
+                  >
+                    {STATUS_LABEL[q.status]}
+                  </span>
+                  <p className="text-right text-sm font-semibold">
+                    {q.totalCents > 0
+                      ? (q.totalCents / 100).toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: q.currency,
+                        })
+                      : '—'}
+                  </p>
+                </Link>
               </li>
             ))}
           </ul>
