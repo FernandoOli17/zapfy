@@ -3,6 +3,8 @@ import { Instrument_Serif } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
 
+import { ToastProvider, Toaster } from '@zapai/ui';
+
 import { ThemeProvider } from '@/components/theme-provider';
 
 import './globals.css';
@@ -34,7 +36,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="font-sans antialiased min-h-screen bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-          {children}
+          <ToastProvider>
+            {children}
+            <Toaster />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

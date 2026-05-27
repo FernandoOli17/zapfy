@@ -10,3 +10,64 @@ html {
   color-scheme: light dark;
   scroll-behavior: smooth;
 }
+
+/* Animações globais pra micro-interactions (sem framer-motion) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 250ms ease-out;
+}
+.animate-slide-up {
+  animation: slide-up 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-slide-down {
+  animation: slide-down 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-scale-in {
+  animation: scale-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Reduz animação se usuário preferir */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-scale-in,
+  .animate-shimmer {
+    animation: none;
+  }
+  html { scroll-behavior: auto; }
+}
