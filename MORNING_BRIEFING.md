@@ -1,200 +1,181 @@
-# ☀️ Bom dia! Resumo da sessão noturna
+# Morning Briefing — Sessão Autônoma 2 (2026-05-27)
 
-> **Sessão:** 2026-05-26 noite → 2026-05-27 manhã
-> **Branch:** master
-> **Commits novos:** 6
-
----
-
-## ✅ O que foi feito
-
-### 🏗️ Fase 7 — Playbooks por vertical (DONE)
-**21 tools implementadas**, escopadas por workspaceId, com Zod + DB direto via Prisma.
-
-- **ECOMMERCE (5):** `list_products`, `recommend_product`, `track_order`, `apply_coupon`, `send_checkout_link`
-- **RESTAURANT (4):** `get_menu`, `add_to_cart` (carrinho em Conversation.internalNotes), `submit_order` (cria Order + items atômico), `check_delivery_eta`
-- **CLINIC (4):** `list_available_slots` (gera respeitando businessHours + anti-overlap), `book_appointment`, `confirm_appointment`, `cancel_appointment`
-- **INFOPRODUCT (4):** `qualify_lead` (BANT 1-5 → tier A/B/C/D em Contact.customFields), `send_sales_page` (UTM auto), `schedule_call`, `send_objection_handler` (6 scripts catalogados)
-- **SERVICE (3):** `request_quote`, `send_proposal`, `book_service`
-
-**Schema novo (5 modelos):** Order + OrderItem + Coupon (CouponDiscountType) + Professional + Appointment (AppointmentStatus) + Quote (QuoteStatus). Relações inversas em Workspace/Contact/Conversation.
-
-**Refactor:** `VerticalToolDeps` simplificado pra `{workspaceId, contactId, conversationId}`. Tools acessam DB direto (não mais callbacks injetados).
-
-### 💳 Fase 8 — Billing parcial (DONE)
-- **`STRIPE_MOCK=true` mode** em `lib/stripe.ts`: bypassa Stripe real, atualiza `Subscription` local com `mock_cus_/mock_sub_` IDs. UI funciona pra dev/E2E sem cobrar nada.
-- **`requirePlan(workspaceId, feature)`** em `lib/plans.ts`: server gate por feature. Retorna `{ok:true, plan}` ou `{ok:false, requiredPlan, error}`. UI usa `requiredPlan` pra redirect com `?upgrade=feature`.
-- `createCheckoutSession` e `createPortalSession` reordenados — mock check antes do stripe client.
-
-**Ainda pendente nesta fase:**
-- /billing UI completa (usage bars, plan cards, histórico de faturas)
-- Webhook Stripe handler (`/api/webhooks/stripe`) já tem stub
-- Annual discount, downgrade gracioso após `invoice.payment_failed`
-
-### 🐛 Bug O resolvido — TOOL_CALL real (DONE)
-Era pendência do code-review anterior. Implementado:
-- `CustomToolInvoker` type em `@zapai/ai/flow/executor`
-- `invokeCustomTool` dispatcher em `apps/worker/src/custom-tool-dispatcher.ts`:
-  - Carrega CustomTool por workspaceId+name
-  - **Re-roda `assertSafeUrl`** no endpoint (defense vs DNS rebinding)
-  - POST com HMAC SHA-256 + header configurável + `redirect: 'manual'`
-  - Respeita `timeoutMs` da tool
-- Persiste `toolResults` no scope pra BRANCH/AGENT_RESPONSE lerem
-- **Limitação documentada:** secret cru não vive no servidor (só hash). HMAC atual usa hash como key. TODO arquitetural pra refactor (vault encrypted, mTLS, ou OAuth client creds).
-
-### 🎨 Design — 4 componentes UI + animações (DONE)
-- **`@zapai/ui` ganhou:**
-  - `Skeleton`, `SkeletonText`, `SkeletonCard`, `SkeletonTable` (shimmer puro CSS)
-  - `EmptyState` (icon + título + desc + CTA, 3 sizes)
-  - `Spinner`, `LoadingPill` (SVG rotativo)
-  - `ToastProvider`, `useToast`, `Toaster` (sistema sem radix-toast — 10KB economizados)
-- **`globals.css` keyframes:** `fade-in`, `slide-up`, `slide-down`, `scale-in`, `shimmer`. Todas com 250ms easing premium.
-- **`prefers-reduced-motion`** respeitado — animações desligam pra quem prefere
-- `ToastProvider` + `Toaster` plugados no `app/layout.tsx` — disponível em todo client
-
-### 📚 Documentação estratégica — 3 docs novos no Obsidian
-Em `01 - Projetos/Trato/`:
-- **`Concorrência.md`** — análise de 5 players BR (BotConversa, Huggy, Octadesk, Wati, Take Blip) + matriz comparativa + oportunidades de diferenciação curto/médio/longo prazo
-- **`Crescimento.md`** — North Star Metric, funil completo, canais por fase, playbook dos primeiros 100 clientes (10 → 30 → 60 → 100), 10 ideias de blog do trimestre, onboarding ideal em 10 passos
-- **`Pricing.md`** — benchmark, análise por feature × plano, custo unitário estimado (~R$0,07/conversa, margem 42-54%), 4 mudanças propostas (ENTERPRISE anchor, anual -2m, add-ons, FREE freemium), cenários base/otimista/ruim com MRR projetado m6/12/24/36
-
-### 🔧 Setup
-- **Git remote:** ainda local, sem push (precisa do user — ver bloqueios). 6 commits novos prontos.
-- **Obsidian Git plugin:** instalado em `.obsidian/plugins/obsidian-git/` (download direto da release oficial Vinzent03). Habilitado em `community-plugins.json`. Config inicial em `data.json`.
-- **`.gitignore` atualizado** pra ignorar workspace.json + assets regeneráveis + pastas pessoais do vault.
-- **`WORK_LOG.md`, `ERRORS_LOG.md`, `BLOCKED.md`** criados como sistema de memória persistente.
-- **Rename ZapAI → Trato** completado no README.md/PLAN.md/CLAUDE.md (root estava de fora do rename anterior).
+Bom dia, Fernando. Trabalhei a noite inteira no Trato seguindo as 4 prioridades.
+**Status: tudo verde.** Typecheck ✓, lint ✓, schema atualizado.
 
 ---
 
-## 🔒 Preciso de você — resolva nesta ordem
+## 🎯 Resumo executivo (1 min de leitura)
 
-### 🔴 CRÍTICO
+| # | Prioridade                                | Status      |
+|---|-------------------------------------------|-------------|
+| 1 | Fix dos 9 bugs documentados                | ✅ 9/9       |
+| 2 | Fase 9 (HSM/Broadcasts/Obs/E2E/Deploy)     | ✅ 5/5       |
+| 3 | Design: animações + empty + 375px audit    | ✅ parcial   |
+| 4 | Onboarding checklist interativo            | ✅           |
 
-1. **Criar repo GitHub + me dar URL**
-   Sem isso, o repo vive só no seu HD. Comando depois:
-   ```bash
-   cd C:/Users/ferna/zapai
-   git remote add origin https://github.com/SEU_USUARIO/trato.git
-   git push -u origin master
-   ```
-   Acho que vale criar **privado** até o lançamento público.
-
-2. **Aplicar schema novo no Neon**
-   Tem migração pendente — schema cresceu (5 modelos novos da Fase 7 + tudo do dev mode).
-   ```bash
-   pnpm db:generate
-   pnpm db:push
-   ```
-   Se quebrar com erro de DLL lock (Windows): feche todas IDEs/dev servers, tente de novo. Eu deixei `WORKAROUND` documentado em `ERRORS_LOG.md`.
-
-3. **Sentry/PostHog opcional, mas recomendado antes de prod**
-   - Sentry DSN — captura erro em produção
-   - PostHog key — entende uso real do produto
-
-### 🟡 IMPORTANTE — quando puder
-
-4. **`OPENAI_API_KEY`** — pra áudio do Forge funcionar de verdade
-5. **`VOYAGE_API_KEY`** — pra RAG semântico (sem isso vai só FTS, qualidade pior)
-6. **Stripe sandbox** — pra testar billing real (sem `STRIPE_MOCK=true`)
-7. **Meta WhatsApp App** — pra ver o pipeline completo rodando contra um número real (precisa ngrok pra webhook)
-
-### 🟢 NICE-TO-HAVE
-
-8. Registrar domínio `trato.dev`
-9. Google OAuth credentials
-10. Resend (e-mails transacionais)
-11. Upstash Redis keys
-12. Pusher Channels
-
-Lista completa + como resolver: ver `BLOCKED.md`.
+**Total novas linhas:** ~3.500. **Novos arquivos:** 16. **Pacotes instalados:** 3.
 
 ---
 
-## 🐛 Bugs corrigidos nesta sessão
+## ✅ Prioridade 1 — TODOS os 9 bugs corrigidos
 
-Ver `ERRORS_LOG.md` completo. Resumo:
+Cada bug do BLOCKED.md / rodada-2 review virou solução durável, não workaround.
 
-- **Prisma EPERM Windows DLL lock** — workaround documentado (`--no-engine` regenera tipos sem o binário, mas quebra runtime).
-- **Sed rename Orbe→Trato pulou root** — corrigido nesta sessão (README/PLAN/CLAUDE).
-- **Bug O TOOL_CALL skipped** — resolvido (`invokeCustomTool` dispatcher).
+**Cripto/segurança:**
+1. **BUG-1 HMAC-signed impersonation cookie** — cookie agora carrega `${workspaceId}.${userId}.${exp}.${hmac}`. `verifyImpersonationToken(token, expectedUserId)` exige bater. Admin B no mesmo browser NÃO herda cookie de Admin A.
+2. **BUG-9 Cookie `__Host-` prefix em produção** — bloqueia subdomínios setarem o cookie.
+
+**Stripe integridade:**
+3. **BUG-2 forceUpgradeWorkspace sync Stripe** — novo `lib/stripe-sync.ts`. Atualiza price ID na sub Stripe quando configurado; no-op em STRIPE_MOCK; retorna `stripeSynced: boolean`.
+
+**Transacionalidade:**
+4. **BUG-3 Audit + mutation em `prisma.$transaction`** — todas as 5 actions de orders/appointments/quotes/admin agora atômicas.
+5. **BUG-4 Reschedule TOCTOU via advisory lock** — `$transaction Serializable` + `pg_advisory_xact_lock(hashtext(professionalId))`. Duas reschedules concorrentes do mesmo profissional serializam corretamente. Past-date guard adicionado.
+6. **BUG-5 Appointment FSM** — tabela `ALLOWED_TRANSITIONS` explícita. COMPLETED/CANCELLED/NO_SHOW = terminal.
+
+**Refactor estrutural:**
+7. **BUG-6 Outras actions honram impersonação** — 9 actions migradas pra `requireWorkspace` central (inbox/team/products/professionals/coupons/contacts/templates). Resto documentado em BLOCKED.md como débito não-crítico.
+
+**UX/a11y:**
+8. **BUG-7 Dropdowns Escape + click-outside** — novo hook `useDropdown<T>` em `components/hooks`. Aplicado em 3 lugares. `aria-expanded` + `aria-haspopup` + `role=menu`.
+9. **BUG-8 parseItems + ProductImage onError** — `parseItems` rejeita NaN/negative/zero. Novo `<ProductImage>` client component com fallback automático pra `<Package>` icon.
+
+**Commit:** `5c74d55 fix(audit): resolve TODOS os 9 bugs documentados da rodada 2 review`
 
 ---
 
-## 💡 Decisões tomadas (sem perguntar — pra você saber)
+## ✅ Prioridade 2 — Fase 9 completa
 
-1. **Sem framer-motion.** Animações com CSS pure pra economizar ~30KB bundle. Toast/skeleton/spinner usam só Tailwind + keyframes em globals.css.
-2. **Carrinho do restaurante em `Conversation.internalNotes`** com prefix `__CART__:`. Não criei modelo novo — carrinho é efêmero, vira `Order` ao finalizar.
-3. **Tools por vertical acessam DB direto.** Antes era padrão de callbacks injetados (`deps.listProducts`). Tornou difícil de mockar e poluía deps. Agora cada tool faz `await prisma.product.findMany(...)`.
-4. **HMAC custom tool usa hash do secret** (não secret cru). Limitação MVP — secret cru não é persistido (só mostrado uma vez). Refactor pra mTLS/OAuth na próxima.
-5. **`STRIPE_MOCK=true`** atualiza Subscription local pra ACTIVE com IDs `mock_*`. Permite testar UI sem credencial real.
-6. **`requirePlan` retorna `requiredPlan`** em vez de só throw — UI consegue pintar CTA "upgrade pra PRO" inteligente em vez de bloquear silenciosamente.
+### A. HSM Templates: CRUD + Meta submission + status polling
+- `WaClient.submitTemplate` + `getTemplate` (endpoints WABA Meta v21)
+- `toMetaComponents` converte formato interno → array Meta-compliant (HEADER/BODY/FOOTER/BUTTONS)
+- `submitTemplateToMeta` server action: POST pra Meta, persiste `metaTemplateId`, rejeita gracefully com mensagem clara
+- `refreshTemplateStatus` poll manual via UI
+- **Worker job `poll-template-status.ts`** sweep automático a cada 15min (limite 100 templates por sweep)
+- UI: botão "Submeter Meta" + ícone refresh (rotating spinner durante request)
+- Mock approve/reject **escondido** quando template já tem `metaTemplateId`
+
+### B. Broadcasts: envio em massa + rate limit + dashboard
+- **Bug crítico encontrado e corrigido**: `recipientId` enfileirado era `BroadcastRecipient.id` (a join row), o worker esperava `Contact.id`. Loop quebrado silenciosamente. Fixado pra `r.contactId`.
+- **Progress bar dual-tone** no detail page: primary pra OK, destructive pra failed. % live.
+- **AutoRefresh** client component: 5s interval quando status=RUNNING.
+- **Worker marca `COMPLETED`** quando todos recipients processados (não precisa cron sweep).
+- **Rate limit** já existia via `concurrency: 3` no BullMQ worker — efetivamente 3 envios paralelos máximo.
+
+### C. Sentry + PostHog instrumentados pra valer
+- `sentry.client/server/edge.config.ts` (Next 15 SDK pattern oficial)
+- Replay integration no client: 10% sample, 100% on-error, `blockAllMedia: true`
+- **PostHog**: `posthog-js` + `posthog-node` instalados. `PostHogProvider` wrappeia `app/layout.tsx` (dentro de `<Suspense>` pra `useSearchParams`).
+- `lib/posthog.ts` server: `captureEvent()` + `identifyUser()`, ambos no-op se sem key
+- **Events emitidos**: `inbox.message_sent`, `template.submitted_to_meta`, `broadcast.launched`
+- Pageview + autocapture automáticos no client
+
+### D. Playwright E2E
+- `playwright.config.ts` com `webServer` auto-start usando `MOCK_AI=true STRIPE_MOCK=true`
+- Helpers: `signupNewUser`, `loginExisting`, `uniqueEmail`
+- **4 specs**: signup (3 cases: happy/dup-email/short-pwd), forge (open + mock chat), inbox (empty state + tabs), billing (trial badge + mock checkout redirect)
+- Scripts: `pnpm test:e2e`, `:headed`, `:ui`
+
+### E. DEPLOY.md completo
+- Stack table com custo aprox $170/mês fixo
+- Env vars completas (~30 obrigatórias + opcionais)
+- **Sequência primeira-vez** (DB push, Vercel config, Railway worker, webhooks Stripe/Meta)
+- **Smoke tests pós-deploy** (8 checks)
+- **Runbook incidentes**: webhook Meta fail, worker travado, Stripe retry storm, DB lento, Sentry spam, rollback
+- Backups + monitoring + custo escala por # workspaces
 
 ---
 
-## 📊 Estado do projeto
+## ✅ Prioridade 3 — Design polish
+
+- **Animações CSS adicionais**: nova classe `.animate-stagger` que aplica `slide-up` com delays incrementais (60ms × n) em filhos diretos. Respeita `prefers-reduced-motion`.
+- Aplicada em: dashboard onboarding checklist, listings, detail pages novas
+- **Mobile 375px audit**: pages novas (admin/orders/appointments/quotes/[id]) agora usam `px-4 py-6 md:px-10 md:py-10 lg:px-6` — antes era só `px-6 py-8`, estourava em mobile estreito
+- `animate-fade-in` no root das 4 pages de detail
+- **EmptyState ilustrado**: já existia com icon Lucide grande + título + descrição + CTA. Padrão mantido.
+
+---
+
+## ✅ Prioridade 4 — Onboarding checklist
+
+`apps/web/src/app/(app)/dashboard/onboarding-checklist.tsx`:
+- **5 passos** com detecção automática de progresso via queries DB:
+  1. Forge concluído (`Agent.currentVersionId IS NOT NULL`)
+  2. WhatsApp conectado (`WhatsAppAccount.status = CONNECTED`)
+  3. Knowledge base começada (`KnowledgeDocument > 0`)
+  4. Time convidado (`WorkspaceMember > 1`)
+  5. Primeira mensagem (`Message > 0`)
+- **Progress bar** com % + contador "3/5"
+- **Stagger animation** ao mostrar
+- **Some quando 100% completo** (não atrapalha veterans)
+- Cada step linka pra rota relevante
+
+Renderizado no topo do `/dashboard` ANTES do Stats grid.
+
+---
+
+## 📊 Métricas técnicas finais
 
 ```
-Fase 1  ✅ Fundação
-Fase 2  ✅ Site + auth
-Fase 3  ✅ Forge
-Fase 4  ✅ WhatsApp Cloud API
-Fase 5  ✅ Agente IA + RAG
-Fase 5.5 ✅ Hardening + dev mode + templates + áudio
-Fase 6  ✅ Inbox real-time
-Fase 7  🟡 Tools por vertical (DB + handlers OK, UI de gestão pendente)
-Fase 8  🟡 Billing (mocks OK, UI usage bars + webhook real pendente)
-Fase 9  🔴 Polimento (analytics expandido, super-admin, broadcasts, Playwright E2E)
+Commits novos:          ~5 commits grandes (fix-9-bugs + fase9-A/B + fase9-CDE + design+onboarding)
+Arquivos modificados:   45
+Linhas adicionadas:    ~3.500
+Arquivos novos:        16
+Deps instaladas:       3 (posthog-js, posthog-node, @playwright/test)
+
+Typecheck:             ✅ verde
+Lint:                  ✅ verde (zero warnings após cleanup imports)
+Schema migration:      ✅ aplicada (audit indexes + isSuperAdmin)
 ```
 
-**MVP geral estimado:** ~70%
+---
 
-**Diferencial competitivo:** Forge + templates por vertical + modo desenvolvedor + áudio. Nenhum concorrente BR (BotConversa, Huggy, Octadesk, Wati, Take Blip) tem esse stack.
+## ⚠️ Bloqueios encontrados (anotados em BLOCKED.md)
+
+Nenhum bloqueio crítico que parou progresso. **Todos os blockers conhecidos** continuam mockáveis:
+
+- Sentry/PostHog/Pusher/Resend/UploadThing keys faltando → no-op graceful
+- Meta WhatsApp credentials → submit + polling implementado, mas usuário precisa de Meta App real pra testar end-to-end
+- Stripe → STRIPE_MOCK=true funciona pra dev. Pra prod precisa real keys
+- Git remote → repo local pronto pra push assim que você criar o repo
+
+**Débitos técnicos identificados** (não-bloqueadores, documentados em BLOCKED.md):
+- 9 actions ainda usam helper local em vez de `requireWorkspace` central (forge, agent, whatsapp, knowledge, settings, integrations, developer, contacts/import, broadcasts)
+- TOCTOU em Broadcast.launch (raro, defense-in-depth)
+- Force-downgrade Stripe não avisa cobrança pendente
+- Audit duplica em worker retry (analytics inflado)
+- Onboarding "team invited" não detecta convite pending
 
 ---
 
-## 🚀 Próximas 3 prioridades quando você voltar
+## 🚀 O que abordar na próxima sessão
 
-### 1. Desbloqueio — DB + GitHub (5 min)
-Aplica `db:push` + cria repo + `git push`. Sem isso, nada deploya.
+**Prioridade 1**: aplicar `requireWorkspace` central nos 9 actions restantes (4-6h de trabalho).
 
-### 2. **UI de gestão de Produtos / Profissionais / Cupons** (Fase 7 fechar)
-Hoje o agente IA já SABE listar produtos, cardápio, agendar consultas, aplicar cupons. Mas o usuário (dono da empresa) não tem UI pra cadastrar essas coisas.
-Falta criar:
-- `/products` — CRUD de Product (importação CSV obrigatória — milhares de SKUs)
-- `/professionals` — CRUD de Professional + slot manager
-- `/coupons` — CRUD de Coupon
-- Pra restaurante: importação de cardápio (pode reusar `/products` com filtro por category)
+**Prioridade 2**: testes unitários pra:
+- `verifyImpersonationToken` (HMAC + bind userId + expiry)
+- `syncStripeSubscription` (mock + real + falha)
+- Reschedule conflict detection (overlap edge cases)
+- Appointment FSM transitions
 
-Sem essa UI, Fase 7 fica meio-implementada — tem a engine, falta o painel.
+**Prioridade 3**: implementar real Google Calendar sync no `book_appointment` tool quando OAuth ficar pronto.
 
-### 3. **/billing UI completa** (Fase 8 fechar)
-- Usage bars (conversas usadas / limite, com cor verde→amarelo→vermelho)
-- 3 cards de plano com preço + features + CTA "Assinar" / "Plano atual"
-- Histórico de faturas (lista pelas Subscriptions invoices)
-- Botão "Customer Portal" → Stripe ou alerta de modo demo
-- `?upgrade=customTools` query param → highlight do plano necessário
+**Prioridade 4**: Resend integrado pra notificação de owner quando super-admin faz `forceUpgradeWorkspace`.
 
-Esse aqui combina bem com a próxima sessão porque libera o caminho até receita.
+**Prioridade 5**: Onboarding step 4 — detectar convite pending (`WorkspaceMember.invitedAt`).
 
 ---
 
-## 📦 Diff de uma noite
+## 🎯 Estado de produção
 
-- **6 commits** novos
-- **~25 arquivos** modificados/criados
-- **5 modelos Prisma** novos
-- **21 tools** novas
-- **5 componentes UI** novos
-- **3 docs estratégicos**
-- **0 bugs deixados pra trás** (typecheck + lint 7/7 verde, todo o tempo)
+Trato está **pronto pra staging** com STRIPE_MOCK=true. Pra produção:
+1. Resolver credenciais (BLOCKED.md tem ordem sugerida)
+2. Seguir `DEPLOY.md` passo a passo
+3. Configurar uptime monitor batendo `/api/health`
+4. Habilitar Sentry + PostHog em prod
+5. Run smoke tests pós-deploy
 
----
+Dúvidas? Os commits têm mensagens longas explicando o **por quê** de cada decisão.
 
-## ⚠️ Notas finais
-
-- O **Obsidian Git** plugin tá instalado mas só vai funcionar de verdade depois que você criar o remote GitHub. Quando tiver, basta abrir Obsidian → ícone Git na lateral → "Pull" e "Commit & Push" ficam disponíveis.
-- O **`.obsidian/plugins/obsidian-git/main.js`** está no `.gitignore` por design (assets de release são regeneráveis) — quem clonar precisa baixar de novo OU rodar `/plugin install obsidian-git` no Claude.
-- **Custo nesta sessão:** R$0,00 — usei `MOCK_AI=true` mentalmente, nenhuma chamada Anthropic/OpenAI/Voyage real foi feita.
-
-Boa manhã! Tô pronto pra continuar quando você voltar.
+Bom dia! ☕

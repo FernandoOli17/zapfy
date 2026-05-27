@@ -1,13 +1,10 @@
 ﻿'use server';
 
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma, WorkspaceRole } from '@zapai/db';
 import { createLogger, emailSchema } from '@zapai/shared';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
 import { env } from '@/env';
 import { sendEmail } from '@/lib/email/client';
 import { teamInviteEmail } from '@/lib/email/templates';

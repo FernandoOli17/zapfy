@@ -59,7 +59,7 @@ export default async function AppointmentDetailPage({
   const isPast = endsAt.getTime() < Date.now();
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 md:px-10 md:py-10">
+    <div className="mx-auto max-w-5xl animate-fade-in px-4 py-6 md:px-10 md:py-10 lg:px-6">
       <Link
         href="/appointments"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

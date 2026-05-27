@@ -1,7 +1,5 @@
 ﻿'use server';
 
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   ConversationStatus,
@@ -16,7 +14,6 @@ import { AppError, createLogger, decrypt } from '@zapai/shared';
 import { createWaClient, isWithin24hWindow, splitText, WaApiError } from '@zapai/wa';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
 import { env } from '@/env';
 import { publishInboxEvent, workspaceChannel } from '@/lib/realtime/pusher-server';
 import { captureException } from '@/lib/sentry';

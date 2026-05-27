@@ -16,6 +16,8 @@ import { Button } from '@zapai/ui';
 
 import { auth } from '@/lib/auth';
 
+import { OnboardingChecklist } from './onboarding-checklist';
+
 export const metadata = { title: 'Dashboard' };
 
 type Action = {
@@ -84,8 +86,20 @@ export default async function DashboardPage() {
     prisma.conversation.count({ where: { workspaceId: ws.id } }),
     prisma.agent.count({ where: { workspaceId: ws.id } }),
     prisma.knowledgeDocument.count({ where: { workspaceId: ws.id } }),
+    prisma.agent.count({ where: { workspaceId: ws.id, currentVersionId: { not: null } } }),
+    prisma.whatsAppAccount.count({ where: { workspaceId: ws.id, status: 'CONNECTED' } }),
+    prisma.workspaceMember.count({ where: { workspaceId: ws.id } }),
+    prisma.message.count({ where: { workspaceId: ws.id } }),
   ]);
-  const [contactsCount, convosCount, agentsCount, docsCount] = counts;
+  const [contactsCount, convosCount, agentsCount, docsCount, publishedAgents, waConnected, memberCount, messageCount] = counts;
+
+  const onboardingStatus = {
+    forgeComplete: publishedAgents > 0,
+    whatsappConnected: waConnected > 0,
+    knowledgeBaseStarted: docsCount > 0,
+    teamInvited: memberCount > 1,
+    firstMessage: messageCount > 0,
+  };
 
   const userName = session.user.name?.split(' ')[0] ?? session.user.email.split('@')[0] ?? 'lá';
 
@@ -106,8 +120,13 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* Onboarding checklist — some quando 100% completo */}
+      <div className="mt-6">
+        <OnboardingChecklist workspaceSlug={ws.slug} status={onboardingStatus} />
+      </div>
+
       {/* Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Stat label="Agentes" value={agentsCount} icon={Sparkles} />
         <Stat label="Contatos" value={contactsCount} icon={Users} />
         <Stat label="Conversas" value={convosCount} icon={Inbox} />

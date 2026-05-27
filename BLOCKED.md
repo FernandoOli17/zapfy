@@ -1,127 +1,134 @@
 # Bloqueios — credenciais e ações manuais do usuário
 
+Atualizado: 2026-05-27 (sessão noturna autônoma 2)
+
 Tudo aqui está implementado com **mock/stub**. Quando o usuário fornecer a credencial,
 remova o TODO no código e teste.
-
-Ordem por prioridade (crítico → quando puder).
 
 ---
 
 ## 🔴 CRÍTICO — bloqueiam features grandes
 
-### [DB] Aplicar schema novo no Neon
-**Status:** ✅ **RESOLVIDO em 2026-05-27.**
-- `prisma generate` completo (engine OK desta vez, DLL não estava locked)
-- `prisma db push`: "Your database is now in sync with your Prisma schema. Done in 12.27s"
-- Schema aplicado no Neon com: `Workspace.developerModeEnabled`, `AgentVersion.flowGraph` + `customToolNames`, `CustomTool`, e **5 modelos da Fase 7**: `Order`, `OrderItem`, `Coupon`, `Professional`, `Appointment`, `Quote`
-- `pnpm build` agora passa completo (38 páginas).
-- Comando que funcionou: `cd zapai && export $(grep -E "^DATABASE_URL=" .env | xargs) && cd packages/db && npx prisma db push`
-
 ### [GIT] Repositório remoto
 **O que precisa:** criar repo no GitHub (público ou privado) e me dar a URL
-**Por que:** projeto inteiro tá local. Sem push, perde-se tudo se HD morre. Bloqueia também Obsidian Git plugin de sincronizar notas.
-**Status:** repo local pronto com 5 commits + ~50 mods uncommitted. Vou commitar tudo nesta sessão. Falta `git remote add origin <url>` + `git push -u origin master`.
+**Por que:** projeto inteiro tá local. Sem push, perde-se tudo se HD morre.
+**Status:** repo local com ~30 commits. Falta `git remote add origin <url>` + `git push -u origin master`.
 
-### [STRIPE] Credenciais
+### [STRIPE] Credenciais reais
 **O que precisa:**
 - `STRIPE_SECRET_KEY=sk_test_...` ou `sk_live_...`
 - `STRIPE_WEBHOOK_SECRET=whsec_...`
-- 3 Price IDs: `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM` (criar produtos em dashboard.stripe.com)
-**Por que:** Fase 8 (Billing) — checkout, customer portal, sync de subscription, cobrança recorrente
-**Status:** código implementado com `STRIPE_MOCK=true` que bypassa toda a chamada real e retorna URLs fake. Funciona pra dev/testing UI. Pra prod precisa das keys.
+- 3 Price IDs em `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, `STRIPE_PRICE_PREMIUM`
+
+**Status:** código com `STRIPE_MOCK=true` que bypassa Stripe inteiro. `syncStripeSubscription` no-op em mock. Pra prod precisa das keys + criar produtos.
 
 ### [META WhatsApp] Credenciais do app
-**O que precisa:** Meta App ID + App Secret + 1 número WhatsApp Business + Phone Number ID + WABA ID + Access Token de longa duração
-**Por que:** sem isso, webhooks não chegam, agente não responde no Zap real
-**Status:** modelo BYO (cada workspace cola suas próprias credenciais via UI) — código completo. Pra testar localmente, usuário precisa de uma conta Meta Business + ngrok pra webhook URL pública.
+**O que precisa:** Meta App ID + Secret + WhatsApp Business + Phone Number ID + WABA ID + Access Token
+
+**Status:** modelo BYO (cada workspace cola próprias creds). Template submission + status polling implementado (`/automations/templates`), mas só funciona em workspace com WhatsApp CONNECTED. Pra testar: usuário precisa Meta Business + ngrok pra webhook URL pública.
 
 ---
 
 ## 🟡 IMPORTANTE — features funcionam parcialmente sem isso
 
-### [OPENAI] Whisper para áudio do Forge
-**O que precisa:** `OPENAI_API_KEY=sk-...`
-**Por que:** transcrição de áudio (admin descreve negócio falando em vez de digitar)
-**Status:** endpoint `/api/forge/transcribe` implementado. Sem a key, retorna 503 educado. UI mostra erro. Sem essa key, áudio ainda pode ser usado se `MOCK_AI=true` (retorna texto canned).
+### [OPENAI] Whisper (transcrição áudio Forge)
+- Endpoint `/api/forge/transcribe` retorna 503 sem `OPENAI_API_KEY`
+- Com `MOCK_AI=true` áudio retorna texto canned
 
-### [VOYAGE] Embeddings para RAG real
-**O que precisa:** `VOYAGE_API_KEY=...`
-**Por que:** indexação semântica dos documentos de conhecimento. Sem isso, RAG cai pra FTS only (busca textual Portuguese).
-**Status:** código tem fallback FTS-only. Funcional, mas relevância pior.
+### [VOYAGE] Embeddings RAG
+- Sem `VOYAGE_API_KEY` cai pra FTS only (busca textual portuguese). Relevância pior, funcional.
 
 ### [ANTHROPIC] Agente principal
-**O que precisa:** `ANTHROPIC_API_KEY=sk-ant-...`
-**Por que:** rodar agente IA de produção (Sonnet 4.5 + Haiku 4.5 classifier)
-**Status:** usuário já adicionou $5 numa key. Tudo funciona com `MOCK_AI=true` pra testes sem custo.
+- Usuário tem key com $5 budget — usar `MOCK_AI=true` por default
+- Modelos: `claude-sonnet-4-5` (agente) + `claude-haiku-4-5` (classifier)
 
-### [GOOGLE CALENDAR] OAuth pro vertical Clínica
-**O que precisa:** Google Cloud Project com OAuth client + scopes `calendar.events`
-**Por que:** vertical CLINIC tem tool `book_appointment` que cria evento no Calendar do profissional
-**Status:** modelo `Appointment` no DB já existe. Tool implementada com mock — cria registro local, mas não sincroniza com Calendar real até OAuth ficar pronto.
+### [GOOGLE CALENDAR] OAuth p/ vertical Clínica
+- Tool `book_appointment` cria registro local, não sincroniza com Google Calendar real
+- TODO no `packages/ai/src/tools/clinic.ts` quando OAuth ficar pronto
 
 ---
 
 ## 🟢 QUANDO PUDER — nice to have
 
 ### [GOOGLE OAUTH] Login com Google
-**O que precisa:** `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`
-**Status:** Better Auth já configurado. Sem keys, botão "Continuar com Google" sumido automaticamente.
+- Better Auth configurado. Sem keys, botão some.
 
 ### [RESEND] E-mails transacionais
-**O que precisa:** `RESEND_API_KEY=re_...` + verificar domínio `trato.dev`
-**Por que:** magic link, reset senha, convites de time, notificações
-**Status:** sem key, app loga magic link no console (modo dev). Funciona pra QA local.
+- Sem key, magic link/reset/invite log no console (dev mode)
 
 ### [UPSTASH] Rate limit em produção
-**O que precisa:** `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
-**Status:** sem isso, rate limit é no-op (sempre permite). Já permite spam — proteja antes de ir público.
+- Sem keys, rate limit é no-op. **Proteger antes de ir público.**
 
-### [PUSHER] Real-time no Inbox
-**O que precisa:** `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER`, `NEXT_PUBLIC_PUSHER_KEY`
-**Status:** sem isso, inbox funciona mas precisa F5 pra ver msg nova.
+### [PUSHER] Real-time Inbox
+- Sem keys, inbox precisa F5 pra ver msg nova
 
 ### [SENTRY] Crash reporting
-**O que precisa:** `SENTRY_DSN`
-**Status:** `captureException` calls são no-op sem DSN. Erros vão pro console.
+- **Configurado**: `sentry.client/server/edge.config.ts` + `lib/sentry.ts` no-op safe
+- Sem `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN`, `captureException` no-op
 
 ### [POSTHOG] Product analytics
-**O que precisa:** `NEXT_PUBLIC_POSTHOG_KEY`
-**Status:** eventos não rastreados. Sem analytics de uso.
-
-### [HEALTH] Token detalhado do health check
-**O que precisa:** `HEALTH_DETAIL_TOKEN=<random 32 chars>`
-**Status:** `/api/health` responde só `{status, timestamp}` sem token. Modo detalhado restrito.
+- **Configurado**: `PostHogProvider` no `app/layout.tsx` + `lib/posthog.ts` no server
+- Events emitidos: `inbox.message_sent`, `template.submitted_to_meta`, `broadcast.launched`
+- Sem `NEXT_PUBLIC_POSTHOG_KEY`, no-op total
 
 ### [UPLOADTHING] Upload de arquivos
-**O que precisa:** `UPLOADTHING_TOKEN`
-**Por que:** PDFs/imagens em Knowledge, propostas em Service vertical
-**Status:** UI pronta, upload mockado pra string vazia.
+- UI pronta, upload mocked pra string vazia
 
 ### [DOMÍNIO] trato.dev
-**O que precisa:** registrar `trato.dev` (ou `.com.br` / `.app`)
-**Status:** marca exibida em landing, e-mails, JSON-LD apontam pra `trato.dev`. Quando registrar, atualizar DNS + Vercel/Railway.
+- Marca exibida em landing/emails/JSON-LD aponta pra `trato.dev`. Registrar + DNS.
 
 ---
 
-## ✅ JÁ DESBLOQUEADOS (não precisa fazer nada)
+## ✅ Já desbloqueados
 
-- Neon Postgres: configurado e online
+- Neon Postgres: configurado + schema aplicado (incluindo isSuperAdmin + audit indexes novos)
 - Upstash Redis URL: configurado em `.env`
 - Encryption key (AES-256-GCM): gerada
 - Better Auth secret: gerado
 
 ---
 
+## 🟡 Débitos técnicos identificados na rodada autônoma 2 (não-bloqueadores)
+
+### Server actions ainda não migradas pra `requireWorkspace` central
+Estes ainda usam helper local (não respeitam impersonação):
+- `apps/web/src/app/(app)/agent/actions.ts`
+- `apps/web/src/app/(app)/forge/actions.ts`
+- `apps/web/src/app/(app)/whatsapp/actions.ts`
+- `apps/web/src/app/(app)/knowledge/actions.ts`
+- `apps/web/src/app/(app)/settings/actions.ts`
+- `apps/web/src/app/(app)/integrations/actions.ts` + `/webhooks/actions.ts`
+- `apps/web/src/app/(app)/developer/actions.ts`
+- `apps/web/src/app/(app)/contacts/import/actions.ts`
+- `apps/web/src/app/(app)/automations/broadcasts/actions.ts`
+
+**Já migrados nesta rodada**: orders/appointments/quotes/admin/inbox/team/products/professionals/coupons/contacts/templates.
+
+### TOCTOU em `Broadcast.launch`
+Reschedule já tem advisory lock + serializable txn. Broadcast launch lê recipients + update sem lock — pode dupliar se launched 2x simultaneamente. Não causou bug ainda mas defense-in-depth.
+
+### Stripe sync ao force-downgrade
+`syncStripeSubscription` propaga upgrade mas se admin força DOWNGRADE (PREMIUM→STARTER), cobrança Stripe continua no valor PREMIUM até próximo ciclo. UX precisa avisar.
+
+### Audit dedup em retry
+Quando worker faz retry de um job, o segundo audit pode duplicar. Idempotência key não implementada — ok pra audit (mais histórico = melhor), mas analytics fica inflado.
+
+### Onboarding step "team invited" não detecta convite pending
+Hoje conta `WorkspaceMember > 1`. Owner que enviou convite mas o convidado não aceitou ainda mostra step como pendente. Detectar `WorkspaceMember.invitedAt IS NOT NULL` também.
+
+---
+
 ## 📋 Como resolver tudo de uma vez
 
-Sequência sugerida:
-
-1. **GitHub** → criar repo `trato` privado → me passe a URL pra eu rodar `git remote add origin ...` e push
+1. **GitHub** → criar repo `trato` privado → me passe a URL pra `git remote add origin` + push
 2. **Stripe** → criar conta sandbox → criar 3 produtos com prices → copiar keys
 3. **Meta** → criar app Business → ativar WhatsApp Cloud API → criar número de teste → copiar credentials
-4. **OpenAI** → gerar key → adicionar no `.env` como `OPENAI_API_KEY`
+4. **OpenAI** → gerar key → adicionar como `OPENAI_API_KEY`
 5. **Voyage AI** → free tier 50M tokens/mês → key no `.env`
-6. **Domínio** → registrar `trato.dev`
-7. **Demais** quando o produto estiver pronto pra ir público
+6. **Sentry** → 2 projetos (web + worker) → DSNs
+7. **PostHog** → 1 projeto → key + host
+8. **Domínio** → registrar `trato.dev`
+9. **Resend** → verificar domínio (SPF + DKIM + DMARC)
+10. **Demais** quando estiver indo público
 
-Cada item resolvido, eu uso na próxima sessão.
+Cada item resolvido, eu uso na próxima sessão. Veja `DEPLOY.md` pra checklist completa.

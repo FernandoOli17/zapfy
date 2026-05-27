@@ -3,8 +3,6 @@ import 'server-only';
 import { PostHog } from 'posthog-node';
 import { createLogger } from '@zapai/shared';
 
-import { env } from '@/env';
-
 const log = createLogger('posthog');
 
 /**

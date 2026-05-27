@@ -1,13 +1,10 @@
 'use server';
 
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
 import { requireWorkspace } from '@/lib/inbox';
 
 const log = createLogger('professionals-actions');

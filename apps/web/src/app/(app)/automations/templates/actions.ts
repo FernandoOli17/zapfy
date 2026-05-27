@@ -1,7 +1,5 @@
 ﻿'use server';
 
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   prisma,
@@ -12,7 +10,6 @@ import {
 import { createLogger } from '@zapai/shared';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
 import { requireWorkspace } from '@/lib/inbox';
 import { decrypt } from '@zapai/shared';
 import { createWaClient, WaApiError } from '@zapai/wa';

@@ -96,7 +96,7 @@ export default async function AdminPage({
   const currentImpersonationId = await getImpersonatedWorkspaceId(session.user.id);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8 md:px-10 md:py-10">
+    <div className="mx-auto max-w-7xl animate-fade-in px-4 py-6 md:px-10 md:py-10 lg:px-6">
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-400">
           <ShieldAlert className="h-5 w-5" />
