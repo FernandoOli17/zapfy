@@ -1,7 +1,8 @@
-﻿import { BarChart3, Bot, Headset, Inbox, MessageSquare, Users } from 'lucide-react';
+﻿import { BarChart3, Bot, Clock, Headset, Inbox, MessageSquare, Users, Zap } from 'lucide-react';
 import { prisma, type Prisma } from '@zapai/db';
 
 import { requireWorkspace } from '@/lib/inbox';
+import { Sparkline } from '@/components/charts/sparkline';
 
 import { MessagesPerDayChart, ConversationsByStatusChart, TopTagsChart } from './charts';
 
@@ -18,6 +19,22 @@ interface DailyMessageCount {
 interface TagCount {
   tag: string;
   count: bigint;
+}
+
+interface DailyHandoffRow {
+  day: string;
+  handoffs: bigint;
+  total: bigint;
+}
+
+interface HourBucket {
+  hour: number;
+  count: bigint;
+}
+
+interface DailyResponseTimeRow {
+  day: string;
+  avg_seconds: number;
 }
 
 export default async function AnalyticsPage() {
@@ -78,6 +95,59 @@ export default async function AnalyticsPage() {
     ` as Prisma.PrismaPromise<TagCount[]>,
   ]);
 
+  // Métricas adicionais (queries paralelas, fora da transação principal pra simplificar)
+  const [handoffSeries, hourBuckets, responseTimeSeries] = await Promise.all([
+    // Handoff por dia: conversas que viraram HUMAN_HANDLING / total iniciadas
+    prisma.$queryRaw<DailyHandoffRow[]>`
+      SELECT
+        to_char(date_trunc('day', "createdAt"), 'YYYY-MM-DD') AS day,
+        count(*) FILTER (WHERE status = 'HUMAN_HANDLING')::bigint AS handoffs,
+        count(*)::bigint AS total
+      FROM "Conversation"
+      WHERE "workspaceId" = ${workspace.id} AND "createdAt" >= ${since}
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `,
+    // Hora de pico (msg inbound por hora do dia, agregado nos últimos N dias)
+    prisma.$queryRaw<HourBucket[]>`
+      SELECT
+        extract(hour FROM "createdAt" AT TIME ZONE 'America/Sao_Paulo')::int AS hour,
+        count(*)::bigint AS count
+      FROM "Message"
+      WHERE "workspaceId" = ${workspace.id}
+        AND "createdAt" >= ${since}
+        AND direction = 'INBOUND'
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `,
+    // Tempo médio de resposta: gap entre msg INBOUND e próxima OUTBOUND da mesma conversa
+    prisma.$queryRaw<DailyResponseTimeRow[]>`
+      WITH paired AS (
+        SELECT
+          m_in."createdAt" AS in_at,
+          (
+            SELECT MIN(m_out."createdAt")
+            FROM "Message" m_out
+            WHERE m_out."conversationId" = m_in."conversationId"
+              AND m_out.direction = 'OUTBOUND'
+              AND m_out."createdAt" > m_in."createdAt"
+              AND m_out."createdAt" < m_in."createdAt" + interval '6 hours'
+          ) AS out_at
+        FROM "Message" m_in
+        WHERE m_in."workspaceId" = ${workspace.id}
+          AND m_in.direction = 'INBOUND'
+          AND m_in."createdAt" >= ${since}
+      )
+      SELECT
+        to_char(date_trunc('day', in_at), 'YYYY-MM-DD') AS day,
+        avg(extract(epoch FROM (out_at - in_at)))::float AS avg_seconds
+      FROM paired
+      WHERE out_at IS NOT NULL
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `,
+  ]);
+
   const seriesMap = new Map(messagesPerDay.map((r) => [r.day, Number(r.count)]));
   const series: Array<{ date: string; count: number; label: string }> = [];
   for (let i = DAYS - 1; i >= 0; i--) {
@@ -115,6 +185,47 @@ export default async function AnalyticsPage() {
       : 0;
   const aiPercent = totalMessages > 0 ? Math.round((aiMessages / totalMessages) * 100) : 0;
 
+  // Série de handoff% por dia (aligns com `series` do daily messages)
+  const handoffMap = new Map(
+    handoffSeries.map((r) => [
+      r.day,
+      Number(r.total) > 0 ? Math.round((Number(r.handoffs) / Number(r.total)) * 100) : 0,
+    ]),
+  );
+  const handoffByDay = series.map((s) => ({
+    label: s.label,
+    value: handoffMap.get(s.date) ?? 0,
+  }));
+
+  // Resposta média por dia
+  const responseMap = new Map(
+    responseTimeSeries.map((r) => [r.day, Math.round(Number(r.avg_seconds))]),
+  );
+  const responseByDay = series.map((s) => ({
+    label: s.label,
+    value: responseMap.get(s.date) ?? 0,
+  }));
+  const respValues = responseByDay.map((d) => d.value).filter((v) => v > 0);
+  const avgResponseSeconds =
+    respValues.length > 0 ? Math.round(respValues.reduce((a, b) => a + b, 0) / respValues.length) : 0;
+
+  // Hora de pico — bucket 24 horas com 0 default
+  const hourMap = new Map(hourBuckets.map((h) => [h.hour, Number(h.count)]));
+  const hoursOfDay: Array<{ label: string; value: number }> = [];
+  for (let h = 0; h < 24; h++) {
+    hoursOfDay.push({
+      label: `${h.toString().padStart(2, '0')}h`,
+      value: hourMap.get(h) ?? 0,
+    });
+  }
+  const peakHour = hoursOfDay.reduce((acc, cur) => (cur.value > acc.value ? cur : acc), hoursOfDay[0]!);
+
+  function formatDuration(seconds: number): string {
+    if (seconds === 0) return '—';
+    if (seconds < 60) return `${seconds}s`;
+    return `${Math.round(seconds / 60)}min`;
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 md:px-10 md:py-10">
       {/* Header */}
@@ -150,6 +261,35 @@ export default async function AnalyticsPage() {
         <Metric icon={Inbox} label="Conversas abertas" value={activeConversations} />
       </div>
 
+      {/* Métricas secundárias */}
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+        <MiniMetric
+          icon={Headset}
+          label="Handoff humano"
+          value={`${handoffRate}%`}
+          sublabel="agora"
+        />
+        <MiniMetric
+          icon={Clock}
+          label="Resposta média"
+          value={formatDuration(avgResponseSeconds)}
+          sublabel="primeira resposta"
+        />
+        <MiniMetric
+          icon={Zap}
+          label="Hora de pico"
+          value={peakHour.label}
+          sublabel={`${peakHour.value} msgs`}
+        />
+        <MiniMetric
+          icon={Bot}
+          label="% IA"
+          value={`${aiPercent}%`}
+          sublabel="vs humano"
+          accent
+        />
+      </div>
+
       {/* Charts row 1 */}
       <section className="mt-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card title="Mensagens por dia" subtitle="Volume diário (in + out)">
@@ -171,22 +311,63 @@ export default async function AnalyticsPage() {
             <TopTagsChart data={topTags} />
           )}
         </Card>
-        <Card title="Handoff humano" subtitle="Conversas que precisaram de gente">
-          <div className="flex h-48 flex-col items-center justify-center">
-            <p className="text-6xl font-semibold tracking-tight text-primary tabular-nums">
-              {handoffRate}%
-            </p>
-            <p className="mt-2 inline-flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              <Headset className="h-3 w-3" />
-              conversas humanas
-            </p>
+        <Card title="Handoff por dia" subtitle="% conversas que viraram humanas">
+          <div className="h-32 text-amber-600 dark:text-amber-400">
+            <Sparkline data={handoffByDay} height={120} format="percent" colorClass="text-amber-500" />
           </div>
+        </Card>
+      </section>
+
+      {/* Charts row 3 — novos */}
+      <section className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card title="Tempo de resposta" subtitle="Primeira resposta após msg do cliente">
+          <div className="h-32">
+            <Sparkline data={responseByDay} height={120} format="duration" colorClass="text-sky-500" />
+          </div>
+          {avgResponseSeconds > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Média no período: <strong className="text-foreground">{formatDuration(avgResponseSeconds)}</strong>
+            </p>
+          )}
+        </Card>
+        <Card title="Hora de pico" subtitle="Mensagens recebidas por hora (BRT)">
+          <div className="h-32">
+            <Sparkline data={hoursOfDay} height={120} colorClass="text-violet-500" />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Pico: <strong className="text-foreground">{peakHour.label}</strong> ({peakHour.value} mensagens)
+          </p>
         </Card>
       </section>
 
       <p className="mt-6 text-xs text-muted-foreground">
         Em breve: filtro por intervalo, exportação CSV, comparação período-anterior.
       </p>
+    </div>
+  );
+}
+
+function MiniMetric({
+  icon: Icon,
+  label,
+  value,
+  sublabel,
+  accent,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  sublabel?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-1.5">
+        <Icon className={`h-3 w-3 ${accent ? 'text-primary' : 'text-muted-foreground'}`} />
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      </div>
+      <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+      {sublabel && <p className="text-[10px] text-muted-foreground/80">{sublabel}</p>}
     </div>
   );
 }
