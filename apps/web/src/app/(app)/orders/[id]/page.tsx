@@ -120,7 +120,6 @@ export default async function OrderDetailPage({
                 {order.items.map((it) => (
                   <li key={it.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                     {it.product?.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={it.product.imageUrl}
                         alt=""

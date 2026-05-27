@@ -3,14 +3,14 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { prisma } from '@zapai/db';
 import { createLogger } from '@zapai/shared';
 
 import { auth } from '@/lib/auth';
+import { IMPERSONATE_COOKIE } from '@/lib/impersonation';
 
 const log = createLogger('admin-actions');
-
-const IMPERSONATE_COOKIE = 'x-impersonate-workspace';
 
 async function requireSuperAdmin(): Promise<
   | { ok: true; user: { id: string; email: string } }
@@ -28,6 +28,12 @@ async function requireSuperAdmin(): Promise<
   return { ok: true, user: { id: user.id, email: user.email } };
 }
 
+const WorkspaceIdInput = z.object({ workspaceId: z.string().min(1).max(40) });
+const ForceUpgradeInput = z.object({
+  workspaceId: z.string().min(1).max(40),
+  plan: z.enum(['STARTER', 'PRO', 'PREMIUM']),
+});
+
 /**
  * Impersona um workspace — seta cookie httpOnly. Outras queries do app
  * checam `getImpersonatedWorkspaceId()` antes de usar o workspace do user.
@@ -38,11 +44,13 @@ async function requireSuperAdmin(): Promise<
 export async function impersonateWorkspace(
   workspaceId: string,
 ): Promise<{ status: 'ok' } | { status: 'error'; error: string }> {
+  const parsed = WorkspaceIdInput.safeParse({ workspaceId });
+  if (!parsed.success) return { status: 'error', error: 'workspaceId inválido' };
   const ctx = await requireSuperAdmin();
   if (!ctx.ok) return { status: 'error', error: ctx.error };
 
   const ws = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
+    where: { id: parsed.data.workspaceId },
     select: { id: true, name: true },
   });
   if (!ws) return { status: 'error', error: 'Workspace não encontrado' };
@@ -115,41 +123,59 @@ export async function forceUpgradeWorkspace(
   workspaceId: string,
   plan: 'STARTER' | 'PRO' | 'PREMIUM',
 ): Promise<{ status: 'ok' } | { status: 'error'; error: string }> {
+  const parsed = ForceUpgradeInput.safeParse({ workspaceId, plan });
+  if (!parsed.success) {
+    return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
+  }
   const ctx = await requireSuperAdmin();
   if (!ctx.ok) return { status: 'error', error: ctx.error };
+
+  // Existência: evita FK error 500 em workspace deletado
+  const ws = await prisma.workspace.findUnique({
+    where: { id: parsed.data.workspaceId },
+    select: { id: true, name: true },
+  });
+  if (!ws) return { status: 'error', error: 'Workspace não encontrado' };
 
   const now = new Date();
   const periodEnd = new Date(now);
   periodEnd.setMonth(periodEnd.getMonth() + 1);
 
+  // Reset período inteiro também no update — forced upgrade restart 30d window
   await prisma.subscription.upsert({
-    where: { workspaceId },
+    where: { workspaceId: ws.id },
     create: {
-      workspaceId,
-      plan,
+      workspaceId: ws.id,
+      plan: parsed.data.plan,
       status: 'ACTIVE',
       currentPeriodStart: now,
       currentPeriodEnd: periodEnd,
     },
     update: {
-      plan,
+      plan: parsed.data.plan,
       status: 'ACTIVE',
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
     },
   });
 
   await prisma.auditLog.create({
     data: {
-      workspaceId,
+      workspaceId: ws.id,
       userId: ctx.user.id,
       action: 'admin.force_upgrade',
       targetType: 'Subscription',
-      targetId: workspaceId,
-      metadata: { adminEmail: ctx.user.email, newPlan: plan },
+      targetId: ws.id,
+      metadata: {
+        adminEmail: ctx.user.email,
+        workspaceName: ws.name,
+        newPlan: parsed.data.plan,
+      },
     },
   });
 
   log.warn(
-    { adminId: ctx.user.id, workspaceId, plan },
+    { adminId: ctx.user.id, workspaceId: ws.id, plan: parsed.data.plan },
     'super-admin forçou mudança de plano',
   );
 

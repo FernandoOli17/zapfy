@@ -37,7 +37,7 @@ export async function updateOrderStatus(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user } = await requireWorkspace();
+  const { workspace, user, impersonating } = await requireWorkspace();
 
   const existing = await prisma.order.findFirst({
     where: { id: parsed.data.orderId, workspaceId: workspace.id },
@@ -69,6 +69,7 @@ export async function updateOrderStatus(
         publicNumber: existing.publicNumber,
         from: existing.status,
         to: parsed.data.status,
+        ...(impersonating && { impersonating: true, adminEmail: user.email }),
       },
     },
   });

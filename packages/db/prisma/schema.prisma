@@ -833,6 +833,10 @@ model AuditLog {
 
   @@index([workspaceId, createdAt])
   @@index([userId, createdAt])
+  /// Detail pages filtram audit por (workspaceId, targetType, targetId)
+  @@index([workspaceId, targetType, targetId])
+  /// /admin filtra audit por action LIKE 'admin.%'
+  @@index([action, createdAt])
 }
 
 // =========================================

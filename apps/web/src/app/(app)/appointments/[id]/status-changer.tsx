@@ -142,6 +142,23 @@ export function StatusChanger({
   );
 }
 
+/**
+ * datetime-local representa o WALL TIME do navegador (sem TZ). Pra evitar shift
+ * de timezone toda vez que reagenda, convertemos UTC → wall local via offset
+ * do navegador na hora de prefill, e wall local → UTC subtraindo o offset
+ * na hora de submeter.
+ */
+function utcIsoToLocalInput(utcIso: string): string {
+  const d = new Date(utcIso);
+  const tzOffsetMs = d.getTimezoneOffset() * 60_000;
+  return new Date(d.getTime() - tzOffsetMs).toISOString().slice(0, 16);
+}
+
+function localInputToUtcIso(localInput: string): string {
+  // new Date('YYYY-MM-DDTHH:mm') é interpretado como hora local
+  return new Date(localInput).toISOString();
+}
+
 function RescheduleForm({
   appointmentId,
   currentStartsAt,
@@ -155,15 +172,13 @@ function RescheduleForm({
 }) {
   const { push } = useToast();
   const [pending, startTransition] = useTransition();
-  // datetime-local quer no formato YYYY-MM-DDTHH:mm sem timezone
-  const startsAtLocal = new Date(currentStartsAt).toISOString().slice(0, 16);
-  const [startsAt, setStartsAt] = useState(startsAtLocal);
+  const [startsAt, setStartsAt] = useState(() => utcIsoToLocalInput(currentStartsAt));
   const [duration, setDuration] = useState(currentDurationMinutes);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     startTransition(async () => {
-      const iso = new Date(startsAt).toISOString();
+      const iso = localInputToUtcIso(startsAt);
       const r = await rescheduleAppointment({
         appointmentId,
         startsAt: iso,

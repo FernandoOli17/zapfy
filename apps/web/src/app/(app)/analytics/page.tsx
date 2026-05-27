@@ -120,23 +120,35 @@ export default async function AnalyticsPage() {
       GROUP BY 1
       ORDER BY 1 ASC
     `,
-    // Tempo médio de resposta: gap entre msg INBOUND e próxima OUTBOUND da mesma conversa
+    // Tempo médio de resposta: gap entre msg INBOUND e próxima OUTBOUND da mesma conversa.
+    // LATERAL JOIN + LIMIT 1 evita o nested-loop scan da subquery correlacionada.
+    // Cap em 5k inbound rows por workspace pra blindar contra DoS em workspace
+    // grande — métrica vira amostra acima desse volume.
     prisma.$queryRaw<DailyResponseTimeRow[]>`
-      WITH paired AS (
+      WITH inbounds AS (
+        SELECT "id", "conversationId", "createdAt"
+        FROM "Message"
+        WHERE "workspaceId" = ${workspace.id}
+          AND direction = 'INBOUND'
+          AND "createdAt" >= ${since}
+        ORDER BY "createdAt" DESC
+        LIMIT 5000
+      ),
+      paired AS (
         SELECT
-          m_in."createdAt" AS in_at,
-          (
-            SELECT MIN(m_out."createdAt")
-            FROM "Message" m_out
-            WHERE m_out."conversationId" = m_in."conversationId"
-              AND m_out.direction = 'OUTBOUND'
-              AND m_out."createdAt" > m_in."createdAt"
-              AND m_out."createdAt" < m_in."createdAt" + interval '6 hours'
-          ) AS out_at
-        FROM "Message" m_in
-        WHERE m_in."workspaceId" = ${workspace.id}
-          AND m_in.direction = 'INBOUND'
-          AND m_in."createdAt" >= ${since}
+          i."createdAt" AS in_at,
+          o."createdAt" AS out_at
+        FROM inbounds i
+        LEFT JOIN LATERAL (
+          SELECT "createdAt"
+          FROM "Message" m_out
+          WHERE m_out."conversationId" = i."conversationId"
+            AND m_out.direction = 'OUTBOUND'
+            AND m_out."createdAt" > i."createdAt"
+            AND m_out."createdAt" < i."createdAt" + interval '6 hours'
+          ORDER BY m_out."createdAt" ASC
+          LIMIT 1
+        ) o ON true
       )
       SELECT
         to_char(date_trunc('day', in_at), 'YYYY-MM-DD') AS day,
@@ -218,7 +230,12 @@ export default async function AnalyticsPage() {
       value: hourMap.get(h) ?? 0,
     });
   }
-  const peakHour = hoursOfDay.reduce((acc, cur) => (cur.value > acc.value ? cur : acc), hoursOfDay[0]!);
+  const peakHourCandidate = hoursOfDay.reduce(
+    (acc, cur) => (cur.value > acc.value ? cur : acc),
+    hoursOfDay[0]!,
+  );
+  // Quando nenhuma hora teve msg, "00h" não é informativo — exibe "—"
+  const peakHour = peakHourCandidate.value > 0 ? peakHourCandidate : { label: '—', value: 0 };
 
   function formatDuration(seconds: number): string {
     if (seconds === 0) return '—';

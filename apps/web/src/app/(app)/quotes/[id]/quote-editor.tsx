@@ -27,6 +27,19 @@ function newRow(): ItemFormState {
   return { name: '', quantity: 1, unitPriceCents: 0, notes: '' };
 }
 
+/**
+ * `<input type="date">` devolve 'YYYY-MM-DD' sem TZ. `new Date('YYYY-MM-DD')`
+ * é parseado como UTC midnight — em qualquer TZ west of UTC isso vira o dia
+ * anterior quando formatado local. Truque: cravar 12:00:00 local pra ficar
+ * resiliente a qualquer offset razoável (até ±11h).
+ */
+function dateInputToIso(value: string): string | null {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d, 12, 0, 0, 0).toISOString();
+}
+
 export function QuoteEditor(props: QuoteEditorProps) {
   const router = useRouter();
   const { push } = useToast();
@@ -79,7 +92,7 @@ export function QuoteEditor(props: QuoteEditorProps) {
         quoteId: props.quoteId,
         serviceDescription: serviceDescription.trim(),
         items: cleaned,
-        validUntil: validUntil ? new Date(validUntil).toISOString() : null,
+        validUntil: dateInputToIso(validUntil),
         notes: notes.trim(),
       });
       if (r.status === 'ok') {
@@ -111,7 +124,7 @@ export function QuoteEditor(props: QuoteEditorProps) {
         quoteId: props.quoteId,
         serviceDescription: serviceDescription.trim(),
         items: cleaned,
-        validUntil: validUntil ? new Date(validUntil).toISOString() : null,
+        validUntil: dateInputToIso(validUntil),
         notes: notes.trim(),
       });
       if (s.status !== 'ok') {

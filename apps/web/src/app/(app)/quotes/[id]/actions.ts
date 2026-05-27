@@ -42,7 +42,7 @@ export async function saveQuoteDraft(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user } = await requireWorkspace();
+  const { workspace, user, impersonating } = await requireWorkspace();
 
   const existing = await prisma.quote.findFirst({
     where: { id: parsed.data.quoteId, workspaceId: workspace.id },
@@ -86,6 +86,7 @@ export async function saveQuoteDraft(
       metadata: {
         itemCount: parsed.data.items.length,
         totalCents,
+        ...(impersonating && { impersonating: true, adminEmail: user.email }),
       },
     },
   });
@@ -107,7 +108,7 @@ export async function changeQuoteStatus(
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
   }
-  const { workspace, user } = await requireWorkspace();
+  const { workspace, user, impersonating } = await requireWorkspace();
 
   const q = await prisma.quote.findFirst({
     where: { id: parsed.data.quoteId, workspaceId: workspace.id },
@@ -144,7 +145,11 @@ export async function changeQuoteStatus(
       action: 'quote.status_change',
       targetType: 'Quote',
       targetId: q.id,
-      metadata: { from: q.status, to: parsed.data.status },
+      metadata: {
+        from: q.status,
+        to: parsed.data.status,
+        ...(impersonating && { impersonating: true, adminEmail: user.email }),
+      },
     },
   });
 

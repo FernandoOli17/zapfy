@@ -1,6 +1,16 @@
 import { cn } from '@zapai/ui';
 
 /**
+ * Contador module-scope pra gerar IDs únicos de gradient. Como o Sparkline
+ * é um Server Component (sem hooks), não dá pra usar `useId`. O contador
+ * funciona porque cada render do server reincia o module — em produção,
+ * cada page load começa em 0, mas dentro do mesmo render todos os IDs são
+ * únicos. NUNCA reusar o mesmo `colorClass` como ID (collision quando 2
+ * sparklines compartilham cor).
+ */
+let sparkSeq = 0;
+
+/**
  * Sparkline SVG simples — barras verticais com gradiente. Sem Recharts,
  * sem framer-motion. Renderiza no server (Server Component).
  */
@@ -29,7 +39,7 @@ export function Sparkline({
   const barWidth = Math.max(2, Math.floor(280 / data.length) - 2);
   const totalWidth = data.length * (barWidth + 2);
 
-  const gradId = `spark-grad-${colorClass.replace(/\W/g, '')}`;
+  const gradId = `spark-grad-${++sparkSeq}`;
 
   function formatValue(v: number): string {
     if (format === 'percent') return `${v.toLocaleString('pt-BR')}%`;
