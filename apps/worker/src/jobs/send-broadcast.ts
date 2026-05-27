@@ -133,6 +133,18 @@ export async function processSendBroadcast(data: SendBroadcastJob): Promise<void
   await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.SENT, undefined, waMessageId);
 
   log.info({ broadcastId, recipientId }, 'broadcast enviado');
+
+  // Check completion: se não restam mais PENDING, marca broadcast como COMPLETED
+  const remaining = await prisma.broadcastRecipient.count({
+    where: { broadcastId, status: BroadcastRecipientStatus.PENDING },
+  });
+  if (remaining === 0) {
+    await prisma.broadcast.update({
+      where: { id: broadcastId },
+      data: { status: BroadcastStatus.COMPLETED, finishedAt: new Date() },
+    });
+    log.info({ broadcastId }, 'broadcast completed');
+  }
 }
 
 async function markRecipient(

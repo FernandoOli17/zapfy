@@ -313,6 +313,54 @@ export function createWaClient(config: WaClientConfig) {
         method: 'GET',
       });
     },
+
+    /**
+     * Submete template HSM pra aprovação Meta. Endpoint roda em WABA id, não
+     * em phoneNumberId — passa wabaId explicitamente.
+     *
+     * components: array com formato Meta-compliant (HEADER/BODY/FOOTER/BUTTONS).
+     * Veja {@link https://developers.facebook.com/docs/whatsapp/business-management-api/message-templates}
+     */
+    async submitTemplate(input: {
+      wabaId: string;
+      name: string;
+      language: string;
+      category: 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
+      components: ReadonlyArray<Record<string, unknown>>;
+    }): Promise<{ id: string; status: string; category: string }> {
+      return request<{ id: string; status: string; category: string }>({
+        url: `https://graph.facebook.com/${version}/${input.wabaId}/message_templates`,
+        body: {
+          name: input.name,
+          language: input.language,
+          category: input.category,
+          components: input.components,
+        },
+      });
+    },
+
+    /** Lê status atual de um template pelo metaTemplateId. */
+    async getTemplate(input: {
+      wabaId: string;
+      metaTemplateId: string;
+    }): Promise<{
+      id: string;
+      name: string;
+      status: string;
+      category: string;
+      rejected_reason?: string;
+    }> {
+      return request<{
+        id: string;
+        name: string;
+        status: string;
+        category: string;
+        rejected_reason?: string;
+      }>({
+        url: `https://graph.facebook.com/${version}/${input.metaTemplateId}?fields=id,name,status,category,rejected_reason`,
+        method: 'GET',
+      });
+    },
   };
 }
 

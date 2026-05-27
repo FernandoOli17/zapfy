@@ -7,12 +7,19 @@ import {
   Clock,
   Loader2,
   PauseCircle,
+  RefreshCw,
+  Send,
   Trash2,
   XCircle,
 } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button, useToast } from '@zapai/ui';
 
-import { deleteMessageTemplate, mockApproveTemplate } from './actions';
+import {
+  deleteMessageTemplate,
+  mockApproveTemplate,
+  refreshTemplateStatus,
+  submitTemplateToMeta,
+} from './actions';
 
 interface TemplateRowProps {
   template: {
@@ -25,23 +32,48 @@ interface TemplateRowProps {
     approvedAt: string | null;
     rejectionReason: string | null;
     createdAt: string;
+    metaTemplateId: string | null;
   };
 }
 
 export function TemplateRow({ template }: TemplateRowProps) {
   const [pending, startTransition] = useTransition();
+  const { push } = useToast();
 
   function onDelete() {
     if (!confirm(`Apagar template "${template.name}"?`)) return;
     startTransition(async () => {
       const r = await deleteMessageTemplate(template.id);
-      if (r.status === 'error') alert(r.error);
+      if (r.status === 'error') push({ type: 'error', message: r.error });
     });
   }
 
   function onMockApprove(approved: boolean) {
     startTransition(async () => {
       await mockApproveTemplate(template.id, approved);
+    });
+  }
+
+  function onSubmitMeta() {
+    if (!confirm(`Submeter "${template.name}" pra Meta? Análise leva ~1-24h.`)) return;
+    startTransition(async () => {
+      const r = await submitTemplateToMeta(template.id);
+      if (r.status === 'ok') {
+        push({ type: 'success', message: 'Enviado pra análise da Meta' });
+      } else {
+        push({ type: 'error', message: r.error });
+      }
+    });
+  }
+
+  function onRefresh() {
+    startTransition(async () => {
+      const r = await refreshTemplateStatus(template.id);
+      if (r.status === 'ok') {
+        push({ type: 'success', message: `Status: ${r.templateStatus.toLowerCase()}` });
+      } else {
+        push({ type: 'error', message: r.error });
+      }
     });
   }
 
@@ -71,7 +103,35 @@ export function TemplateRow({ template }: TemplateRowProps) {
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          {template.status === 'SUBMITTED' && (
+          {/* Submeter pra Meta — só se ainda não tem metaTemplateId */}
+          {!template.metaTemplateId && template.status === 'SUBMITTED' && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onSubmitMeta}
+              disabled={pending}
+              title="Submeter pra aprovação da Meta"
+            >
+              <Send className="mr-1 h-3 w-3" />
+              Submeter Meta
+            </Button>
+          )}
+          {/* Refresh status — só se já foi submetido */}
+          {template.metaTemplateId && template.status === 'SUBMITTED' && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              disabled={pending}
+              title="Atualizar status com Meta agora"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${pending ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
+          {/* Mock approve/reject — só em dev sem metaTemplateId */}
+          {!template.metaTemplateId && template.status === 'SUBMITTED' && (
             <>
               <Button
                 type="button"

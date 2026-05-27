@@ -6,6 +6,7 @@ import { prisma } from '@zapai/db';
 import { requireWorkspace } from '@/lib/inbox';
 
 import { BroadcastRow } from '../broadcast-row';
+import { AutoRefresh } from './auto-refresh';
 
 export const metadata = { title: 'Broadcast' };
 export const dynamic = 'force-dynamic';
@@ -76,8 +77,48 @@ export default async function BroadcastDetailPage({
       </div>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold tracking-tight">Status dos envios</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-6">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold tracking-tight">Status dos envios</h2>
+          {broadcast.status === 'RUNNING' && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+              em execução
+            </span>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {(() => {
+          const total = broadcast._count.recipients || 1;
+          const done = counts.SENT + counts.DELIVERED + counts.READ + counts.FAILED + counts.SKIPPED;
+          const pct = Math.round((done / total) * 100);
+          const failedPct = Math.round((counts.FAILED / total) * 100);
+          return (
+            <div className="mt-3">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div className="flex h-full">
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${pct - failedPct}%` }}
+                  />
+                  <div
+                    className="h-full bg-destructive/70 transition-all duration-500"
+                    style={{ width: `${failedPct}%` }}
+                  />
+                </div>
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {done.toLocaleString('pt-BR')} / {broadcast._count.recipients.toLocaleString('pt-BR')} ·{' '}
+                {pct}%
+                {counts.FAILED > 0 && (
+                  <span className="text-destructive"> · {counts.FAILED} falhas</span>
+                )}
+              </p>
+            </div>
+          );
+        })()}
+
+        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-6">
           <Stat label="Pendentes" value={counts.PENDING} />
           <Stat label="Enviados" value={counts.SENT} />
           <Stat label="Entregues" value={counts.DELIVERED} accent="primary" />
@@ -85,6 +126,8 @@ export default async function BroadcastDetailPage({
           <Stat label="Falhas" value={counts.FAILED} accent="destructive" />
           <Stat label="Skipped" value={counts.SKIPPED} />
         </div>
+
+        {broadcast.status === 'RUNNING' && <AutoRefresh />}
       </section>
 
       <section className="mt-8">

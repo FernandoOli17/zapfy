@@ -93,6 +93,7 @@ export default async function TemplatesPage() {
                     approvedAt: t.approvedAt?.toISOString() ?? null,
                     rejectionReason: t.rejectionReason,
                     createdAt: t.createdAt.toISOString(),
+                    metaTemplateId: t.metaTemplateId,
                   }}
                 />
               </li>

@@ -150,7 +150,7 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
 
   const broadcast = await prisma.broadcast.findFirst({
     where: { id: broadcastId, workspaceId: ctx.workspace.id },
-    include: { recipients: { select: { id: true } } },
+    include: { recipients: { select: { contactId: true } } },
   });
   if (!broadcast) return { status: 'error', error: 'Broadcast não encontrado' };
   if (
@@ -165,16 +165,19 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
     data: { status: BroadcastStatus.RUNNING, startedAt: new Date() },
   });
 
-  // Enfileira um job por recipient. Worker processa com throttle global no provider.
+  // Enfileira um job por recipient. BullMQ worker tem concurrency=3 globalmente
+  // (apps/worker/src/index.ts) — efetivamente já rate-limita envios pra Meta.
+  // Cada job tem jobId determinístico (broadcast:contactId) pra dedup natural
+  // em re-enqueue/retry.
   let enqueued = 0;
   for (const r of broadcast.recipients) {
     const job: SendBroadcastJob = {
       workspaceId: ctx.workspace.id,
       broadcastId: broadcast.id,
-      recipientId: r.id,
+      recipientId: r.contactId, // Contact.id, NÃO BroadcastRecipient.id
     };
     const res = await enqueue('send-broadcast', job, {
-      jobId: `broadcast:${broadcast.id}:${r.id}`,
+      jobId: `broadcast:${broadcast.id}:${r.contactId}`,
       attempts: 3,
     });
     if (res.ok) enqueued += 1;

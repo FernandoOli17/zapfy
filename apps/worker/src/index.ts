@@ -25,6 +25,7 @@ import {
   processKnowledge,
   type ProcessKnowledgeJob,
 } from './jobs/process-knowledge';
+import { sweepTemplateStatuses } from './jobs/poll-template-status';
 
 const log = createLogger('worker');
 
@@ -120,8 +121,10 @@ workers.push(
 
 /**
  * Repeatable: LGPD hard delete sweep a cada hora.
+ * Template status polling a cada 15min.
  */
 const SWEEP_INTERVAL_MS = 60 * 60 * 1000;
+const TEMPLATE_POLL_INTERVAL_MS = 15 * 60 * 1000;
 
 function startRepeatables(): void {
   setInterval(() => {
@@ -135,6 +138,14 @@ function startRepeatables(): void {
   void sweepExpiredHardDeletes().catch((err: unknown) =>
     log.error({ err: String(err) }, 'lgpd sweep inicial falhou'),
   );
+
+  setInterval(() => {
+    void sweepTemplateStatuses()
+      .then(({ checked, changed }) => {
+        if (checked > 0) log.info({ checked, changed }, 'template poll sweep');
+      })
+      .catch((err: unknown) => log.error({ err: String(err) }, 'template poll falhou'));
+  }, TEMPLATE_POLL_INTERVAL_MS);
 }
 
 startRepeatables();

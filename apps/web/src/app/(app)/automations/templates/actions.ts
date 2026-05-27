@@ -13,22 +13,50 @@ import { createLogger } from '@zapai/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { requireWorkspace } from '@/lib/inbox';
+import { decrypt } from '@zapai/shared';
+import { createWaClient, WaApiError } from '@zapai/wa';
+import { env } from '@/env';
 
 const log = createLogger('templates-actions');
 
 async function requireAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/login');
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!member) redirect('/onboarding');
-  if (member.role !== 'OWNER' && member.role !== 'ADMIN') {
+  const ctx = await requireWorkspace();
+  if (ctx.member.role !== 'OWNER' && ctx.member.role !== 'ADMIN') {
     return { error: 'Apenas Owner/Admin podem gerenciar templates' as const };
   }
-  return { user: session.user, workspace: member.workspace };
+  return { user: ctx.user, workspace: ctx.workspace };
+}
+
+/**
+ * Converte components do nosso formato interno (Zod) pro formato Meta esperado
+ * em /message_templates. Meta exige array `[{type:'HEADER'},{type:'BODY'},...]`.
+ */
+function toMetaComponents(components: z.infer<typeof componentsSchema>): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  if (components.header) {
+    out.push({
+      type: 'HEADER',
+      format: components.header.type,
+      ...(components.header.text && { text: components.header.text }),
+    });
+  }
+  out.push({ type: 'BODY', text: components.body.text });
+  if (components.footer) {
+    out.push({ type: 'FOOTER', text: components.footer.text });
+  }
+  if (components.buttons && components.buttons.length > 0) {
+    out.push({
+      type: 'BUTTONS',
+      buttons: components.buttons.map((b) => ({
+        type: b.type,
+        text: b.text,
+        ...(b.url && { url: b.url }),
+        ...(b.phone_number && { phone_number: b.phone_number }),
+      })),
+    });
+  }
+  return out;
 }
 
 const buttonSchema = z.object({
@@ -129,6 +157,147 @@ export async function deleteMessageTemplate(templateId: string) {
   await prisma.messageTemplate.delete({ where: { id: tpl.id } });
   revalidatePath('/automations/templates');
   return { status: 'ok' as const };
+}
+
+/**
+ * Submete template pra aprovação na Meta WhatsApp Cloud API.
+ * Atualiza `status=SUBMITTED` e `metaTemplateId` em sucesso. Em falha, marca
+ * `status=REJECTED` com `rejectionReason`.
+ *
+ * Precondições:
+ *  - workspace tem WhatsAppAccount CONNECTED (com wabaId + accessToken cifrado)
+ *  - template ainda não tem `metaTemplateId` (não foi submetido)
+ */
+export async function submitTemplateToMeta(templateId: string): Promise<
+  { status: 'ok'; metaTemplateId: string } | { status: 'error'; error: string }
+> {
+  const ctx = await requireAdmin();
+  if ('error' in ctx) return { status: 'error', error: ctx.error };
+
+  const tpl = await prisma.messageTemplate.findFirst({
+    where: { id: templateId, workspaceId: ctx.workspace.id },
+  });
+  if (!tpl) return { status: 'error', error: 'Template não encontrado' };
+  if (tpl.metaTemplateId) {
+    return { status: 'error', error: 'Template já foi submetido' };
+  }
+
+  const wa = await prisma.whatsAppAccount.findFirst({
+    where: { workspaceId: ctx.workspace.id, status: 'CONNECTED' },
+  });
+  if (!wa) {
+    return { status: 'error', error: 'Conecte um número WhatsApp primeiro em /whatsapp' };
+  }
+
+  let accessToken: string;
+  try {
+    accessToken = decrypt(wa.accessTokenEncrypted, env.ENCRYPTION_KEY);
+  } catch {
+    return { status: 'error', error: 'Token WhatsApp corrompido — reconecte em /whatsapp' };
+  }
+
+  const client = createWaClient({ phoneNumberId: wa.phoneNumberId, accessToken });
+
+  // Reusa parser pra obter components normalizados
+  const componentsParsed = componentsSchema.safeParse(tpl.components);
+  if (!componentsParsed.success) {
+    return { status: 'error', error: 'Components inválidos no template' };
+  }
+
+  try {
+    const res = await client.submitTemplate({
+      wabaId: wa.businessAccountId,
+      name: tpl.name,
+      language: tpl.language,
+      category: tpl.category as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION',
+      components: toMetaComponents(componentsParsed.data),
+    });
+
+    await prisma.messageTemplate.update({
+      where: { id: tpl.id },
+      data: {
+        metaTemplateId: res.id,
+        status: 'SUBMITTED',
+        submittedAt: new Date(),
+        rejectionReason: null,
+      },
+    });
+
+    log.info({ workspaceId: ctx.workspace.id, templateId: tpl.id, metaId: res.id }, 'template submetido pra Meta');
+    revalidatePath('/automations/templates');
+    return { status: 'ok', metaTemplateId: res.id };
+  } catch (err) {
+    const msg = err instanceof WaApiError ? err.message : err instanceof Error ? err.message : String(err);
+    log.error({ workspaceId: ctx.workspace.id, templateId: tpl.id, err: msg }, 'submit template falhou');
+
+    await prisma.messageTemplate.update({
+      where: { id: tpl.id },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: `Erro Meta: ${msg.slice(0, 200)}`,
+      },
+    });
+    return { status: 'error', error: msg };
+  }
+}
+
+/**
+ * Refresca status do template direto da Meta. Usado pelo polling do worker
+ * e pelo botão "atualizar" na UI.
+ */
+export async function refreshTemplateStatus(templateId: string): Promise<
+  { status: 'ok'; templateStatus: string } | { status: 'error'; error: string }
+> {
+  const ctx = await requireAdmin();
+  if ('error' in ctx) return { status: 'error', error: ctx.error };
+
+  const tpl = await prisma.messageTemplate.findFirst({
+    where: { id: templateId, workspaceId: ctx.workspace.id },
+  });
+  if (!tpl || !tpl.metaTemplateId) {
+    return { status: 'error', error: 'Template não submetido ainda' };
+  }
+
+  const wa = await prisma.whatsAppAccount.findFirst({
+    where: { workspaceId: ctx.workspace.id, status: 'CONNECTED' },
+  });
+  if (!wa) return { status: 'error', error: 'WhatsApp não conectado' };
+
+  let accessToken: string;
+  try {
+    accessToken = decrypt(wa.accessTokenEncrypted, env.ENCRYPTION_KEY);
+  } catch {
+    return { status: 'error', error: 'Token corrompido' };
+  }
+
+  const client = createWaClient({ phoneNumberId: wa.phoneNumberId, accessToken });
+  try {
+    const meta = await client.getTemplate({
+      wabaId: wa.businessAccountId,
+      metaTemplateId: tpl.metaTemplateId,
+    });
+    // Status Meta: APPROVED | REJECTED | PENDING | PAUSED | DISABLED
+    let next: 'APPROVED' | 'REJECTED' | 'SUBMITTED' | 'PAUSED';
+    if (meta.status === 'APPROVED') next = 'APPROVED';
+    else if (meta.status === 'REJECTED') next = 'REJECTED';
+    else if (meta.status === 'PAUSED' || meta.status === 'DISABLED') next = 'PAUSED';
+    else next = 'SUBMITTED';
+
+    await prisma.messageTemplate.update({
+      where: { id: tpl.id },
+      data: {
+        status: next,
+        approvedAt: next === 'APPROVED' ? new Date() : null,
+        rejectionReason: next === 'REJECTED' ? meta.rejected_reason ?? 'Rejeitado pela Meta' : null,
+      },
+    });
+
+    revalidatePath('/automations/templates');
+    return { status: 'ok', templateStatus: next };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { status: 'error', error: msg };
+  }
 }
 
 /** Mock pra simular aprovação/rejeição pela Meta. Útil pra teste. */
