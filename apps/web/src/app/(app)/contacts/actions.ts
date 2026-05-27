@@ -8,19 +8,12 @@ import { createLogger, phoneE164Schema } from '@zapai/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { requireWorkspace } from '@/lib/inbox';
 
 const log = createLogger('contacts-actions');
 
 async function requireWorkspaceMember() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/login');
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!member) redirect('/onboarding');
-  return { user: session.user, member, workspace: member.workspace };
+  return requireWorkspace();
 }
 
 function requireAdminOrOwner(role: string) {

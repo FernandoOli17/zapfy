@@ -8,22 +8,16 @@ import { createLogger } from '@zapai/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { requireWorkspace } from '@/lib/inbox';
 
 const log = createLogger('coupons-actions');
 
 async function requireWorkspaceAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/login');
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: { select: { id: true } } },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!member) redirect('/onboarding');
-  if (member.role !== 'OWNER' && member.role !== 'ADMIN') {
+  const ctx = await requireWorkspace();
+  if (ctx.member.role !== 'OWNER' && ctx.member.role !== 'ADMIN') {
     return { error: 'Apenas OWNER/ADMIN podem gerenciar cupons' as const };
   }
-  return { user: session.user, workspaceId: member.workspace.id };
+  return { user: ctx.user, workspaceId: ctx.workspace.id };
 }
 
 const couponInput = z

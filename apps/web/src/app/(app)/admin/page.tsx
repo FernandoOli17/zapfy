@@ -93,7 +93,7 @@ export default async function AdminPage({
     mrrCents += PLANS[p].priceBRLCents * row._count._all;
   }
 
-  const currentImpersonationId = await getImpersonatedWorkspaceId();
+  const currentImpersonationId = await getImpersonatedWorkspaceId(session.user.id);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 md:px-10 md:py-10">

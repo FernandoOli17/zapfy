@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, ChevronDown } from 'lucide-react';
 import { Button, useToast } from '@zapai/ui';
 import type { PlanId } from '@zapai/shared';
+
+import { useDropdown } from '@/components/hooks/use-dropdown';
 
 import { forceUpgradeWorkspace, impersonateWorkspace } from './actions';
 
@@ -55,7 +57,7 @@ export function ForcePlanButton({
 }) {
   const router = useRouter();
   const { push } = useToast();
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, ref } = useDropdown<HTMLDivElement>();
   const [pending, startTransition] = useTransition();
 
   function onPick(p: PlanId) {
@@ -74,18 +76,23 @@ export function ForcePlanButton({
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <Button
         type="button"
         size="sm"
         variant="ghost"
         disabled={pending}
-        onClick={() => setOpen((s) => !s)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen(!open)}
       >
         Plano <ChevronDown className="ml-0.5 h-3 w-3" />
       </Button>
       {open && (
-        <div className="absolute right-0 z-10 mt-1 w-32 overflow-hidden rounded-md border border-border bg-popover shadow-md">
+        <div
+          role="menu"
+          className="absolute right-0 z-10 mt-1 w-32 overflow-hidden rounded-md border border-border bg-popover shadow-md"
+        >
           {(['STARTER', 'PRO', 'PREMIUM'] as const).map((p) => (
             <button
               key={p}

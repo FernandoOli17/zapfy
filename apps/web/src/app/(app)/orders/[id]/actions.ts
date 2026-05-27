@@ -51,30 +51,32 @@ export async function updateOrderStatus(
     return { status: 'ok' };
   }
 
-  await prisma.order.update({
-    where: { id: existing.id },
-    data: {
-      status: parsed.data.status,
-      ...(parsed.data.etaMinutes !== undefined && { etaMinutes: parsed.data.etaMinutes }),
-      ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
-    },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      workspaceId: workspace.id,
-      userId: user.id,
-      action: 'order.status_change',
-      targetType: 'Order',
-      targetId: existing.id,
-      metadata: {
-        publicNumber: existing.publicNumber,
-        from: existing.status,
-        to: parsed.data.status,
-        ...(impersonating && { impersonating: true, adminEmail: user.email }),
+  // Mutation + audit numa transação — atomic
+  await prisma.$transaction([
+    prisma.order.update({
+      where: { id: existing.id },
+      data: {
+        status: parsed.data.status,
+        ...(parsed.data.etaMinutes !== undefined && { etaMinutes: parsed.data.etaMinutes }),
+        ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
       },
-    },
-  });
+    }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        action: 'order.status_change',
+        targetType: 'Order',
+        targetId: existing.id,
+        metadata: {
+          publicNumber: existing.publicNumber,
+          from: existing.status,
+          to: parsed.data.status,
+          ...(impersonating && { impersonating: true, adminEmail: user.email }),
+        },
+      },
+    }),
+  ]);
 
   log.info(
     { workspaceId: workspace.id, orderId: existing.id, from: existing.status, to: parsed.data.status },

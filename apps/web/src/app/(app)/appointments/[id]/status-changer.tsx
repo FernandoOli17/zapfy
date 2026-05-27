@@ -6,6 +6,8 @@ import { Calendar, ChevronDown, Loader2 } from 'lucide-react';
 import type { AppointmentStatus } from '@zapai/db';
 import { Button, cn, useToast } from '@zapai/ui';
 
+import { useDropdown } from '@/components/hooks/use-dropdown';
+
 import { rescheduleAppointment, updateAppointmentStatus } from './actions';
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -38,7 +40,7 @@ export function StatusChanger({
   const router = useRouter();
   const { push } = useToast();
   const [pending, startTransition] = useTransition();
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, ref } = useDropdown<HTMLDivElement>();
   const [showReschedule, setShowReschedule] = useState(false);
 
   function onChange(next: AppointmentStatus) {
@@ -94,18 +96,23 @@ export function StatusChanger({
         <Calendar className="mr-1.5 h-3 w-3" /> Reagendar
       </Button>
 
-      <div className="relative">
+      <div className="relative" ref={ref}>
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={pending}
-          onClick={() => setOpen((s) => !s)}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          onClick={() => setOpen(!open)}
         >
           Mudar status <ChevronDown className="ml-1 h-3 w-3" />
         </Button>
         {open && (
-          <div className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-md border border-border bg-popover shadow-md">
+          <div
+            role="menu"
+            className="absolute right-0 z-10 mt-1 w-44 overflow-hidden rounded-md border border-border bg-popover shadow-md"
+          >
             {(Object.keys(STATUS_LABEL) as AppointmentStatus[]).map((s) => {
               const destructive = s === 'CANCELLED' || s === 'NO_SHOW';
               return (

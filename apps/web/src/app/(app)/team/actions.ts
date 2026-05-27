@@ -12,22 +12,17 @@ import { env } from '@/env';
 import { sendEmail } from '@/lib/email/client';
 import { teamInviteEmail } from '@/lib/email/templates';
 import { signInviteToken } from '@/lib/invite-token';
+import { requireWorkspace } from '@/lib/inbox';
 
 const log = createLogger('team-actions');
 
 async function requireOwnerOrAdmin() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/login');
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!member) redirect('/onboarding');
-  if (member.role !== 'OWNER' && member.role !== 'ADMIN') {
+  // Usa requireWorkspace centralizado (respeita impersonação)
+  const ctx = await requireWorkspace();
+  if (ctx.member.role !== 'OWNER' && ctx.member.role !== 'ADMIN') {
     return { error: 'Apenas Owner/Admin podem convidar membros' as const };
   }
-  return { user: session.user, workspace: member.workspace, member };
+  return { user: ctx.user, workspace: ctx.workspace, member: ctx.member };
 }
 
 const inviteInput = z.object({

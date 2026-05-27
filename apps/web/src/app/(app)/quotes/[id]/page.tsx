@@ -39,10 +39,13 @@ function parseItems(json: unknown): QuoteItemPersisted[] {
   return json.flatMap((raw) => {
     if (!raw || typeof raw !== 'object') return [];
     const r = raw as Record<string, unknown>;
-    const name = typeof r['name'] === 'string' ? r['name'] : null;
+    const name = typeof r['name'] === 'string' && r['name'].length > 0 ? r['name'] : null;
     const quantity = typeof r['quantity'] === 'number' ? r['quantity'] : null;
     const unitPriceCents = typeof r['unitPriceCents'] === 'number' ? r['unitPriceCents'] : null;
+    // Defense-in-depth: rejeita negativos/NaN/zero qty mesmo se DB foi semeado errado
     if (!name || quantity == null || unitPriceCents == null) return [];
+    if (!Number.isFinite(quantity) || quantity <= 0) return [];
+    if (!Number.isFinite(unitPriceCents) || unitPriceCents < 0) return [];
     const item: QuoteItemPersisted = { name, quantity, unitPriceCents };
     if (typeof r['notes'] === 'string') item.notes = r['notes'];
     return [item];

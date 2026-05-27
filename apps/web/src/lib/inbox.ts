@@ -37,7 +37,7 @@ export async function requireWorkspace() {
 
   // Super-admin impersonando → carrega workspace alvo, bypassando member check
   if (fullUser?.isSuperAdmin) {
-    const targetId = await getImpersonatedWorkspaceId();
+    const targetId = await getImpersonatedWorkspaceId(session.user.id);
     if (targetId) {
       const ws = await prisma.workspace.findUnique({ where: { id: targetId } });
       if (ws) {

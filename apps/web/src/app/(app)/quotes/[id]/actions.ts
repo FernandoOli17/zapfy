@@ -77,31 +77,32 @@ export async function saveQuoteDraft(
       })()
     : null;
 
-  await prisma.quote.update({
-    where: { id: existing.id },
-    data: {
-      serviceDescription: parsed.data.serviceDescription,
-      items: parsed.data.items,
-      totalCents,
-      validUntil: validUntilDate,
-      ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
-    },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      workspaceId: workspace.id,
-      userId: user.id,
-      action: 'quote.draft_saved',
-      targetType: 'Quote',
-      targetId: existing.id,
-      metadata: {
-        itemCount: parsed.data.items.length,
+  await prisma.$transaction([
+    prisma.quote.update({
+      where: { id: existing.id },
+      data: {
+        serviceDescription: parsed.data.serviceDescription,
+        items: parsed.data.items,
         totalCents,
-        ...(impersonating && { impersonating: true, adminEmail: user.email }),
+        validUntil: validUntilDate,
+        ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
       },
-    },
-  });
+    }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        action: 'quote.draft_saved',
+        targetType: 'Quote',
+        targetId: existing.id,
+        metadata: {
+          itemCount: parsed.data.items.length,
+          totalCents,
+          ...(impersonating && { impersonating: true, adminEmail: user.email }),
+        },
+      },
+    }),
+  ]);
 
   log.info(
     { workspaceId: workspace.id, quoteId: existing.id, totalCents },
@@ -147,25 +148,26 @@ export async function changeQuoteStatus(
     return { status: 'error', error: 'Aceitar/recusar só depois de enviado' };
   }
 
-  await prisma.quote.update({
-    where: { id: q.id },
-    data: { status: parsed.data.status },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      workspaceId: workspace.id,
-      userId: user.id,
-      action: 'quote.status_change',
-      targetType: 'Quote',
-      targetId: q.id,
-      metadata: {
-        from: q.status,
-        to: parsed.data.status,
-        ...(impersonating && { impersonating: true, adminEmail: user.email }),
+  await prisma.$transaction([
+    prisma.quote.update({
+      where: { id: q.id },
+      data: { status: parsed.data.status },
+    }),
+    prisma.auditLog.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        action: 'quote.status_change',
+        targetType: 'Quote',
+        targetId: q.id,
+        metadata: {
+          from: q.status,
+          to: parsed.data.status,
+          ...(impersonating && { impersonating: true, adminEmail: user.email }),
+        },
       },
-    },
-  });
+    }),
+  ]);
 
   // TODO(notify): quando status=SENT, enfileirar envio de WhatsApp pro contato
   // com link do PDF. Implementar quando upload do PDF estiver pronto.

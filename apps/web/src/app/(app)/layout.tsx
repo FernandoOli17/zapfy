@@ -106,7 +106,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   let impersonatingName: string | null = null;
 
   if (isSuperAdmin) {
-    const impersonatedId = await getImpersonatedWorkspaceId();
+    const impersonatedId = await getImpersonatedWorkspaceId(session.user.id);
     if (impersonatedId) {
       const ws = await prisma.workspace.findUnique({ where: { id: impersonatedId } });
       if (ws) {

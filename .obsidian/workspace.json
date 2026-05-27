@@ -173,19 +173,25 @@
       "daily-notes:Abrir a nota de hoje": false,
       "templates:Inserir modelo": false,
       "command-palette:Abrir paleta de comandos": false,
-      "bases:Criar nova base": false
+      "bases:Criar nova base": false,
+      "obsidian-git:Open Git source control": false
     }
   },
   "active": "a43ceda3d3c12807",
   "lastOpenFiles": [
+    "apps/web/src/app/(app)/orders/[id]/page.tsx.tmp.16828.3df61bd85690",
+    "apps/web/src/app/(app)/orders/[id]/page.tsx.tmp.16828.2d06343d5197",
+    "apps/web/src/components/product-image.tsx",
+    "apps/web/src/components/product-image.tsx.tmp.16828.45d3e679cca0",
+    "apps/web/src/app/(app)/quotes/[id]/page.tsx.tmp.16828.31f0992f3b12",
+    "apps/web/src/app/(app)/admin/client-buttons.tsx.tmp.16828.6f547ee1ffd0",
+    "apps/web/src/app/(app)/admin/client-buttons.tsx.tmp.16828.85f5f161e14a",
+    "apps/web/src/app/(app)/appointments/[id]/status-changer.tsx.tmp.16828.c37248b4b502",
+    "apps/web/src/app/(app)/appointments/[id]/status-changer.tsx.tmp.16828.62a7c32d5a2e",
+    "apps/web/src/app/(app)/orders/[id]/status-changer.tsx.tmp.16828.3bdb3aa1155e",
+    "apps/web/src/components/hooks/use-dropdown.ts",
     "CLAUDE.md",
     "PLAN.md",
-    "README.md",
-    "04 - Arquivo",
-    "Nova pasta",
-    "03 - Recursos",
-    "02 - Áreas",
-    "01 - Projetos",
-    "00 - Dashboard"
+    "README.md"
   ]
 }

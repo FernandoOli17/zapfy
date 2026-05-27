@@ -22,26 +22,21 @@ import { publishInboxEvent, workspaceChannel } from '@/lib/realtime/pusher-serve
 import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 import { enforceRateLimit, RL_INBOX_SEND } from '@/lib/rate-limit';
+import { requireWorkspace } from '@/lib/inbox';
 
 const log = createLogger('inbox-actions');
 
 async function requireWorkspaceAndConversation(conversationId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect('/login');
-  const member = await prisma.workspaceMember.findFirst({
-    where: { userId: session.user.id },
-    include: { workspace: true },
-    orderBy: { createdAt: 'asc' },
-  });
-  if (!member) redirect('/onboarding');
+  // requireWorkspace respeita impersonação (super-admin com cookie)
+  const { user, workspace } = await requireWorkspace();
   const conversation = await prisma.conversation.findFirst({
-    where: { id: conversationId, workspaceId: member.workspace.id },
+    where: { id: conversationId, workspaceId: workspace.id },
     include: { contact: true },
   });
   if (!conversation) {
     throw new AppError('NOT_FOUND', 404, 'Conversa não encontrada nesse workspace');
   }
-  return { user: session.user, workspace: member.workspace, conversation };
+  return { user, workspace, conversation };
 }
 
 const sendInput = z.object({

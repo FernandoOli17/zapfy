@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, MessageSquare, Package, Truck, User } from 'lucide-react';
+
+import { ProductImage } from '@/components/product-image';
 import { prisma, type OrderStatus } from '@zapai/db';
 import { cn } from '@zapai/ui';
 
@@ -119,17 +121,8 @@ export default async function OrderDetailPage({
               <ul className="divide-y divide-border">
                 {order.items.map((it) => (
                   <li key={it.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
-                    {it.product?.imageUrl ? (
-                      <img
-                        src={it.product.imageUrl}
-                        alt=""
-                        className="h-10 w-10 shrink-0 rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
+                    <ProductImage src={it.product?.imageUrl ?? null} />
+
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{it.nameSnapshot}</p>
                       {it.notes && (
