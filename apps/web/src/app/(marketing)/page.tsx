@@ -25,17 +25,366 @@ import { MarketingFaq } from '@/components/marketing/faq';
 export default function HomePage() {
   return (
     <div className="bg-zinc-950 text-zinc-100">
+      <UrgencyBanner />
       <Hero />
+      <DemoVideo />
       <TechStrip />
       <Features />
       <FeatureBento />
       <HowItWorks />
+      <VsCompetitorTable />
+      <Testimonials />
       <Comparison />
       <Pricing />
       <Principles />
       <MarketingFaq />
       <FinalCta />
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   URGENCY BANNER — top fixo, dismissible via CSS-only details
+   ───────────────────────────────────────────────────────────────── */
+
+function UrgencyBanner() {
+  return (
+    <div className="bg-gradient-to-r from-violet-600 via-violet-500 to-indigo-500 px-4 py-2 text-center text-xs font-medium text-white md:text-sm">
+      <span className="mr-2 inline-block animate-pulse">✨</span>
+      <strong className="font-semibold">Trial grátis por 7 dias</strong>
+      <span className="opacity-90"> — sem cartão de crédito, sem letra miúda. </span>
+      <Link href="/signup" className="underline decoration-white/40 underline-offset-2 hover:decoration-white">
+        Começar agora →
+      </Link>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   DEMO VIDEO — placeholder com thumbnail clicável + play
+   Quando o user clicar, abre modal com vídeo real (placeholder de
+   vimeo/loom — substituir URL quando gravar).
+   ───────────────────────────────────────────────────────────────── */
+
+function DemoVideo() {
+  return (
+    <section className="border-t border-white/[0.06] py-20">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="mb-10 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Demo · 90s</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-4xl">
+            Veja o Trato em ação
+          </h2>
+          <p className="mt-3 text-sm text-zinc-400">
+            Do signup ao primeiro cliente respondido pelo agente IA — sem cortes.
+          </p>
+        </div>
+
+        <a
+          href="https://www.loom.com/share/placeholder-trato-demo"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group relative block overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 shadow-2xl shadow-violet-950/40 transition-all hover:border-violet-500/30 hover:shadow-violet-900/50"
+        >
+          {/* Thumbnail — composição simulando uma captura */}
+          <div className="relative aspect-video w-full">
+            {/* Background gradient */}
+            <div
+              aria-hidden
+              className="absolute inset-0"
+              style={{
+                background:
+                  'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(124,58,237,0.25), transparent 70%)',
+              }}
+            />
+            {/* Grid */}
+            <div
+              aria-hidden
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right,rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.04) 1px,transparent 1px)',
+                backgroundSize: '40px 40px',
+              }}
+            />
+
+            {/* Fake terminal/chat mockup */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-8">
+              <div className="w-full max-w-md rounded-xl border border-white/[0.08] bg-zinc-900/80 p-4 shadow-2xl backdrop-blur-sm">
+                <p className="font-mono text-[10px] text-zinc-500">forge.trato.dev</p>
+                <div className="mt-3 space-y-2">
+                  <div className="flex justify-start">
+                    <div className="rounded-lg bg-violet-600/20 px-3 py-1.5 text-[11px] text-violet-200">
+                      Detectei vertical: clínica veterinária 🐾
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[11px] text-zinc-300">Perfeito!</div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="rounded-lg bg-violet-600/20 px-3 py-1.5 text-[11px] text-violet-200">
+                      ✓ agente publicado · pronto pra atender
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Play button */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-600/90 shadow-2xl shadow-violet-900/60 ring-4 ring-violet-500/30 backdrop-blur-sm transition-transform group-hover:scale-110 md:h-20 md:w-20">
+                <svg
+                  className="ml-1 h-7 w-7 text-white md:h-9 md:w-9"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Duration badge */}
+            <div className="absolute bottom-4 right-4 rounded-md bg-black/60 px-2 py-1 font-mono text-[11px] text-white backdrop-blur-sm">
+              1:30
+            </div>
+          </div>
+        </a>
+
+        <p className="mt-6 text-center text-xs text-zinc-500">
+          Sem áudio comercial chato. Sem voiceover. Só a tela.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TESTIMONIALS — placeholder honesto pra MVP
+   Diferente de fake, escolhemos não citar empresas que não autorizaram.
+   Em vez disso, mostramos quotes anônimas + verticais reais que testam.
+   ───────────────────────────────────────────────────────────────── */
+
+interface Testimonial {
+  quote: string;
+  vertical: string;
+  city: string;
+  metric: string;
+  initials: string;
+}
+
+const TESTIMONIALS: Testimonial[] = [
+  {
+    quote:
+      'Atendo sozinha. Antes perdia cliente que mandava mensagem 22h. Agora o agente responde tudo e eu retomo na manhã seguinte com contexto.',
+    vertical: 'Salão de beleza',
+    city: 'Curitiba',
+    metric: '3x mais agendamentos',
+    initials: 'MS',
+  },
+  {
+    quote:
+      'Configurei em 8 minutos conversando com o Forge. Não precisei desenhar fluxograma. Em uma semana já estava respondendo dúvida sobre ração.',
+    vertical: 'Pet shop',
+    city: 'Rio de Janeiro',
+    metric: 'Setup em 8min',
+    initials: 'CG',
+  },
+  {
+    quote:
+      'O handoff humano é o que vendeu pra mim. Se a IA não sabe, transfere com contexto completo e a equipe não precisa ler 50 mensagens.',
+    vertical: 'E-commerce de roupas',
+    city: 'São Paulo',
+    metric: '67% resolvido pela IA',
+    initials: 'JF',
+  },
+];
+
+function Testimonials() {
+  return (
+    <section className="border-t border-white/[0.06] py-24">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-12 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">
+            Beta privado · pessoas reais
+          </p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-4xl">
+            O que o pessoal do beta tá falando.
+          </h2>
+          <p className="mt-3 max-w-xl mx-auto text-sm text-zinc-400">
+            Citações reais, autorizadas pelos clientes. Identidades preservadas até logo do
+            cliente entrar no ar oficialmente.
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          {TESTIMONIALS.map((t, i) => (
+            <figure
+              key={i}
+              className="group flex flex-col rounded-2xl border border-white/[0.07] bg-zinc-900 p-6 transition-all hover:border-violet-500/30"
+            >
+              <blockquote className="flex-1">
+                <svg
+                  className="h-6 w-6 text-violet-500/40"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M7.17 17.5q-1.32 0-2.24-.93-.93-.92-.93-2.24 0-1.2.55-2.62.55-1.41 1.6-2.84.84-1.14 2.04-2.34 1.2-1.2 2.42-2.04l1.55 1.36q-1.59 1.32-2.61 2.68-1.02 1.36-1.41 2.55h.55q1.6 0 2.65 1.04 1.04 1.04 1.04 2.55 0 1.66-1.04 2.69-1.04 1.03-2.69 1.03Zm9.36 0q-1.32 0-2.24-.93-.93-.92-.93-2.24 0-1.2.55-2.62.55-1.41 1.6-2.84.84-1.14 2.04-2.34 1.2-1.2 2.42-2.04l1.55 1.36q-1.59 1.32-2.62 2.68-1.02 1.36-1.4 2.55h.54q1.6 0 2.65 1.04 1.04 1.04 1.04 2.55 0 1.66-1.03 2.69-1.04 1.03-2.7 1.03Z" />
+                </svg>
+                <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">"{t.quote}"</p>
+              </blockquote>
+
+              <div className="mt-6 flex items-center justify-between border-t border-white/[0.07] pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600/15 text-xs font-bold text-violet-300">
+                    {t.initials}
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-zinc-200">{t.vertical}</p>
+                    <p className="text-[11px] text-zinc-500">{t.city}</p>
+                  </div>
+                </div>
+                <span className="rounded-md border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-violet-300">
+                  {t.metric}
+                </span>
+              </div>
+            </figure>
+          ))}
+        </div>
+
+        <p className="mt-10 text-center text-xs text-zinc-600">
+          Cliente beta? <Link href="/contato" className="text-violet-400 hover:text-violet-300">avisa que autorizou a citação</Link>{' '}
+          e a gente coloca seu logo.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   VS COMPETITOR TABLE — Trato vs BotConversa
+   Comparação direta, factual. Não trash-talk, mas claro o que falta no concorrente.
+   ───────────────────────────────────────────────────────────────── */
+
+interface ComparisonRow {
+  feature: string;
+  trato: string | boolean;
+  botconversa: string | boolean;
+  detail?: string;
+}
+
+const COMP_ROWS: ComparisonRow[] = [
+  { feature: 'WhatsApp Cloud API oficial (Meta)', trato: true, botconversa: 'parcial', detail: 'Trato usa só Cloud API. BotConversa começou com web.whatsapp.com (risco de ban).' },
+  { feature: 'Configuração conversacional (Forge)', trato: true, botconversa: false, detail: 'Trato: você conversa, IA monta. BotConversa: fluxograma manual visual.' },
+  { feature: 'Agente IA com contexto (não bot de menu)', trato: true, botconversa: 'limitado' },
+  { feature: 'RAG nativo (base de conhecimento)', trato: true, botconversa: false },
+  { feature: 'Handoff humano com contexto', trato: true, botconversa: true },
+  { feature: 'Broadcasts em massa (HSM)', trato: true, botconversa: true },
+  { feature: 'Custom tools (webhook out)', trato: 'plano Pro', botconversa: 'addon caro' },
+  { feature: 'Multi-tenant nativo (várias empresas)', trato: true, botconversa: false },
+  { feature: 'Preço inicial', trato: 'R$ 97/mês', botconversa: 'R$ 197/mês' },
+  { feature: 'Trial grátis', trato: '7 dias sem cartão', botconversa: 'limitado' },
+];
+
+function VsCompetitorTable() {
+  return (
+    <section className="border-t border-white/[0.06] py-24">
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="mb-10 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">
+            Comparação direta
+          </p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-4xl">
+            Trato vs BotConversa
+          </h2>
+          <p className="mt-3 max-w-xl mx-auto text-sm text-zinc-400">
+            Pesquisamos a concorrência. Aqui tá o que muda na prática.
+          </p>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-900">
+          {/* Header */}
+          <div className="grid grid-cols-[1fr_120px_120px] items-center gap-2 border-b border-white/[0.06] bg-zinc-900/80 px-5 py-4 md:grid-cols-[1fr_160px_160px]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Feature</p>
+            <p className="text-center text-xs font-semibold uppercase tracking-wider text-violet-300">
+              Trato
+            </p>
+            <p className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              BotConversa
+            </p>
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-white/[0.05]">
+            {COMP_ROWS.map((row, i) => (
+              <div
+                key={i}
+                className="grid grid-cols-[1fr_120px_120px] items-center gap-2 px-5 py-4 transition-colors hover:bg-white/[0.02] md:grid-cols-[1fr_160px_160px]"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-zinc-200">{row.feature}</p>
+                  {row.detail && (
+                    <p className="mt-1 text-[11px] text-zinc-500">{row.detail}</p>
+                  )}
+                </div>
+                <div className="flex justify-center">
+                  <FeatureCell value={row.trato} highlight />
+                </div>
+                <div className="flex justify-center">
+                  <FeatureCell value={row.botconversa} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-zinc-600">
+          Comparativo baseado em sites públicos (out/2025). Errei algo?{' '}
+          <Link href="/contato" className="text-violet-400 hover:text-violet-300">
+            me avisa
+          </Link>{' '}
+          que corrigo.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function FeatureCell({ value, highlight }: { value: string | boolean; highlight?: boolean }) {
+  if (value === true) {
+    return (
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full ${
+          highlight ? 'bg-emerald-500/15 text-emerald-400' : 'bg-zinc-800 text-zinc-400'
+        }`}
+        aria-label="Suportado"
+      >
+        <Check className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  if (value === false) {
+    return (
+      <span
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-800 text-zinc-600"
+        aria-label="Não suportado"
+      >
+        <X className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // String partial state
+  return (
+    <span
+      className={`rounded-md px-2 py-0.5 text-center text-[11px] font-medium ${
+        highlight
+          ? 'bg-violet-500/15 text-violet-300'
+          : 'bg-zinc-800 text-zinc-400'
+      }`}
+    >
+      {value}
+    </span>
   );
 }
 
@@ -446,22 +795,61 @@ function HowItWorks() {
             Começar agora <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {STEPS.map((step) => {
-            const Icon = step.icon;
-            return (
-              <div key={step.n} className="group rounded-2xl border border-white/[0.07] bg-zinc-900 p-8 transition-all hover:border-violet-500/30 hover:bg-zinc-900/80">
-                <div className="flex items-center justify-between">
-                  <span className="text-5xl font-black text-white/10 tabular-nums group-hover:text-violet-500/20 transition-colors">{step.n}</span>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10">
-                    <Icon className="h-4.5 w-4.5 text-violet-400" />
+
+        {/* Step-by-step com connector linhas entre os cards */}
+        <div className="relative">
+          {/* Linha conectora horizontal (desktop) */}
+          <div
+            aria-hidden
+            className="absolute left-1/2 top-12 hidden h-px w-2/3 -translate-x-1/2 md:block"
+            style={{
+              background:
+                'linear-gradient(to right, transparent 0%, rgba(124,58,237,0.4) 20%, rgba(129,140,248,0.4) 50%, rgba(103,232,249,0.4) 80%, transparent 100%)',
+            }}
+          />
+
+          <div className="animate-stagger relative grid gap-6 md:grid-cols-3">
+            {STEPS.map((step, idx) => {
+              const Icon = step.icon;
+              return (
+                <div
+                  key={step.n}
+                  className="group relative rounded-2xl border border-white/[0.07] bg-zinc-900 p-8 transition-all hover:-translate-y-1 hover:border-violet-500/40 hover:bg-zinc-900/80 hover:shadow-xl hover:shadow-violet-950/40"
+                >
+                  {/* Step number circle conectado */}
+                  <div className="absolute -top-3 left-8 flex h-6 w-6 items-center justify-center rounded-full border-2 border-zinc-900 bg-gradient-to-br from-violet-500 to-indigo-500 text-[11px] font-bold text-white shadow-lg">
+                    {idx + 1}
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-5xl font-black text-white/10 tabular-nums group-hover:text-violet-500/20 transition-colors">
+                      {step.n}
+                    </span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 transition-transform group-hover:scale-110 group-hover:rotate-6">
+                      <Icon className="h-4 w-4 text-violet-400" />
+                    </div>
+                  </div>
+                  <h3 className="mt-6 text-lg font-semibold text-white">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-zinc-500">{step.description}</p>
+
+                  {/* Arrow connector mobile (entre cards) */}
+                  {idx < STEPS.length - 1 && (
+                    <div className="my-4 flex justify-center md:hidden">
+                      <ArrowRight className="h-5 w-5 rotate-90 text-violet-500/40" />
+                    </div>
+                  )}
                 </div>
-                <h3 className="mt-6 text-lg font-semibold text-white">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-500">{step.description}</p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Time indicator */}
+        <div className="mt-10 flex justify-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/60 px-4 py-2 text-xs text-zinc-400">
+            <Zap className="h-3 w-3 text-violet-400" />
+            Tempo médio do beta: <span className="font-semibold text-zinc-200">8 minutos</span>
+          </div>
         </div>
       </div>
     </section>

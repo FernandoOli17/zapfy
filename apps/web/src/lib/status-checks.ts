@@ -2,8 +2,6 @@ import 'server-only';
 
 import { prisma } from '@zapai/db';
 
-import { env } from '@/env';
-
 export type ComponentStatus = 'operational' | 'degraded' | 'down';
 
 export interface ComponentCheck {
