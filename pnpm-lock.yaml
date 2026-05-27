@@ -192,6 +192,9 @@ importers:
       pusher:
         specifier: ^5.3.3
         version: 5.3.3
+      resend:
+        specifier: ^6.12.3
+        version: 6.12.3
       zod:
         specifier: ^4.0.0
         version: 4.4.3

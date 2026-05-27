@@ -16,7 +16,8 @@
     "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "db:push": "dotenv -e ../../.env -- prisma db push",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
-    "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts"
+    "seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "seed:granvilla": "dotenv -e ../../.env -- tsx prisma/seed-granvilla.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -26,6 +26,7 @@ import {
   type ProcessKnowledgeJob,
 } from './jobs/process-knowledge';
 import { sweepTemplateStatuses } from './jobs/poll-template-status';
+import { runEmailSequencesSweep } from './jobs/email-sequences';
 
 const log = createLogger('worker');
 
@@ -146,6 +147,16 @@ function startRepeatables(): void {
       })
       .catch((err: unknown) => log.error({ err: String(err) }, 'template poll falhou'));
   }, TEMPLATE_POLL_INTERVAL_MS);
+
+  // Email sequences a cada 30min
+  const EMAIL_SEQ_INTERVAL_MS = 30 * 60 * 1000;
+  setInterval(() => {
+    void runEmailSequencesSweep()
+      .then(({ sent }) => {
+        if (sent > 0) log.info({ sent }, 'email sequence sweep');
+      })
+      .catch((err: unknown) => log.error({ err: String(err) }, 'email seq sweep falhou'));
+  }, EMAIL_SEQ_INTERVAL_MS);
 }
 
 startRepeatables();

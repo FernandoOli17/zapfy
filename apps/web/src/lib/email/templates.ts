@@ -147,6 +147,90 @@ export function teamInviteEmail(input: {
   return { html, text, subject: `${input.inviterName} te convidou pro Trato` };
 }
 
+/**
+ * Day 3 — usuário não completou o Forge ainda. Nudge gentil.
+ */
+export function day3ForgeNudgeEmail(input: { name: string; appUrl: string }) {
+  const forgeUrl = `${input.appUrl.replace(/\/$/, '')}/forge`;
+  const html = wrap(`
+    <h1 style="font-size:24px;margin:24px 0 8px">Já criou seu agente, ${escapeHtml(input.name)}?</h1>
+    <p>Você criou sua conta no Trato faz 3 dias e ainda não terminou de configurar o agente IA.</p>
+    <p>O <strong>Forge</strong> faz isso em 5 minutos conversando — você só responde 6 perguntas (vertical, tom, horário, etc.) e ele monta o agente.</p>
+    <a href="${forgeUrl}" style="${BUTTON_STYLES}">Configurar agora</a>
+    <p style="color:#71717a;font-size:13px;margin-top:24px">Travou em alguma parte? Responde esse email contando e a gente resolve junto.</p>
+    <p style="color:#71717a;font-size:13px">— Time Trato</p>
+  `);
+  const text = `Já criou seu agente, ${input.name}?\n\nVocê criou sua conta faz 3 dias e ainda não terminou. O Forge faz isso em 5 minutos conversando.\n\nConfigurar: ${forgeUrl}\n\nTravou em algo? Responde esse email.\n\n— Time Trato`;
+  return { html, text, subject: `Faltam 5min pro seu agente IA estar no ar 🤖` };
+}
+
+/**
+ * Day 6 — trial acaba amanhã. Mostra plano + CTA pra upgrade.
+ */
+export function day6TrialEndingEmail(input: { name: string; appUrl: string }) {
+  const billingUrl = `${input.appUrl.replace(/\/$/, '')}/billing`;
+  const html = wrap(`
+    <h1 style="font-size:24px;margin:24px 0 8px">Seu trial acaba amanhã, ${escapeHtml(input.name)}</h1>
+    <p>Você tá usando o Trato faz 6 dias. <strong>Amanhã o trial expira</strong> e você precisa escolher um plano pra continuar atendendo no WhatsApp.</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:20px 0">
+      <tr>
+        <td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">
+          <strong style="font-size:16px">Starter — R$ 97/mês</strong><br/>
+          <span style="color:#71717a;font-size:13px">1.000 conversas IA/mês · 1 número WhatsApp · 1 atendente</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px"></td></tr>
+      <tr>
+        <td style="padding:12px;border:2px solid #60A5FA;border-radius:8px;background:#eff6ff">
+          <strong style="font-size:16px;color:#1e40af">Pro — R$ 297/mês</strong> <span style="background:#60A5FA;color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-transform:uppercase">recomendado</span><br/>
+          <span style="color:#3b3b3f;font-size:13px">10.000 conversas IA · 3 números · 5 atendentes · Custom tools · Broadcasts</span>
+        </td>
+      </tr>
+      <tr><td style="padding:4px"></td></tr>
+      <tr>
+        <td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">
+          <strong style="font-size:16px">Premium — R$ 697/mês</strong><br/>
+          <span style="color:#71717a;font-size:13px">Ilimitado · API access · Suporte prioritário</span>
+        </td>
+      </tr>
+    </table>
+
+    <a href="${billingUrl}" style="${BUTTON_STYLES}">Escolher plano</a>
+    <p style="color:#71717a;font-size:13px;margin-top:24px">Não quer continuar? Tudo bem — sua conta vira modo limitado (read-only) em 24h. Pode reativar quando quiser.</p>
+  `);
+  const text = `Seu trial acaba amanhã, ${input.name}.\n\nEscolha um plano em ${billingUrl}\n\n- Starter R$ 97 — 1k conversas, 1 número\n- Pro R$ 297 — 10k conversas, 3 números, custom tools\n- Premium R$ 697 — ilimitado\n\nSem upgrade, conta vai pra modo read-only.\n\n— Time Trato`;
+  return { html, text, subject: 'Seu trial Trato acaba amanhã ⏰' };
+}
+
+/**
+ * Onboarding concluído — agente publicado, WhatsApp conectado.
+ */
+export function activationEmail(input: { name: string; workspaceSlug: string; appUrl: string }) {
+  const inboxUrl = `${input.appUrl.replace(/\/$/, '')}/inbox`;
+  const analyticsUrl = `${input.appUrl.replace(/\/$/, '')}/analytics`;
+  const html = wrap(`
+    <h1 style="font-size:28px;margin:24px 0 8px">Seu agente está no ar 🎉</h1>
+    <p>Parabéns, ${escapeHtml(input.name)}. Você acabou de ativar o agente IA do workspace <strong>${escapeHtml(input.workspaceSlug)}</strong>.</p>
+    <p>A partir de agora, toda mensagem que chegar no seu número WhatsApp será respondida pelo agente em segundos. Sem tempo de espera. Sem perder cliente fora do horário.</p>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:24px 0">
+      <p style="margin:0;font-weight:600;color:#15803d">✓ Próximos passos opcionais</p>
+      <ul style="margin:8px 0 0;padding-left:20px;color:#15803d;font-size:14px">
+        <li>Suba documentos pra base de conhecimento (RAG)</li>
+        <li>Convide seu time pra fazer handoff humano</li>
+        <li>Configure templates HSM pra envio ativo</li>
+      </ul>
+    </div>
+
+    <a href="${inboxUrl}" style="${BUTTON_STYLES}">Ver Inbox ao vivo</a>
+    <p style="color:#71717a;font-size:13px">Ou acompanhe métricas em <a href="${analyticsUrl}" style="color:#60A5FA">analytics</a>.</p>
+    <p style="margin-top:32px;color:#71717a;font-size:13px">— Time Trato</p>
+  `);
+  const text = `Seu agente está no ar! 🎉\n\nParabéns, ${input.name}. O workspace "${input.workspaceSlug}" tá ativo.\n\nVer inbox: ${inboxUrl}\nAnalytics: ${analyticsUrl}\n\nPróximos passos:\n- Subir documentos pra RAG\n- Convidar time pra handoff\n- Configurar templates HSM\n\n— Time Trato`;
+  return { html, text, subject: 'Seu agente Trato está no ar 🎉' };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

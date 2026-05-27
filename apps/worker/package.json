@@ -18,8 +18,9 @@
     "@zapai/wa": "workspace:*",
     "bullmq": "^5.34.5",
     "ioredis": "^5.4.2",
-    "zod": "^4.0.0",
-    "pusher": "^5.3.3"
+    "pusher": "^5.3.3",
+    "resend": "^6.12.3",
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

@@ -274,6 +274,122 @@ export async function disconnectWhatsAppAction(
   return { status: 'ok' };
 }
 
+/**
+ * Simula uma mensagem recebida de WhatsApp pra fins de demo/teste local.
+ * Cria Contact (se necessário) + Conversation + Message INBOUND + enfileira
+ * `process-message` pro agente IA responder.
+ *
+ * **Não exige Meta credentials reais** — não chama nenhuma API externa.
+ * Útil pra demos com cliente sem precisar de número Meta + ngrok.
+ *
+ * Marcação: a Message criada tem flag `metadata.testMode=true` pra distinguir
+ * em analytics. Workspace owner verá normalmente no inbox.
+ */
+const testInboundInput = z.object({
+  fromPhone: z.string().min(8).max(20).regex(/^\d+$/, 'Apenas dígitos, sem +'),
+  fromName: z.string().min(1).max(80),
+  text: z.string().min(1).max(2000),
+});
+
+export async function sendTestInboundMessage(
+  raw: z.infer<typeof testInboundInput>,
+): Promise<
+  | { status: 'ok'; conversationId: string }
+  | { status: 'error'; error: string }
+> {
+  const { workspace, role } = await requireSessionAndWorkspace();
+  const perm = assertAdminPermission(role);
+  if (!perm.ok) return { status: 'error', error: perm.error };
+
+  const parsed = testInboundInput.safeParse(raw);
+  if (!parsed.success) {
+    return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
+  }
+
+  const { enqueue } = await import('@/lib/queues');
+
+  // Cria/upsert contato com prefix de teste pra ficar claro nos analytics
+  const contact = await prisma.contact.upsert({
+    where: {
+      workspaceId_phoneE164: { workspaceId: workspace.id, phoneE164: parsed.data.fromPhone },
+    },
+    update: {
+      lastSeenAt: new Date(),
+    },
+    create: {
+      workspaceId: workspace.id,
+      phoneE164: parsed.data.fromPhone,
+      name: parsed.data.fromName,
+      tags: ['test_mode'],
+      lastSeenAt: new Date(),
+    },
+  });
+
+  // Reusa conversa aberta ou cria nova
+  const conversation =
+    (await prisma.conversation.findFirst({
+      where: {
+        workspaceId: workspace.id,
+        contactId: contact.id,
+        status: { not: 'CLOSED' },
+      },
+    })) ??
+    (await prisma.conversation.create({
+      data: {
+        workspaceId: workspace.id,
+        contactId: contact.id,
+        status: 'AI_HANDLING',
+      },
+    }));
+
+  const message = await prisma.message.create({
+    data: {
+      workspaceId: workspace.id,
+      conversationId: conversation.id,
+      contactId: contact.id,
+      direction: 'INBOUND',
+      type: 'TEXT',
+      // testMode flag dentro do content pra rastreabilidade — schema Message
+      // não tem coluna metadata
+      content: { text: parsed.data.text, _testMode: true },
+      status: 'DELIVERED',
+      fromAi: false,
+    },
+  });
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { lastMessageAt: new Date(), lastIncomingMessageAt: new Date() },
+  });
+
+  // Enfileira pro worker processar com IA (idêntico a webhook real da Meta)
+  await enqueue('process-message', {
+    workspaceId: workspace.id,
+    messageId: message.id,
+    conversationId: conversation.id,
+    contactId: contact.id,
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      workspaceId: workspace.id,
+      action: 'whatsapp.test_inbound',
+      targetType: 'Conversation',
+      targetId: conversation.id,
+      metadata: { fromPhone: parsed.data.fromPhone, preview: parsed.data.text.slice(0, 80) },
+    },
+  });
+
+  log.info(
+    { workspaceId: workspace.id, conversationId: conversation.id, contactId: contact.id },
+    'mensagem de teste injetada',
+  );
+
+  revalidatePath('/whatsapp');
+  revalidatePath('/inbox');
+  return { status: 'ok', conversationId: conversation.id };
+}
+
 // =========================================
 // helpers
 // =========================================

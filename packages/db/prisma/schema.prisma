@@ -782,6 +782,60 @@ model Tag {
 }
 
 // =========================================
+// STATUS PAGE — uptime + incidentes públicos
+// =========================================
+
+enum StatusComponent {
+  API
+  WORKER
+  WHATSAPP
+  DATABASE
+}
+
+enum IncidentSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+/**
+ * Track de emails enviados por user/template — idempotência pra sequence.
+ * Evita re-enviar day3/day6 pro mesmo user se worker re-rodar.
+ */
+model EmailSent {
+  id          String   @id @default(cuid())
+  userId      String
+  templateKey String   // 'welcome' | 'day3_forge_nudge' | 'day6_trial_ending' | 'activation'
+  resendId    String?  // ID retornado pela Resend (pra debug)
+  sentAt      DateTime @default(now())
+
+  @@unique([userId, templateKey])
+  @@index([sentAt])
+}
+
+/**
+ * Incidente registrado manualmente ou via auto-detect (worker que falha mais
+ * de N vezes em sequência, DB down, etc.). Exibido em /status (rota pública).
+ * Sem workspaceId — é status global do produto, não por tenant.
+ */
+model StatusIncident {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  component   StatusComponent
+  severity    IncidentSeverity @default(MINOR)
+  startedAt   DateTime         @default(now())
+  resolvedAt  DateTime?
+  /// JSON array com timeline de updates: [{at, message}]
+  updates     Json             @default("[]")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([startedAt])
+  @@index([component, startedAt])
+}
+
+// =========================================
 // API / WEBHOOKS / AUDIT
 // =========================================
 

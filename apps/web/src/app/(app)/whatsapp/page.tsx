@@ -18,6 +18,7 @@ import { env } from '@/env';
 import { ConnectForm } from './connect-form';
 import { AccountActions } from './account-actions';
 import { CopyButton } from './copy-button';
+import { TestInboundCard } from './test-inbound';
 
 export const metadata = { title: 'WhatsApp — Conectar número' };
 
@@ -150,6 +151,10 @@ function AccountCard({ account }: { account: AccountSummary }) {
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <CopyField label="URL do webhook (cole na Meta)" value={webhookUrl} />
         <CopyField label="Verify token (cole na Meta)" value={account.webhookVerifyToken} mask />
+      </div>
+
+      <div className="mt-6">
+        <TestInboundCard workspaceConnected={account.status === 'CONNECTED'} />
       </div>
     </div>
   );
