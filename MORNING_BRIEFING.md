@@ -1,91 +1,114 @@
-# Morning Briefing — Sessão 8 (Design fixes · 2026-05-28)
+# Morning Briefing — Sessão 9 (Vídeos Veo3 + fixes design · 2026-05-28)
 
-Bom dia, Fernando. Sessão focada nos **7 problemas visuais que você listou**
-na landing. **Todos corrigidos**, typecheck/lint/build verdes, push pro
-GitHub: `e976145 fix(design): FAQ dark, cards depth, animations, spacing`.
-
----
-
-## ⚠️ Vercel staging ainda bloqueado em Root Directory
-Continua o mesmo bloqueio da sessão 7 — você ainda não setou
-**Root Directory = `apps/web`** no dashboard. Sem isso o deploy não passa.
-Push automático do GitHub vai tentar build novo agora e vai falhar igual.
-Instruções continuam em `BLOCKED.md`.
+Bom dia, Fernando. Sessão grande: **3 vídeos Veo3 integrados na landing
++ nova seção BrandFilm**. typecheck/lint/build verdes, 2 commits pushed.
 
 ---
 
-## ✅ P1 — FAQ em dark theme (CRÍTICO)
-**Antes:** `bg-white py-24` — quebrava o tema escuro inteiro.
-**Depois:** `bg-[#0a0a0a] py-32`, items em `bg-[#111] border-[#1a1a1a]`,
-texto branco/[#888], ícone +/− em `text-[#00E676]`. Item aberto ganha
-`border-[#00E676]/30`. Headline com "dúvida?" em Instrument Serif italic.
+## 🎬 Os 3 vídeos integrados
 
-## ✅ P2 — Steps refinados
-Watermark `text-[120px]` já existia. Ajustado ícone de 24px→28px (`h-7 w-7`)
-conforme briefing. Hover `border-[#00E676]/30` mantido.
+Os arquivos estavam em `/videos/` (root, fora do tree do Next, com nome
+`promt N.mp4` com typo e espaço). Movidos pra `apps/web/public/videos/`
+e renomeados pra `promptN.mp4`:
 
-## ✅ P3 — Features com pill + ícone em container
-- Card: `bg-[#0d0d0d]` (era `#111` flat) → contraste com surface principal
-- Pill de categoria no topo: **CORE · BUILDER · IA · INBOX · ANALYTICS · INFRA**
-  Cada uma em `bg-[#00E676]/10 text-[#00E676] text-[10px]`
-- Ícone movido pra container `w-10 h-10 rounded-xl bg-[#00E676]/10` com
-  ícone 20px dentro (era 32px solto)
-- Hover: `bg-[#111] + border-[#00E676]/25 + scale(1.01) transition-all`
+```
+apps/web/public/videos/prompt1.mp4   2.9 MB  hero cinematográfico
+apps/web/public/videos/prompt2.mp4   1.4 MB  Forge split-screen demo
+apps/web/public/videos/prompt3.mp4   2.5 MB  Ana Lima · pet shop SP
+                                     ─────
+                                     6.8 MB  total
+```
 
-## ✅ P4 — Depoimentos com credibilidade
-- Aspas `&ldquo;` gigantes (`text-[80px] leading-[0.8] text-[#00E676]/20`)
-  como marca d'água no canto superior direito
-- Métrica numérica em destaque **acima** do nome, em `text-[#00E676] font-medium`:
-  - "+340% de agendamentos no fim de semana" — Ana Lima
-  - "Setup completo em 1 manhã" — Dr. Carlos Mendes
-  - "70% das dúvidas resolvidas pela IA" — Loja Moda Clara
-- Card: `bg-[#0d0d0d]` (era `#111`)
+Todos com `autoPlay muted loop playsInline poster=/brand/logo-primary.svg`
+pra rodar inline em iOS sem fricção.
 
-## ✅ P5 — Hero com animações escalonadas
-Já existia `animate-fade-up`. Trocados delays de `animate-delay-N` pra
-`delay-N` (alias do briefing). Sequência:
-- Badge: `delay-1` (100ms)
-- H1: `delay-2` (200ms)
-- Subtítulo: `delay-3` (300ms)
-- CTAs: `delay-4` (400ms)
-- "7 dias grátis · sem cartão": inline `animationDelay:500ms`
+### Vídeo 1 — Hero
+Inserido no fim do `<Hero>`, abaixo do "7 dias grátis". 16:9, `max-w-2xl`,
+bordas `#1a1a1a`, overlay gradiente `from-[#0a0a0a]/60` no topo pra fundir
+com o fundo dark. Entra com `animate-fade-up` delay 700ms (depois das
+animações dos textos).
 
-## ✅ P6 — ComparisonTable visualmente decisivo
-- Coluna **Zapfy**: header `bg-[#00E676] text-[#0a0a0a] font-bold` (era
-  texto branco em fundo escuro)
-- Badge **"Recomendado"** com `animate-pulse-green` (novo keyframe verde
-  pulsando, já existia no globals.css desde sessão 6)
-- Coluna **BotConversa**: header `bg-[#1a1a1a] text-[#666]` deprimido
-- Linha "Preço inicial": `R$ 97/mês` em verde bold, `R$ 197/mês` em #666
-- Linha "Trial grátis": Zapfy "7 dias · sem cartão" em verde, BotConversa
-  agora mostra "Não" em `text-[#ef4444]` com ícone X (não mais bolha vermelha)
+### Vídeo 2 — ForgeDemo (substituiu o chat animado)
+A seção "Você conversa. O Zapfy monta." era um chat fake animado de ~140
+linhas. Trocado por `<video src=prompt2.mp4>` (60 linhas), com badge
+**"AO VIVO"** verde pulsando no canto superior direito. CTA
+"Experimentar de graça" mantido logo abaixo com `animate-pulse-green`.
 
-## ✅ P7 — Spacing consistente
-Substituído `py-[120px]` por `py-32` (≈128px conforme briefing) em
-**TODAS** as sections de marketing via sed. Confirmado 0 ocorrências
-de `py-[120px]` em `apps/web/src/`.
+### Vídeo 3 — BrandFilmSection (NOVA)
+Arquivo novo: `apps/web/src/components/marketing/brand-film.tsx`.
+Posicionado entre `<Testimonials>` e `<MarketingFaq>`.
+- Headline: **"Pequenos negócios. _Grandes resultados._"** (italic Instrument Serif na 2ª parte)
+- Vídeo com overlay gradiente inferior carregando quote:
+  > "Meu negócio nunca mais perdeu um cliente por falta de resposta."
+  > Ana Lima · Pet Shop Granvilla · São Paulo
+- Tagline embaixo: "Seu negócio nunca dorme. **O Zapfy cuida.**"
+
+---
+
+## 📐 Ordem final das seções
+
+```
+1.  <UrgencyBanner />           verde, 7 dias grátis
+2.  <Hero />                    headline + Hero film (prompt1)
+3.  <LogosStrip />              wordmarks parceiros
+4.  <HowItWorks />              3 steps (01/02/03)
+5.  <Features />                grid 2×3 com pills
+6.  <ForgeDemo />               Forge film (prompt2)
+7.  <ComparisonTable />         Zapfy vs BotConversa
+8.  <Testimonials />            3 quotes Ana / Carlos / Loja
+9.  <BrandFilmSection /> ⭐     Brand film (prompt3) — NOVO
+10. <MarketingFaq />            FAQ dark
+11. <FinalCta />                bloco verde sólido
+```
+
+---
+
+## ✅ Fixes da Parte 2 (já aplicados na sessão anterior — confirmados ainda no ar)
+
+| Fix | Estado |
+|-----|--------|
+| FAQ em dark theme | ✅ aplicado no commit `e976145` |
+| Steps com watermark 96-120px | ✅ aplicado |
+| Features com pill + ícone container | ✅ aplicado (categorias CORE/BUILDER/IA/INBOX/ANALYTICS/INFRA) |
+| Depoimentos com aspas + métrica | ✅ aplicado |
+| Hero animações escalonadas | ✅ aplicado |
+
+Tudo no commit `e976145 fix(design): FAQ dark, cards depth, animations, spacing`.
 
 ---
 
 ## 📊 Métricas
 
 ```
-4 arquivos modificados, +120/-57 linhas líquidas
+Commits novos:        2 (e40e03f vídeos + 4c1d65d briefing anterior)
+Arquivos novos:       4 (3 vídeos + brand-film.tsx)
+Arquivos modificados: 2 (page.tsx + forge-demo.tsx)
++103 / -111 linhas líquidas (ForgeDemo encolheu)
+
 typecheck:  ✅ exit 0
 lint:       ✅ exit 0
-build:      ✅ exit 0 (warnings esperados de OpenTelemetry/Sentry/BullMQ)
-push:       ✅ a547fcc..e976145 → master
+build:      ✅ exit 0 (warnings esperados OpenTelemetry/Sentry/BullMQ)
+push:       ✅ master → origin (e40e03f)
 ```
 
 ---
 
-## 🎯 Próximos passos
+## ⚠️ Vercel staging ainda bloqueado em Root Directory
 
-1. **Vercel staging** — setar Root Directory = `apps/web` no dashboard
-   (60s, instruções no `BLOCKED.md`). Auto-deploy do push acima ainda
-   vai falhar até esse setting ser ajustado.
-2. **Pusher real-time** — keys ainda faltam (`BLOCKED.md`)
-3. **Smoke tests** assim que staging passar
+Continua o mesmo bloqueio das sessões 7-8 — você ainda não setou
+**Root Directory = `apps/web`** no Vercel dashboard. Sem isso, o
+auto-deploy do push acima vai falhar igual ao último.
+
+Instruções exatas em `BLOCKED.md`. **Esse setting é o último passo
+pra colocar tudo no ar com vídeo e tudo.**
+
+---
+
+## 🎯 Próximos 3 passos
+
+1. **Vercel Root Directory = apps/web** (60s no dashboard) → me avisa
+2. Confirmar vídeos carregando no staging (smoke test visual)
+3. Pusher real-time keys (opcional, instruções em `BLOCKED.md`)
 
 ---
 
@@ -94,10 +117,10 @@ push:       ✅ a547fcc..e976145 → master
 ```bash
 pnpm dev
 # http://localhost:3000
-# Scroll de cima a baixo: nenhuma seção branca, tudo dark + verde
-# Hero: entrada escalonada em ~600ms
-# FAQ: clique nos accordions — bordas verdes ao abrir
-# Comparativo: coluna Zapfy verde sólido com badge pulsando
+# Hero: vídeo aparece após CTA com fade-up
+# Forge section: vídeo com badge AO VIVO pulsando
+# Brand film: nova seção entre depoimentos e FAQ
+# Todos rodam autoplay/muted/loop, OK no iOS
 ```
 
 Bom dia! ☕
