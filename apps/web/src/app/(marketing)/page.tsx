@@ -15,6 +15,7 @@ import { MarketingFaq } from '@/components/marketing/faq';
 import { ForgeDemo } from '@/components/marketing/forge-demo';
 import { UrgencyBanner } from '@/components/marketing/urgency-banner';
 import { ComparisonTable } from '@/components/marketing/comparison-table';
+import { BrandFilmSection } from '@/components/marketing/brand-film';
 
 export default function HomePage() {
   return (
@@ -27,6 +28,7 @@ export default function HomePage() {
       <ForgeDemo />
       <ComparisonTable />
       <Testimonials />
+      <BrandFilmSection />
       <MarketingFaq />
       <FinalCta />
     </div>
@@ -39,7 +41,7 @@ export default function HomePage() {
 
 function Hero() {
   return (
-    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-20 text-center">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-24 text-center">
       <BackgroundDecor />
 
       <div className="animate-fade-up delay-1 relative mb-8 inline-flex items-center gap-2 rounded-full border border-[#00E676]/25 bg-[#00E676]/[0.06] px-3 py-1.5 text-xs font-medium text-[#00E676]">
@@ -82,6 +84,28 @@ function Hero() {
       >
         7 dias grátis · sem cartão · cancele quando quiser
       </p>
+
+      {/* Hero film — gerado via Veo 3, autoplay loop muted (iOS-safe) */}
+      <div
+        className="animate-fade-up relative mx-auto mt-12 aspect-video w-full max-w-2xl overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a]"
+        style={{ animationDelay: '700ms' }}
+      >
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="/brand/logo-primary.svg"
+          className="h-full w-full object-cover"
+        >
+          <source src="/videos/prompt1.mp4" type="video/mp4" />
+        </video>
+        {/* fade pra integrar com fundo dark */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/60 via-transparent to-transparent"
+        />
+      </div>
     </section>
   );
 }
