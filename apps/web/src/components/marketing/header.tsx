@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { Button, ZapfyLogo } from '@zapfy/ui';
+import { ZapfyLogo } from '@zapfy/ui';
 
 const NAV = [
   { href: '/precos', label: 'Preços' },
@@ -15,14 +15,23 @@ const NAV = [
 
 export function MarketingHeader() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
 
-  // Fecha drawer quando muda de rota
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
-  // Bloqueia scroll do body quando o menu mobile está aberto
+  // scroll detection — fundo ganha blur + borda quando passa de 12px
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 12);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const orig = document.body.style.overflow;
@@ -32,7 +41,6 @@ export function MarketingHeader() {
     };
   }, [open]);
 
-  // Esc fecha
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -44,7 +52,13 @@ export function MarketingHeader() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-zinc-950/80 backdrop-blur-xl">
+      <header
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-200 ${
+          scrolled
+            ? 'border-b border-white/[0.08] bg-[#0a0a0a]/80 backdrop-blur-xl'
+            : 'border-b border-transparent bg-transparent'
+        }`}
+      >
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/"
@@ -70,24 +84,19 @@ export function MarketingHeader() {
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="hidden text-zinc-400 hover:bg-white/[0.06] hover:text-white sm:inline-flex"
+            <Link
+              href="/login"
+              className="hidden rounded-full px-3 py-2 text-sm text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-white sm:inline-flex"
             >
-              <Link href="/login">Entrar</Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="bg-violet-600 text-white shadow-lg shadow-violet-900/30 hover:bg-violet-500"
+              Entrar
+            </Link>
+            <Link
+              href="/signup"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-[#00E676] px-4 py-2 text-sm font-semibold text-[#0a0a0a] transition-transform hover:scale-[1.02]"
             >
-              <Link href="/signup">
-                Criar conta
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+              Criar agente grátis
+              <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
@@ -111,11 +120,11 @@ export function MarketingHeader() {
         aria-hidden={!open}
       >
         <div
-          className="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
+          className="absolute inset-0 bg-[#0a0a0a]/80 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         />
         <nav
-          className={`absolute right-0 top-0 flex h-full w-72 max-w-[85vw] flex-col gap-1 border-l border-white/[0.06] bg-zinc-950 px-5 pb-6 pt-20 shadow-2xl transition-transform ${
+          className={`absolute right-0 top-0 flex h-full w-72 max-w-[85vw] flex-col gap-1 border-l border-white/[0.08] bg-[#0a0a0a] px-5 pb-6 pt-20 shadow-2xl transition-transform ${
             open ? 'translate-x-0' : 'translate-x-full'
           }`}
           aria-label="Menu mobile"
@@ -129,7 +138,7 @@ export function MarketingHeader() {
               {item.label}
             </Link>
           ))}
-          <div className="mt-4 border-t border-white/[0.06] pt-4">
+          <div className="mt-4 border-t border-white/[0.08] pt-4">
             <Link
               href="/login"
               className="block rounded-md px-3 py-3 text-base text-zinc-400 transition-colors hover:bg-white/[0.06] hover:text-white"
@@ -138,9 +147,9 @@ export function MarketingHeader() {
             </Link>
             <Link
               href="/signup"
-              className="mt-2 flex items-center justify-between rounded-md bg-violet-600 px-3 py-3 text-base font-medium text-white shadow-lg shadow-violet-900/30 transition-colors hover:bg-violet-500"
+              className="mt-2 flex items-center justify-between rounded-full bg-[#00E676] px-4 py-3 text-base font-semibold text-[#0a0a0a] transition-transform hover:scale-[1.02]"
             >
-              Criar conta
+              Criar agente grátis
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

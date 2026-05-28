@@ -162,7 +162,7 @@ export default function PricingPage() {
           >
             Preço simples e{' '}
             <span className="font-serif italic font-normal">
-              <span className="bg-gradient-to-r from-primary via-sky-300 to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-[#00E676] to-primary bg-clip-text text-transparent">
                 previsível
               </span>
             </span>
@@ -295,7 +295,7 @@ export default function PricingPage() {
           <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
             Sem cartão. Sem ligação.{' '}
             <span className="font-serif italic font-normal">
-              <span className="bg-gradient-to-r from-primary via-sky-300 to-primary bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-primary via-[#00E676] to-primary bg-clip-text text-transparent">
                 Só conversar.
               </span>
             </span>
@@ -353,7 +353,7 @@ function PlanCard({ plan }: { plan: Plan }) {
               padding: '1px',
             }}
           />
-          <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-sky-400 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-md shadow-primary/40">
+          <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-[#00E676] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-md shadow-primary/40">
             <Sparkles className="h-3 w-3" />
             Mais escolhido
           </span>

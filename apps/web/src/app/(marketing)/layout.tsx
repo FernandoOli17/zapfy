@@ -52,7 +52,7 @@ const SOFTWARE_APP_LD = {
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950" style={{ overflowX: 'clip' }}>
+    <div className="flex min-h-screen flex-col bg-[#0a0a0a]" style={{ overflowX: 'clip' }}>
       <Script
         id="ld-organization"
         type="application/ld+json"

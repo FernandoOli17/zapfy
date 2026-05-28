@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ZapfyLogo } from '@zapfy/ui';
 
 const COLUMNS = [
   {
@@ -29,26 +30,28 @@ const COLUMNS = [
       { href: '/lgpd', label: 'LGPD' },
     ],
   },
+  {
+    title: 'Redes sociais',
+    links: [
+      { href: 'https://instagram.com/zapfybr', label: 'Instagram', external: true },
+      { href: 'https://twitter.com/zapfybr', label: 'Twitter / X', external: true },
+      { href: 'https://linkedin.com/company/zapfy', label: 'LinkedIn', external: true },
+      { href: 'https://github.com/zapfy', label: 'GitHub', external: true },
+    ],
+  },
 ] as const;
 
 export function MarketingFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="border-t border-white/[0.06] bg-zinc-950">
+    <footer className="border-t border-[#1a1a1a] bg-[#080808]">
       <div className="mx-auto max-w-6xl px-6 py-16">
-        <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
-          {/* Brand column */}
+        <div className="grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
           <div>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2.5 font-semibold tracking-tight text-white"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white shadow-lg shadow-violet-900/40">
-                O
-              </span>
-              Trato
+            <Link href="/" aria-label="Zapfy" className="inline-flex">
+              <ZapfyLogo variant="white" height={26} />
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-zinc-500">
+            <p className="mt-5 max-w-xs text-sm leading-relaxed text-[#666]">
               O WhatsApp da sua empresa, com cérebro próprio. Configure conversando, atenda
               24/7.
             </p>
@@ -56,7 +59,7 @@ export function MarketingFooter() {
               {['Cloud API oficial Meta', 'AES-256-GCM', 'LGPD-friendly'].map((badge) => (
                 <span
                   key={badge}
-                  className="inline-flex items-center rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] font-medium text-zinc-500"
+                  className="inline-flex items-center rounded-full border border-[#1a1a1a] bg-[#111] px-2.5 py-1 text-[10px] font-medium text-[#666]"
                 >
                   {badge}
                 </span>
@@ -64,31 +67,44 @@ export function MarketingFooter() {
             </div>
           </div>
 
-          {/* Nav columns */}
           {COLUMNS.map((col) => (
             <div key={col.title}>
-              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+              <h4 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#888]">
                 {col.title}
               </h4>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {col.links.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-zinc-500 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+              <ul className="mt-5 space-y-3 text-sm">
+                {col.links.map((link) => {
+                  const isExternal = 'external' in link && link.external;
+                  const cls = 'text-[#666] transition-colors hover:text-[#00E676]';
+                  return (
+                    <li key={link.href}>
+                      {isExternal ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                          className={cls}
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link href={link.href} className={cls}>
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-white/[0.06] pt-6 md:flex-row md:items-center">
-          <p className="text-xs text-zinc-600">© {year} Trato · Todos os direitos reservados</p>
-          <p className="text-xs text-zinc-600">Feito no Brasil 🇧🇷</p>
+        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-[#1a1a1a] pt-6 md:flex-row md:items-center">
+          <p className="text-xs text-[#444]">
+            © {year} Zapfy · Todos os direitos reservados
+          </p>
+          <p className="text-xs text-[#444]">Feito no Brasil 🇧🇷</p>
         </div>
       </div>
     </footer>
