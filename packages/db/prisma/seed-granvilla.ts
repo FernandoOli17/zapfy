@@ -37,8 +37,23 @@ import {
 } from '@prisma/client';
 import { randomBytes } from 'node:crypto';
 import { scryptAsync } from '@noble/hashes/scrypt.js';
+import { neonConfig } from '@neondatabase/serverless';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import ws from 'ws';
 
-const prisma = new PrismaClient();
+// Polyfill WebSocket para Neon serverless em Node — sem isso, conexão TCP 5432
+// é tentada e bloqueada por firewalls corporativos (Cisco Umbrella etc.).
+if (typeof globalThis.WebSocket === 'undefined') {
+  neonConfig.webSocketConstructor = ws as unknown as typeof WebSocket;
+}
+
+const connectionString = process.env['DATABASE_URL'];
+if (!connectionString) {
+  throw new Error('DATABASE_URL não configurada');
+}
+
+const adapter = new PrismaNeon({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 const WORKSPACE_SLUG = 'granvilla-pet-shop';
 const OWNER_EMAIL = 'claudio@granvilla.pet';
@@ -500,7 +515,7 @@ Horário de atendimento: seg-sex 8h-19h, sáb 9h-15h. Domingo fechado.`,
           state: 'RJ',
           zip: '22461-000',
         },
-        etaMinutes: state.status === OrderStatus.PREPARING ? 45 : undefined,
+        etaMinutes: state.status === OrderStatus.PREPARING ? 45 : null,
         createdAt: daysAgo(state.daysOld),
         items: {
           create: items.map((it) => ({

@@ -1,201 +1,194 @@
-# Morning Briefing — Sessão 3 (Demo Prep · 2026-05-27)
+# Morning Briefing — Sessão 4 (Retomada · 2026-05-28)
 
-Bom dia, Fernando. Sessão focada em **prep pra demo com cliente**.
-**Status: tudo verde.** Typecheck ✓, lint ✓, schema atualizado, 2 commits novos.
+Bom dia, Fernando. Sessão focada em **diagnosticar credenciais novas + validar pipeline end-to-end**.
+**Status: tudo verde.** Typecheck ✓, lint ✓, build ✓, seed ✓, 8/8 E2E ✓.
+
+---
+
+## ⚠️ DISCOVERY IMPORTANTE — Pusher não está realmente configurado
+
+Você me disse que tinha adicionado as credenciais Pusher. Mas o `.env` mostra:
+
+```
+NEXT_PUBLIC_PUSHER_CLUSTER=us2
+PUSHER_CLUSTER=us2
+PUSHER_APP_ID=        # vazio
+PUSHER_KEY=           # vazio
+PUSHER_SECRET=        # vazio
+NEXT_PUBLIC_PUSHER_KEY= # vazio
+```
+
+Só o **cluster** (que é apenas a região) está setado. Sem APP_ID/KEY/SECRET o
+Pusher não inicializa — código cai em no-op silencioso (em `pusher-server.ts`
+e `pusher-client.ts`). Inbox funciona sem real-time push (precisa refresh manual).
+
+**Pra realmente ativar:** dashboard.pusher.com → criar app (recomendo cluster `sa1` São Paulo) → copiar **App ID**, **Key** e **Secret** pra `.env`. `NEXT_PUBLIC_PUSHER_KEY` recebe o mesmo valor de `PUSHER_KEY`.
 
 ---
 
 ## 🎯 Resumo executivo (1 min de leitura)
 
-| # | Prioridade                                | Status   |
+| # | Tarefa                                    | Status   |
 |---|-------------------------------------------|----------|
-| 1 | SEED Granvilla Pet Shop (demo data)        | ✅       |
-| 2 | /status pública (uptime + incidentes)      | ✅       |
-| 3 | Landing: como funciona + depoimentos + vs + urgência | ✅       |
-| 4 | Email sequences (Resend, worker idempotente) | ✅       |
-| 5 | Webhook de teste no /whatsapp              | ✅       |
+| 1 | Diagnóstico do .env e dos mocks ativos    | ✅       |
+| 2 | Fix typecheck (seed-granvilla etaMinutes) | ✅       |
+| 3 | Ativação MOCK_AI/STRIPE_MOCK/HEALTH_TOKEN | ✅       |
+| 4 | Build de produção (4m52s, 41 páginas)     | ✅       |
+| 5 | Fix seed Granvilla (Neon adapter)         | ✅       |
+| 6 | Suite E2E Playwright (8/8)                | ✅       |
 
-**Total novas linhas:** ~2.000. **Novos arquivos:** 7. **Pacotes instalados:** 1 (resend no worker).
-
----
-
-## ✅ #1 — SEED Granvilla Pet Shop
-
-`pnpm db:seed:granvilla` cria um workspace de demonstração verossímil:
-
-- **Login**: `claudio@granvilla.pet` / `Granvilla2026!`
-- **Workspace**: `/granvilla-pet-shop` (plano PRO ativo, não trial — pra mostrar features unlocked)
-- **Agente IA**: system prompt customizado pra pet shop, vertical=ECOMMERCE, tools de RAG/handoff/products/appointments
-- **WhatsApp account**: status CONNECTED (mock, displayPhone +55 21 99876-5432)
-- **50 contatos** com nomes/tags brasileiros realistas (Mariana Silva, João Oliveira...) + customFields com pet (nome/raça/idade)
-- **200 mensagens** distribuídas em **30 conversas** variando entre AI_HANDLING / HUMAN_HANDLING / CLOSED. Mensagens em pt-BR realistas ("Bom dia! Quanto tá o banho do shih tzu?" / "Banho de shih tzu: R$ 80...")
-- **12 produtos**: ração premium, banho/tosa por porte, vacina V10/antirrábica, coleira, brinquedos, areia, petisco, cama
-- **3 pedidos**: 1 DELIVERED (PED-2401), 1 PREPARING (PED-2402), 1 PENDING (PED-2403) com endereço Jardim Botânico
-- **5 agendamentos**: 1 COMPLETED, 1 NO_SHOW, 2 CONFIRMED futuros, 1 SCHEDULED
-- **3 profissionais**: Dra. Carla (veterinária), Bruno (tosador), Patrícia (banhista)
-- **2 cupons**: PETLOVER10 (10% off), PRIMEIRO20 (20% off, max 1 uso)
-- **3 templates HSM aprovados**: `lembrete_banho`, `promo_racao_mensal`, `vacina_atrasada`
-
-**Idempotente**: re-roda sem duplicar (deletes seletivos antes de upsert).
-
-Pra demo: faça login com a conta acima e mostre cada feature.
+**Total novas linhas de mudança:** ~120 (helpers de teste + adapter no seed + .env + next.config + locators). **Nenhum bug de produção encontrado** — todos os fixes foram em testes ou config dev.
 
 ---
 
-## ✅ #2 — Página /status pública
+## ✅ #1 — Diagnóstico do .env
 
-`/status` — sem auth, cacheada 30s:
+12 vars setadas. Auditadas uma a uma contra o código:
 
-**Schema novo**: `StatusIncident` (component/severity/timeline/resolved). Sem workspaceId — status é global do produto.
+| Categoria | Status | Detalhes |
+|-----------|--------|----------|
+| DB (Neon) | ✅ funcional | health ping 196ms via HTTP 443 |
+| Redis (Upstash ioredis) | ✅ funcional | BullMQ conecta |
+| Better Auth | ✅ funcional | signup/login validados E2E |
+| Crypto (ENCRYPTION_KEY + LOG_PII_SALT) | ✅ funcional | |
+| Anthropic | ⚠️ MOCK_AI=true | agente roda com respostas canned |
+| Stripe | ⚠️ STRIPE_MOCK=true | billing modo demo |
+| Pusher | ⚠️ só cluster setado | no-op real-time |
+| Upstash REST | ⚠️ vazio | rate-limit no-op (ok dev) |
+| Resend | ⚠️ vazio | email → log no console |
+| Sentry/PostHog/UploadThing/Voyage/Meta/Google* | ⚠️ vazio | todos com graceful fallback |
 
-**Componentes monitorados** (live a cada hit):
-- **API (web)**: se chegou, tá vivo. Mostra região Vercel.
-- **Banco de dados**: ping `SELECT 1` com timeout 3s. >1500ms = degradado.
-- **Worker**: heurística — mensagens IA na última hora OU audit recente.
-- **WhatsApp Cloud API**: % de WhatsAppAccount em status ERROR (>5% = degradado, >20% = down).
-
-**Visual**:
-- Banner verde/amarelo/vermelho conforme estado global
-- Lista de componentes com status pill + detail
-- Histórico 30d de incidentes (vazio mostra "Nenhum incidente. ✨")
-- Footer com link pra RSS feed (placeholder em `/api/status/rss` — a implementar)
-
-Compartilhe `https://trato.dev/status` com clientes pra build trust.
-
----
-
-## ✅ #3 — Landing page polish
-
-**5 melhorias** na home (`/`):
-
-1. **UrgencyBanner top**: gradient violet com "Trial grátis por 7 dias — sem cartão" + link signup. Acima do hero.
-
-2. **DemoVideo section**: card 16:9 com thumbnail composto (chat mockup + grid + glow). Botão de play central com ring + scale on hover. Duração "1:30" badge. Link pra Loom placeholder — substituir URL quando gravar.
-
-3. **HowItWorks reescrito**: step-by-step com:
-   - Linha conectora gradiente horizontal entre os 3 cards (desktop)
-   - Círculo numerado em cima de cada card (cross-card visual)
-   - Stagger animation (`animate-stagger` aplica delays 60ms incrementais)
-   - Hover: lift up + scale ícone + rotate 6deg
-   - Footer: "Tempo médio do beta: 8 minutos" badge
-
-4. **Testimonials**: 3 quotes anônimas mas honestas — vertical (salão/pet shop/e-commerce), cidade (Curitiba/RJ/SP), métrica concreta ("3x mais agendamentos", "Setup em 8min", "67% resolvido pela IA"). Footer convida clientes beta a autorizar logo.
-
-5. **VsCompetitorTable**: comparação **Trato vs BotConversa** linha-a-linha. 10 features com check/X/string. Highlight Trato em verde/violeta, BotConversa em zinc. Footer ressalta que comparativo é factual e convida correções.
+Detalhes completos em `BLOCKED.md`.
 
 ---
 
-## ✅ #4 — Email sequences
+## ✅ #2 — Fix typecheck
 
-**Welcome** continua no signup (já existia, instantâneo).
-
-**3 templates novos** em `lib/email/templates.ts`:
-- `day3ForgeNudgeEmail`: 3 dias após signup, se Forge não publicado → "Faltam 5min pro seu agente IA estar no ar 🤖"
-- `day6TrialEndingEmail`: trial expira em <24h → mostra tabela dos 3 planos com PRO destacado
-- `activationEmail`: agente publicado + primeira mensagem → "Seu agente Trato está no ar 🎉"
-
-**Worker `email-sequences.ts`** roda sweep a cada **30min**:
-- Query users por janela temporal (day3: 12h antes/depois, day6: 23-25h antes do `trialEndsAt`)
-- Verifica condição (Forge publicado? Trial ativo? Agente + mensagem?)
-- Sends via Resend client direto
-- Persiste `EmailSent` (userId + templateKey unique) pra **idempotência**
-
-**Schema novo**: `EmailSent` com index em `sentAt` pra debug.
-
-Sem `RESEND_API_KEY`: roda em modo dev (log), AINDA persiste em EmailSent pra não spam-tentar.
+`packages/db/prisma/seed-granvilla.ts:503` — `etaMinutes: ... ? 45 : undefined` quebrava `exactOptionalPropertyTypes`. Trocado por `null`. Documentado em `ERRORS_LOG.md`.
 
 ---
 
-## ✅ #5 — Webhook de teste em /whatsapp
+## ✅ #3 — Mocks ativados no .env
 
-`TestInboundCard` no `/whatsapp` (após o card de conta conectada):
+Adicionado pra desbloquear pipeline sem credenciais externas:
+- `MOCK_AI=true` — `isMockMode()` retorna true, agente devolve respostas canned
+- `STRIPE_MOCK=true` — `getStripeClient()` retorna null, UI mostra "modo demo"
+- `HEALTH_DETAIL_TOKEN=local_dev_health_detail_token_change_me` — libera `/api/health?token=...` detalhado
 
-**Action `sendTestInboundMessage`**:
-- Cria/upsert `Contact` com tag `test_mode`
-- Cria ou reusa `Conversation` aberta
-- Cria `Message` INBOUND com `content._testMode: true` (sem coluna metadata)
-- Enfileira `process-message` no worker (mesmo path do webhook real Meta)
-- Audita ação como `whatsapp.test_inbound`
-- Redireciona pro inbox da conversa
-
-**UI**: campos número/nome/mensagem com defaults plausíveis ("5511987654321 / Cliente Demo / Oi! Quanto tá o banho..."). Validação RBAC OWNER/ADMIN. Footer indica se workspace tem WA conectado.
-
-**Não chama Meta API real.** Demo em qualquer máquina sem ngrok. O agente responde no inbox exatamente como em produção.
+⚠️ **Trocar `HEALTH_DETAIL_TOKEN` antes de subir pra prod** (token de dev exposto neste arquivo).
 
 ---
 
-## 📊 Métricas técnicas finais
+## ✅ #4 — Build de produção verde
+
+`pnpm build` em 4m52s. 41 páginas geradas. Warnings esperados (OpenTelemetry/Sentry critical-dep, jose Edge runtime, BullMQ child-processor) — **nenhum bloqueia deploy**.
+
+Lateral fix: `experimental.typedRoutes` → top-level `typedRoutes` (movido em Next 15.5+).
+
+---
+
+## ✅ #5 — Seed Granvilla desbloqueado
+
+`pnpm db:seed:granvilla` falhava com `Can't reach database at ...:5432` (firewall Cisco bloqueia 5432). Web app funciona via `PrismaNeon` adapter (HTTPS 443). Replicado o setup do adapter no script standalone. Roda em ~10s.
+
+Login disponível:
+- **Email:** `claudio@granvilla.pet`
+- **Senha:** `Granvilla2026!`
+- **Workspace:** `granvilla-pet-shop` (50 contatos, 200 msgs em 30 conversas, 12 produtos, 3 pedidos, 5 appts, 2 cupons, 3 templates HSM)
+
+---
+
+## ✅ #6 — E2E Playwright: 8/8 verde
+
+Suite completa rodada em 2.4min. **Nenhum bug de produção encontrado.** Os 4 fixes foram em config/helpers de teste:
+
+| Test | Status | Tempo |
+|------|--------|-------|
+| signup × cria conta e chega no app autenticado | ✅ | 12.5s |
+| signup × bloqueia email duplicado | ✅ | 15.7s |
+| signup × valida senha curta | ✅ | 3.1s |
+| billing × abre /billing e mostra plano TRIAL | ✅ | 16.9s |
+| billing × upgrade pra PRO via checkout mock | ✅ | 15.6s |
+| forge × abre, envia mensagem mock, vê preview | ✅ | 56.3s |
+| inbox × abre vazio sem crash | ✅ | 24.3s |
+| inbox × navega entre tabs filtros | ✅ | 17.4s |
+
+**Fixes aplicados em testes:**
+1. `playwright.config.ts`: timeout global 30→90s, expect 5→10s. Primeira request em route dinâmica leva ~25s (turbopack compile + Neon cold connect).
+2. `e2e/helpers.ts`: `signupNewUser` agora completa onboarding (cria workspace com nome único por test) se redirecionar pra `/onboarding`. Sem isso, middleware bounceava qualquer rota interna.
+3. `e2e/forge.spec.ts`: locator `'h1, [data-page="forge"]'` (que não existe) → `'h1, h2'` first. ForgeWorkspace usa `<h2>` introdutório.
+
+---
+
+## 📊 Métricas técnicas
 
 ```
-Commits novos:          2 grandes (feat: demo-prep + feat: landing-polish)
-Arquivos modificados:   20
-Linhas adicionadas:    ~2.000
-Arquivos novos:         7
-Deps instaladas:        1 (resend no worker)
-Schema migrations:      2 (StatusIncident, EmailSent)
-
-Typecheck:             ✅ verde (web + worker)
-Lint:                  ✅ verde
-Seed Granvilla:        ✅ rodou e populou (50 contatos, 200 msgs, 3 pedidos, 5 appts)
+Commits da sessão:      0 ainda (todos os fixes não-commitados)
+Arquivos modificados:   8 (seed, next.config, helpers, configs E2E, .env, ERRORS_LOG, WORK_LOG, BLOCKED, MORNING_BRIEFING)
+Linhas mudadas:        ~120 (líquido)
+Tests E2E:             8/8 ✓ (era 5/8 no início)
+Typecheck:             ✅
+Lint:                  ✅
+Build prod:            ✅ (4m52s, 41 páginas)
+Health detalhado:      ✅ (DB ping 196ms, todos demais "disabled" graceful)
+Seed Granvilla:        ✅
 ```
 
 ---
 
-## 🎯 Como usar pra demo agora
+## 🎯 Próximos passos sugeridos (em ordem)
+
+### 1. **Configurar Pusher real** ⭐ — desbloqueia real-time inbox que o usuário queria
+Dashboard.pusher.com → criar app → 4 valores pra `.env`. Custo: $0 free tier até 100 connections.
+
+### 2. **git push pro GitHub** ⭐ — 38 commits locais sem backup
+Criar repo (privado), `git remote add origin <url>`, `git push -u origin master`.
+
+### 3. **Deploy staging no Vercel** — colocar URL pública no ar
+Seguir `DEPLOY.md`. Mesmo sem domínio próprio, Vercel dá `*.vercel.app`. Worker no Railway.
+
+### 4. **Adicionar credenciais reais conforme orçamento**
+Ordem sugerida por valor/custo:
+- Sentry (free tier) — visibilidade de erros em prod
+- PostHog (free 1M evts) — analytics
+- Resend ($20/mês) — emails transacionais bonitos
+- Anthropic — agente real (varia, $5 já dá pra 1k turnos demo)
+- Stripe — quando tiver primeiro cliente pagante
+- Meta WhatsApp — cliente cadastra no UI (BYO model)
+
+### 5. **Gravar vídeo demo Loom** e trocar URL placeholder na landing
+
+### 6. **Implementar `/api/status/rss`** (linkado no footer da status page)
+
+---
+
+## ⚠️ Carry-overs de débito técnico (sem mudanças nesta sessão)
+
+- 9 actions ainda usam helper local em vez de `requireWorkspace` central
+- TOCTOU em `Broadcast.launch`
+- Stripe sync ao force-downgrade não avisa cobrança pendente
+- Audit dedup em retry
+- Onboarding step "team invited" não detecta convite pending
+- Auto-detect de incidentes (worker cria `StatusIncident` quando DB timeout > 3× em 5min)
+
+---
+
+## 🔑 Como demo agora
 
 ```bash
-# 1. Garanta que dev tá rodando
-pnpm dev
+pnpm install        # já instalado
+pnpm db:seed:granvilla  # idempotente, popula tudo
+pnpm dev            # web + worker
 
-# 2. Abra http://localhost:3000 e mostre:
-#    - Landing nova (urgency banner + demo placeholder + testimonials + vs BotConversa)
-
-# 3. /signup OU /login direto com:
-#    Email: claudio@granvilla.pet
-#    Senha: Granvilla2026!
-
-# 4. Mostre o dashboard com onboarding checklist auto-detectado
-#    (provavelmente 4/5 ou 5/5 já completos — seed criou tudo)
-
-# 5. /inbox → 30 conversas ativas com nomes BR realistas
-
-# 6. /products → 12 produtos categorizados
-
-# 7. /orders → 3 pedidos com endereços reais
-
-# 8. /appointments → agenda passada + futura
-
-# 9. /whatsapp → mostre o botão "Mensagem de teste"
-#    - Digite uma pergunta tipo "Vocês fazem banho pra gato?"
-#    - Submit → vai pro inbox → IA responde (mock se MOCK_AI=true)
-
-# 10. /status (em outra aba, sem login) → uptime live
-
-# 11. /analytics → métricas com dados reais
-
-# 12. /billing → mostra plano PRO ativo com features unlocked
+# Browser: http://localhost:3000
+# Login: claudio@granvilla.pet / Granvilla2026!
+# Rotas chave:
+#   /              landing nova (urgency banner + testimonials + vs BotConversa)
+#   /inbox         30 conversas com nomes BR realistas
+#   /whatsapp      → "Mensagem de teste" → IA responde no inbox
+#   /forge         Forge em modo MOCK_AI (respostas canned)
+#   /status        uptime live (sem auth)
+#   /api/health?token=local_dev_health_detail_token_change_me  detail
 ```
-
----
-
-## 🚀 O que abordar na próxima sessão
-
-**Prioridade 1**: gravar o vídeo demo real e substituir URL placeholder em `/(marketing)/page.tsx` linha do `<a href="https://www.loom.com/share/placeholder-trato-demo">`.
-
-**Prioridade 2**: implementar `/api/status/rss` (linkado no footer da status page).
-
-**Prioridade 3**: auto-detect de incidentes — worker que cria `StatusIncident` automaticamente quando DB timeout >3 vezes em 5min, ou worker fica sem processar mensagens por 30min.
-
-**Prioridade 4**: API pra criar incidentes manualmente (admin via `/admin/incidents/new`).
-
-**Prioridade 5**: continuar débito técnico das 9 actions sem `requireWorkspace` central.
-
----
-
-## ⚠️ Notas de demo
-
-- Agente do Granvilla tá em `MOCK_AI=true` por default — respostas canned. Pra demo "real" com Claude, troca `.env` pra `MOCK_AI=false` (usa o budget de $5 que você tem).
-- Templates HSM aparecem como APPROVED no seed mas têm `metaTemplateId: 'mock-...'` — ao tentar enviar broadcast, vai falhar no worker (sem token Meta real). Demonstre só a UI.
-- Webhook de teste funciona 100% sem Meta — perfeito pra mostrar fluxo end-to-end.
 
 Bom dia! ☕

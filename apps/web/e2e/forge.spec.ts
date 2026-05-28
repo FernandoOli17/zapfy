@@ -12,7 +12,8 @@ test.describe('forge', () => {
     await signupNewUser(page);
 
     await page.goto('/forge');
-    await expect(page.locator('h1, [data-page="forge"]')).toBeVisible({ timeout: 10_000 });
+    // ForgeWorkspace renderiza um <h2> introdutório no empty state.
+    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10_000 });
 
     // Input do chat — primeiro textarea ou input em /forge
     const input = page.getByPlaceholder(/conta|fala|descrev|nome do seu/i).first();

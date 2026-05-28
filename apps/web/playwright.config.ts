@@ -16,8 +16,10 @@ export default defineConfig({
   retries: process.env['CI'] ? 2 : 0,
   workers: 1,
   reporter: process.env['CI'] ? 'github' : 'list',
-  timeout: 30_000,
-  expect: { timeout: 5_000 },
+  // 90s cobre o cold-start do turbopack na primeira request por rota (~25-30s)
+  // + signup/login pipeline (~3s warm). Sem isso, primeiro test sempre falha.
+  timeout: 90_000,
+  expect: { timeout: 10_000 },
 
   use: {
     baseURL: process.env['E2E_BASE_URL'] ?? 'http://localhost:3000',
