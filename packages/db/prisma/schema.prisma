@@ -11,10 +11,14 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-  // Vercel serverless functions rodam em Amazon Linux (RHEL openssl 3).
-  // Sem binaryTarget explícito, Prisma só gera o .node nativo (Windows local)
-  // e o serverless falha com "Query Engine not found for runtime rhel-openssl-3.0.x".
+  // driverAdapters: usamos @prisma/adapter-neon (PrismaNeon) que vai por
+  // HTTPS/WebSocket via @neondatabase/serverless. Sem essa preview o
+  // Prisma exige o query engine binário (libquery_engine-rhel-openssl-3.0.x.so.node)
+  // que NÃO é incluído no bundle do Next.js + Vercel serverless functions,
+  // e tudo de DB quebra em prod com "Query Engine not found".
+  previewFeatures = ["postgresqlExtensions", "driverAdapters"]
+  // Fallback: ainda declaramos binaryTargets caso algum caminho de código
+  // escape o adapter e tente carregar binário nativo.
   binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
