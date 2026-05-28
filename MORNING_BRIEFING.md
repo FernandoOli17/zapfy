@@ -1,126 +1,100 @@
-# Morning Briefing — Sessão 9 (Vídeos Veo3 + fixes design · 2026-05-28)
+# Morning Briefing — Sessão 10 (Paleta global + vídeos menores · 2026-05-28)
 
-Bom dia, Fernando. Sessão grande: **3 vídeos Veo3 integrados na landing
-+ nova seção BrandFilm**. typecheck/lint/build verdes, 2 commits pushed.
+Bom dia, Fernando. Sessão focada nos 3 pedidos:
+1. **Vídeos menores** ✓
+2. **Paleta brand no auth + dashboard** ✓ (via tokens — propagou em todas as 20+ rotas)
+3. **Deploy Vercel** ⚠️ — você prefere setar Root Directory no dashboard
+   (60s), aí eu redeployo
 
----
-
-## 🎬 Os 3 vídeos integrados
-
-Os arquivos estavam em `/videos/` (root, fora do tree do Next, com nome
-`promt N.mp4` com typo e espaço). Movidos pra `apps/web/public/videos/`
-e renomeados pra `promptN.mp4`:
-
-```
-apps/web/public/videos/prompt1.mp4   2.9 MB  hero cinematográfico
-apps/web/public/videos/prompt2.mp4   1.4 MB  Forge split-screen demo
-apps/web/public/videos/prompt3.mp4   2.5 MB  Ana Lima · pet shop SP
-                                     ─────
-                                     6.8 MB  total
-```
-
-Todos com `autoPlay muted loop playsInline poster=/brand/logo-primary.svg`
-pra rodar inline em iOS sem fricção.
-
-### Vídeo 1 — Hero
-Inserido no fim do `<Hero>`, abaixo do "7 dias grátis". 16:9, `max-w-2xl`,
-bordas `#1a1a1a`, overlay gradiente `from-[#0a0a0a]/60` no topo pra fundir
-com o fundo dark. Entra com `animate-fade-up` delay 700ms (depois das
-animações dos textos).
-
-### Vídeo 2 — ForgeDemo (substituiu o chat animado)
-A seção "Você conversa. O Zapfy monta." era um chat fake animado de ~140
-linhas. Trocado por `<video src=prompt2.mp4>` (60 linhas), com badge
-**"AO VIVO"** verde pulsando no canto superior direito. CTA
-"Experimentar de graça" mantido logo abaixo com `animate-pulse-green`.
-
-### Vídeo 3 — BrandFilmSection (NOVA)
-Arquivo novo: `apps/web/src/components/marketing/brand-film.tsx`.
-Posicionado entre `<Testimonials>` e `<MarketingFaq>`.
-- Headline: **"Pequenos negócios. _Grandes resultados._"** (italic Instrument Serif na 2ª parte)
-- Vídeo com overlay gradiente inferior carregando quote:
-  > "Meu negócio nunca mais perdeu um cliente por falta de resposta."
-  > Ana Lima · Pet Shop Granvilla · São Paulo
-- Tagline embaixo: "Seu negócio nunca dorme. **O Zapfy cuida.**"
+Tudo verde: typecheck ✓, lint ✓. Push: `599d89c..466e0a8`.
 
 ---
 
-## 📐 Ordem final das seções
+## 🎬 Vídeos menores
+Reduzi pra mascarar artefatos visuais da IA Veo3:
 
-```
-1.  <UrgencyBanner />           verde, 7 dias grátis
-2.  <Hero />                    headline + Hero film (prompt1)
-3.  <LogosStrip />              wordmarks parceiros
-4.  <HowItWorks />              3 steps (01/02/03)
-5.  <Features />                grid 2×3 com pills
-6.  <ForgeDemo />               Forge film (prompt2)
-7.  <ComparisonTable />         Zapfy vs BotConversa
-8.  <Testimonials />            3 quotes Ana / Carlos / Loja
-9.  <BrandFilmSection /> ⭐     Brand film (prompt3) — NOVO
-10. <MarketingFaq />            FAQ dark
-11. <FinalCta />                bloco verde sólido
-```
+| Vídeo | Antes | Depois |
+|-------|-------|--------|
+| Hero film (prompt1) | `max-w-2xl` (672px) | `max-w-md` (448px) |
+| ForgeDemo (prompt2) | `max-w-4xl` (896px) | `max-w-2xl` (672px) |
+| BrandFilm (prompt3) | `max-w-4xl` (896px) | `max-w-2xl` (672px) |
+
+Comentários inline explicando o porquê do tamanho intencional.
 
 ---
 
-## ✅ Fixes da Parte 2 (já aplicados na sessão anterior — confirmados ainda no ar)
+## 🎨 Paleta brand em **TODO** o app (auth + dashboard)
 
-| Fix | Estado |
-|-----|--------|
-| FAQ em dark theme | ✅ aplicado no commit `e976145` |
-| Steps com watermark 96-120px | ✅ aplicado |
-| Features com pill + ícone container | ✅ aplicado (categorias CORE/BUILDER/IA/INBOX/ANALYTICS/INFRA) |
-| Depoimentos com aspas + métrica | ✅ aplicado |
-| Hero animações escalonadas | ✅ aplicado |
+Em vez de editar 20+ arquivos do dashboard um por um, troquei os
+**design tokens** em `packages/ui/src/styles.css`. Como o dashboard
+inteiro usa `bg-primary`, `text-primary`, `border-primary`, etc.,
+a mudança propagou automaticamente:
 
-Tudo no commit `e976145 fix(design): FAQ dark, cards depth, animations, spacing`.
+| Token | Antes | Depois |
+|-------|-------|--------|
+| `--color-primary` | hsl(213 93% 68%) sky blue | **hsl(151 100% 45%)** = `#00E676` verde Zapfy |
+| `--color-background` | hsl(225 50% 4%) cosmic | hsl(0 0% 4%) = `#0a0a0a` |
+| `--color-card` | hsl(225 30% 7%) | hsl(0 0% 7%) = `#111` |
+| `--color-popover` | hsl(225 35% 6%) | hsl(0 0% 5%) = `#0d0d0d` |
+| `--color-muted-foreground` | hsl(220 8% 65%) | hsl(0 0% 53%) = `#888` |
+| `--color-accent` | tinted blue | tinted verde |
+| `--color-destructive` | hsl(0 72% 55%) | hsl(0 84% 60%) = `#ef4444` |
+| `--color-ring` | sky blue | verde |
+
+Modo light: primary verde mais escuro (35% L) pra contraste em fundo branco.
+
+### (auth) layout reescrito
+- `BrandPanel` agora usa `ZapfyLogo` (era "O Trato" violet)
+- Glow radial verde (era azul), top accent line verde
+- Heading "Por que Zapfy" label, italic "É um funcionário..." em #00E676
+- 4 métricas (24/7, <2s, Cloud API, LGPD) em cards `bg-[#111] border-[#1a1a1a]` com valor em verde
+- Footer "Zapfy © 2026 · Termos · Privacidade"
+
+### (app) dashboard layout
+- Workspace card: `zapfy.com.br/<slug>` (era `Trato.dev/...`)
+- Mobile topbar: `ZapfyLogo` (era "O Trato")
+- Todo o resto: `bg-card`/`border-border`/`text-primary` pegou paleta nova
+  sem precisar de edit individual
+
+### Refs textuais "Trato" → "Zapfy"
+Sed em 10 arquivos restantes: admin, automations, integrations, settings,
+whatsapp + lib/email (client + templates).
+
+---
+
+## ⚠️ Vercel staging — pendente do dashboard
+Você escolheu setar Root Directory pelo dashboard (mais limpo).
+**Passos exatos:**
+1. https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings
+2. **General → Root Directory → Edit → `apps/web`**
+3. Marca **"Include source files outside of the Root Directory in the Build Step"**
+   (Vercel precisa subir pra resolver packages/* do workspace)
+4. **Save**
+5. Me avisa que rolou — eu rodo `pnpm dlx vercel --prod --yes`
+   e faço smoke tests
+
+URL prevista: `https://zapfy.vercel.app` (já setei `BETTER_AUTH_URL` e
+`NEXT_PUBLIC_APP_URL` no project Vercel apontando pra esse domínio).
 
 ---
 
 ## 📊 Métricas
 
 ```
-Commits novos:        2 (e40e03f vídeos + 4c1d65d briefing anterior)
-Arquivos novos:       4 (3 vídeos + brand-film.tsx)
-Arquivos modificados: 2 (page.tsx + forge-demo.tsx)
-+103 / -111 linhas líquidas (ForgeDemo encolheu)
+1 commit pushed:    466e0a8 feat(brand): paleta verde + vídeos menores
+17 arquivos modificados
++127 / -116 linhas líquidas
 
 typecheck:  ✅ exit 0
 lint:       ✅ exit 0
-build:      ✅ exit 0 (warnings esperados OpenTelemetry/Sentry/BullMQ)
-push:       ✅ master → origin (e40e03f)
 ```
 
 ---
 
-## ⚠️ Vercel staging ainda bloqueado em Root Directory
+## 🎯 Próximos passos
 
-Continua o mesmo bloqueio das sessões 7-8 — você ainda não setou
-**Root Directory = `apps/web`** no Vercel dashboard. Sem isso, o
-auto-deploy do push acima vai falhar igual ao último.
-
-Instruções exatas em `BLOCKED.md`. **Esse setting é o último passo
-pra colocar tudo no ar com vídeo e tudo.**
-
----
-
-## 🎯 Próximos 3 passos
-
-1. **Vercel Root Directory = apps/web** (60s no dashboard) → me avisa
-2. Confirmar vídeos carregando no staging (smoke test visual)
-3. Pusher real-time keys (opcional, instruções em `BLOCKED.md`)
-
----
-
-## 🔑 Como ver localmente
-
-```bash
-pnpm dev
-# http://localhost:3000
-# Hero: vídeo aparece após CTA com fade-up
-# Forge section: vídeo com badge AO VIVO pulsando
-# Brand film: nova seção entre depoimentos e FAQ
-# Todos rodam autoplay/muted/loop, OK no iOS
-```
+1. **Setar Root Directory no dashboard** (60s) → me avisa → eu deployo
+2. Smoke tests no staging assim que subir
+3. Pusher keys (opcional, real-time inbox)
 
 Bom dia! ☕
