@@ -13,20 +13,16 @@ import {
 
 import { MarketingFaq } from '@/components/marketing/faq';
 import { ForgeDemo } from '@/components/marketing/forge-demo';
-import { UrgencyBanner } from '@/components/marketing/urgency-banner';
-import { ComparisonTable } from '@/components/marketing/comparison-table';
 import { BrandFilmSection } from '@/components/marketing/brand-film';
 
 export default function HomePage() {
   return (
     <div className="bg-[#0a0a0a] text-white">
-      <UrgencyBanner />
       <Hero />
       <LogosStrip />
       <HowItWorks />
       <Features />
       <ForgeDemo />
-      <ComparisonTable />
       <Testimonials />
       <BrandFilmSection />
       <MarketingFaq />
@@ -77,13 +73,6 @@ function Hero() {
           Ver como funciona
         </Link>
       </div>
-
-      <p
-        className="animate-fade-up relative mt-5 text-xs text-[#666]"
-        style={{ animationDelay: '500ms' }}
-      >
-        7 dias grátis · sem cartão · cancele quando quiser
-      </p>
 
       {/* Hero film — gerado via Veo 3, autoplay loop muted (iOS-safe) */}
       <div
@@ -466,14 +455,14 @@ function FinalCta() {
           <span className="font-serif italic font-normal">seu atendimento?</span>
         </h2>
         <p className="mt-6 text-base text-[#0a0a0a]/80 md:text-lg">
-          7 dias grátis. Sem cartão. Cancele quando quiser.
+          Crie sua conta e converse com o Forge. Cancele quando quiser.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/signup"
             className="group inline-flex items-center gap-2 rounded-full bg-[#0a0a0a] px-7 py-3.5 text-sm font-semibold text-[#00E676] transition-transform hover:scale-[1.02]"
           >
-            Criar meu agente grátis
+            Começar agora
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link

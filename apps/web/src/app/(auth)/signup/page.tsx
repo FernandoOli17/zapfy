@@ -12,7 +12,7 @@ export default function SignupPage() {
         <span className="font-serif italic font-normal text-primary">conta</span>
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        7 dias grátis. Sem cartão. Sem ligação de vendas.
+        Crie sua conta e converse com o Forge em minutos.
       </p>
       <div className="mt-8">
         <SignupForm />

@@ -1,7 +1,7 @@
 /**
- * BrandFilmSection — peça emocional curta, vídeo gerado via Veo 3
- * (dona de pet shop em SP). AutoPlay/muted/loop/playsInline. Overlay
- * inferior carrega a quote + atribuição.
+ * BrandFilmSection — peça emocional curta, vídeo gerado via Veo 3.
+ * Sem overlay com nome/atribuição: o vídeo é apenas evocativo, não
+ * representa cliente real.
  */
 export function BrandFilmSection() {
   return (
@@ -29,16 +29,6 @@ export function BrandFilmSection() {
           >
             <source src="/videos/prompt3.mp4" type="video/mp4" />
           </video>
-
-          {/* gradiente inferior + quote sobreposta */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/60 to-transparent p-8 pt-24">
-            <p className="font-serif text-lg italic text-white md:text-xl">
-              &ldquo;Meu negócio nunca mais perdeu um cliente por falta de resposta.&rdquo;
-            </p>
-            <p className="mt-2 text-sm text-[#888]">
-              Ana Lima · Pet Shop Granvilla · São Paulo
-            </p>
-          </div>
         </div>
 
         <p className="mt-10 text-center text-base text-[#888] md:text-lg">
