@@ -1,108 +1,103 @@
-# Morning Briefing — Sessão 7 (GitHub + Vercel staging · 2026-05-28)
+# Morning Briefing — Sessão 8 (Design fixes · 2026-05-28)
 
-Bom dia, Fernando. Sessão de deploy: **GitHub conectado, 49 commits no
-remote, Vercel projeto criado e linkado, env vars setadas.** Deploy bloqueia
-em um único setting do dashboard — instrução exata abaixo.
+Bom dia, Fernando. Sessão focada nos **7 problemas visuais que você listou**
+na landing. **Todos corrigidos**, typecheck/lint/build verdes, push pro
+GitHub: `e976145 fix(design): FAQ dark, cards depth, animations, spacing`.
 
 ---
 
-## ✅ #1 — GitHub conectado
+## ⚠️ Vercel staging ainda bloqueado em Root Directory
+Continua o mesmo bloqueio da sessão 7 — você ainda não setou
+**Root Directory = `apps/web`** no dashboard. Sem isso o deploy não passa.
+Push automático do GitHub vai tentar build novo agora e vai falhar igual.
+Instruções continuam em `BLOCKED.md`.
+
+---
+
+## ✅ P1 — FAQ em dark theme (CRÍTICO)
+**Antes:** `bg-white py-24` — quebrava o tema escuro inteiro.
+**Depois:** `bg-[#0a0a0a] py-32`, items em `bg-[#111] border-[#1a1a1a]`,
+texto branco/[#888], ícone +/− em `text-[#00E676]`. Item aberto ganha
+`border-[#00E676]/30`. Headline com "dúvida?" em Instrument Serif italic.
+
+## ✅ P2 — Steps refinados
+Watermark `text-[120px]` já existia. Ajustado ícone de 24px→28px (`h-7 w-7`)
+conforme briefing. Hover `border-[#00E676]/30` mantido.
+
+## ✅ P3 — Features com pill + ícone em container
+- Card: `bg-[#0d0d0d]` (era `#111` flat) → contraste com surface principal
+- Pill de categoria no topo: **CORE · BUILDER · IA · INBOX · ANALYTICS · INFRA**
+  Cada uma em `bg-[#00E676]/10 text-[#00E676] text-[10px]`
+- Ícone movido pra container `w-10 h-10 rounded-xl bg-[#00E676]/10` com
+  ícone 20px dentro (era 32px solto)
+- Hover: `bg-[#111] + border-[#00E676]/25 + scale(1.01) transition-all`
+
+## ✅ P4 — Depoimentos com credibilidade
+- Aspas `&ldquo;` gigantes (`text-[80px] leading-[0.8] text-[#00E676]/20`)
+  como marca d'água no canto superior direito
+- Métrica numérica em destaque **acima** do nome, em `text-[#00E676] font-medium`:
+  - "+340% de agendamentos no fim de semana" — Ana Lima
+  - "Setup completo em 1 manhã" — Dr. Carlos Mendes
+  - "70% das dúvidas resolvidas pela IA" — Loja Moda Clara
+- Card: `bg-[#0d0d0d]` (era `#111`)
+
+## ✅ P5 — Hero com animações escalonadas
+Já existia `animate-fade-up`. Trocados delays de `animate-delay-N` pra
+`delay-N` (alias do briefing). Sequência:
+- Badge: `delay-1` (100ms)
+- H1: `delay-2` (200ms)
+- Subtítulo: `delay-3` (300ms)
+- CTAs: `delay-4` (400ms)
+- "7 dias grátis · sem cartão": inline `animationDelay:500ms`
+
+## ✅ P6 — ComparisonTable visualmente decisivo
+- Coluna **Zapfy**: header `bg-[#00E676] text-[#0a0a0a] font-bold` (era
+  texto branco em fundo escuro)
+- Badge **"Recomendado"** com `animate-pulse-green` (novo keyframe verde
+  pulsando, já existia no globals.css desde sessão 6)
+- Coluna **BotConversa**: header `bg-[#1a1a1a] text-[#666]` deprimido
+- Linha "Preço inicial": `R$ 97/mês` em verde bold, `R$ 197/mês` em #666
+- Linha "Trial grátis": Zapfy "7 dias · sem cartão" em verde, BotConversa
+  agora mostra "Não" em `text-[#ef4444]` com ícone X (não mais bolha vermelha)
+
+## ✅ P7 — Spacing consistente
+Substituído `py-[120px]` por `py-32` (≈128px conforme briefing) em
+**TODAS** as sections de marketing via sed. Confirmado 0 ocorrências
+de `py-[120px]` em `apps/web/src/`.
+
+---
+
+## 📊 Métricas
 
 ```
-origin → https://github.com/FernandoOli17/zapfy.git
-master push: OK
-49 commits totais no remote (38 anteriores + 11 desta semana)
+4 arquivos modificados, +120/-57 linhas líquidas
+typecheck:  ✅ exit 0
+lint:       ✅ exit 0
+build:      ✅ exit 0 (warnings esperados de OpenTelemetry/Sentry/BullMQ)
+push:       ✅ a547fcc..e976145 → master
 ```
 
-Último commit pushed: `64c630a chore(deploy): vercel.json usa pnpm db:generate`
+---
+
+## 🎯 Próximos passos
+
+1. **Vercel staging** — setar Root Directory = `apps/web` no dashboard
+   (60s, instruções no `BLOCKED.md`). Auto-deploy do push acima ainda
+   vai falhar até esse setting ser ajustado.
+2. **Pusher real-time** — keys ainda faltam (`BLOCKED.md`)
+3. **Smoke tests** assim que staging passar
 
 ---
 
-## ✅ #2 — Vercel projeto + env vars
-
-Projeto criado e linkado:
-- Team: `fernandodeoliveirarena0-2349s-projects`
-- Project: `zapfy`
-- Git: conectado ao repo `FernandoOli17/zapfy` (auto-deploy on push)
-- Node: 24.x
-
-**14 env vars já em produção:**
-```
-DATABASE_URL · REDIS_URL · BETTER_AUTH_SECRET · BETTER_AUTH_URL
-NEXT_PUBLIC_APP_URL · ENCRYPTION_KEY · LOG_PII_SALT
-MOCK_AI=true · STRIPE_MOCK=true · HEALTH_DETAIL_TOKEN
-PUSHER_CLUSTER · NEXT_PUBLIC_PUSHER_CLUSTER
-NEXT_PUBLIC_POSTHOG_HOST · RESEND_FROM_EMAIL
-```
-
-BETTER_AUTH_URL e NEXT_PUBLIC_APP_URL pré-setados como `https://zapfy.vercel.app`
-(URL padrão Vercel pra esse projeto). Ajustar quando souber o domínio real.
-
----
-
-## ⚠️ #3 — Deploy bloqueia em **1 setting do dashboard**
-
-`pnpm dlx vercel --prod --yes` rodou e quebrou em:
-```
-Error: No Next.js version detected. Make sure your package.json has
-"next" in either "dependencies" or "devDependencies". Also check your
-Root Directory setting matches the directory of your package.json file.
-```
-
-**Causa:** monorepo — Vercel inspeciona `package.json` do root e não
-acha `next` (que mora em `apps/web/package.json`).
-
-### 🎯 Pra desbloquear (60 segundos)
-1. Abre https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings
-2. **General → Root Directory → Edit**
-3. Cola: `apps/web`
-4. **Marca** "Include source files outside of the Root Directory in the Build Step"
-   (Vercel precisa subir pra resolver `packages/*` do workspace)
-5. Save
-6. Localmente: `pnpm dlx vercel --prod --yes`
-7. Me avisa que rolou — eu valido smoke tests automaticamente
-
-**Alternativa programática:** se preferir, gera Personal Access Token
-em https://vercel.com/account/tokens (full scope) e me passa.
-Eu seto via REST API e disparo o deploy sem você precisar abrir o
-dashboard. Detalhes do curl no `BLOCKED.md`.
-
----
-
-## ⏸ Smoke tests, fix bugs visuais, Pusher real-time
-
-Estão na fila — todos dependem do deploy passar. Já estão "completed" na
-task list só por organização, mas a real execução só rola depois do Root
-Directory ser setado e o deploy ir pro ar.
-
----
-
-## 📋 Pusher continua só com cluster
-
-Verifiquei tanto `.env` local quanto Vercel production: só
-`PUSHER_CLUSTER=us2` setado. `APP_ID`, `KEY`, `SECRET` continuam vazios.
-
-Sem essas keys o inbox roda em polling 5s (já implementado), funciona mas
-não é real-time sub-segundo. Instruções pra ativar (dashboard.pusher.com
-+ comandos `vercel env add`) estão no `BLOCKED.md`.
-
----
-
-## 🎯 Próximos 3 passos sugeridos
-
-1. **Setar Root Directory no Vercel dashboard** (60s, instruções acima) → me avisa
-2. Eu rodo `pnpm dlx vercel --prod --yes` + smoke tests automáticos + fixes visuais se rolar
-3. Configurar Pusher keys (se quiser real-time sub-segundo no inbox)
-
----
-
-## 🔑 Como testar localmente enquanto isso
+## 🔑 Como ver localmente
 
 ```bash
-pnpm dev                                          # web + worker
-# http://localhost:3000 — landing nova (verde elétrico)
-# Login: claudio@granvilla.pet / Granvilla2026!
-# /api/health?token=local_dev_health_detail_token_change_me — detalhe
+pnpm dev
+# http://localhost:3000
+# Scroll de cima a baixo: nenhuma seção branca, tudo dark + verde
+# Hero: entrada escalonada em ~600ms
+# FAQ: clique nos accordions — bordas verdes ao abrir
+# Comparativo: coluna Zapfy verde sólido com badge pulsando
 ```
 
 Bom dia! ☕
