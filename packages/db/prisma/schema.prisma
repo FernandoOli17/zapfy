@@ -43,12 +43,74 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  sessions          Session[]
-  accounts          Account[]
-  workspaceMembers  WorkspaceMember[]
-  assignedConvos    Conversation[]    @relation("assignedTo")
-  auditLogs         AuditLog[]
-  forgeSessions     ForgeSession[]
+  sessions             Session[]
+  accounts             Account[]
+  workspaceMembers     WorkspaceMember[]
+  assignedConvos       Conversation[]    @relation("assignedTo")
+  auditLogs            AuditLog[]
+  forgeSessions        ForgeSession[]
+  knownDevices         KnownDevice[]
+  deviceVerifications  DeviceVerification[]
+}
+
+// =========================================
+// DEVICE VERIFICATION (security)
+// =========================================
+
+/**
+ * Dispositivo/IP já reconhecido pra esse usuário.
+ * IP e UA hasheados (sha256 + LOG_PII_SALT) — privacidade.
+ * Compõem chave única: 1 entrada por (userId, ipHash, userAgentHash).
+ */
+model KnownDevice {
+  id              String   @id @default(cuid())
+  userId          String
+  ipHash          String   // sha256(ipAddress + LOG_PII_SALT)
+  userAgentHash   String   // sha256(userAgent + LOG_PII_SALT)
+  /// Label legível pro user identificar — "Chrome em Windows · São Paulo"
+  label           String?
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ipHash, userAgentHash])
+  @@index([userId, lastSeenAt])
+}
+
+/**
+ * Tentativa de verificação ativa pra um IP/dispositivo novo.
+ * Bloqueia a sessão associada até o user confirmar via código 6 dígitos
+ * OU clicar no link mágico do email.
+ */
+model DeviceVerification {
+  id              String    @id @default(cuid())
+  userId          String
+  /// Sessão Better Auth que disparou a verificação (ou null se a sessão
+  /// foi destruída antes da confirmação).
+  sessionToken    String?
+  /// Plain IP (legível pra user no email "Detalhes do acesso").
+  ipAddress       String
+  /// Cidade/UF resolvida do IP (cf-ipcountry, x-vercel-ip-city headers).
+  location        String?
+  /// User-Agent string (legível).
+  userAgent       String
+  /// Código 6 dígitos hasheado (sha256). User digita o plain.
+  codeHash        String
+  /// Token aleatório (32 bytes hex) que vai no link mágico do email.
+  /// Único — usado uma vez.
+  verifyToken     String    @unique
+  /// Mesma coisa pra revogar o acesso ("não fui eu").
+  revokeToken     String    @unique
+  expiresAt       DateTime
+  verifiedAt      DateTime?
+  revokedAt       DateTime?
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([sessionToken])
 }
 
 model Session {

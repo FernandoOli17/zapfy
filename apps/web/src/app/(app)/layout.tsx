@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth';
 import { SignOutLink } from '@/components/sign-out-link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
+import { pendingVerificationForSession } from '@/lib/device-verification';
 
 import { SidebarNav, type NavSection } from './sidebar-nav';
 import { ImpersonateBanner } from './impersonate-banner';
@@ -94,6 +95,14 @@ function buildNavSections(opts: {
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+
+  // Device verification gate: se há verificação pendente pra essa sessão,
+  // bloqueia o app até o user confirmar via código ou link mágico do email.
+  const pending = await pendingVerificationForSession({
+    userId: session.user.id,
+    sessionToken: session.session.token,
+  });
+  if (pending) redirect('/verify-device');
 
   const fullUser = await prisma.user.findUnique({
     where: { id: session.user.id },

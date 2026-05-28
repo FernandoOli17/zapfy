@@ -7,6 +7,11 @@ import { createLogger } from '@zapfy/shared';
 import { env } from '@/env';
 import { isEmailConfigured, sendEmail } from '@/lib/email/client';
 import { magicLinkEmail, passwordResetEmail } from '@/lib/email/templates';
+import {
+  createDeviceVerification,
+  isKnownDevice,
+  registerKnownDevice,
+} from '@/lib/device-verification';
 
 const log = createLogger('auth');
 
@@ -77,6 +82,71 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 30, // 30 dias
     updateAge: 60 * 60 * 24, // refresh a cada 1 dia
+  },
+  /**
+   * Hooks de DB: detectar criação de sessão (login) e checar se o
+   * dispositivo já é conhecido pra esse user. Se NÃO, dispara verificação
+   * por email — o user só consegue navegar quando confirmar.
+   *
+   * - Primeiro device de um user (signup): aceito como "trusted" sem prompt.
+   * - Re-login de IP/UA já visto: passa direto.
+   * - Re-login de combo novo: cria DeviceVerification + email + middleware
+   *   redireciona pra /verify-device até confirmar.
+   */
+  databaseHooks: {
+    session: {
+      create: {
+        after: async (session) => {
+          try {
+            const ip = session.ipAddress ?? '0.0.0.0';
+            const ua = session.userAgent ?? 'unknown';
+
+            // Primeira sessão do user → marca como conhecido sem prompt
+            const prevSessions = await prisma.session.count({
+              where: { userId: session.userId, id: { not: session.id } },
+            });
+            if (prevSessions === 0) {
+              await registerKnownDevice({
+                userId: session.userId,
+                ipAddress: ip,
+                userAgent: ua,
+                location: null,
+              });
+              return;
+            }
+
+            // Já viu esse device? passa direto.
+            if (await isKnownDevice({ userId: session.userId, ipAddress: ip, userAgent: ua })) {
+              return;
+            }
+
+            // Device novo — dispara verificação por email
+            const user = await prisma.user.findUnique({
+              where: { id: session.userId },
+              select: { email: true, name: true },
+            });
+            if (!user) return;
+
+            await createDeviceVerification({
+              userId: session.userId,
+              email: user.email,
+              name: user.name,
+              sessionToken: session.token,
+              ipAddress: ip,
+              userAgent: ua,
+              location: null,
+              appUrl: env.BETTER_AUTH_URL,
+            });
+          } catch (err) {
+            // Não falha login se a verificação não rolar — só loga
+            log.error(
+              { err: String(err), userId: session.userId },
+              'falha disparar verificação de device',
+            );
+          }
+        },
+      },
+    },
   },
 });
 
