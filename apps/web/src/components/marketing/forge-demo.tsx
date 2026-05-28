@@ -45,7 +45,7 @@ export function ForgeDemo() {
   }, []);
 
   return (
-    <section className="border-t border-[#1a1a1a] py-[120px]">
+    <section className="border-t border-[#1a1a1a] py-32">
       <div className="mx-auto max-w-5xl px-6">
         <div className="mb-14 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">

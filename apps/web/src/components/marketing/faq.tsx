@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
@@ -42,7 +42,7 @@ const FAQS: FaqItem[] = [
   {
     question: 'Posso conectar meu CRM, ERP ou ferramenta interna?',
     answer:
-      'No plano Pro e Premium você tem webhooks de saída pra notificar seus sistemas (CRM, ERP, planilha, qualquer endpoint HTTP). Premium ainda tem API pública pra puxar dados do Trato ou empurrar contatos/mensagens. Tools customizadas no agente IA (Pro+) chamam qualquer endpoint seu durante a conversa — perfeito pra consultar estoque, criar pedido, agendar consulta, etc.',
+      'No plano Pro e Premium você tem webhooks de saída pra notificar seus sistemas (CRM, ERP, planilha, qualquer endpoint HTTP). Premium ainda tem API pública pra puxar dados do Zapfy ou empurrar contatos/mensagens. Tools customizadas no agente IA (Pro+) chamam qualquer endpoint seu durante a conversa — perfeito pra consultar estoque, criar pedido, agendar consulta, etc.',
   },
   {
     question: 'Posso treinar o agente com meus próprios documentos?',
@@ -63,18 +63,22 @@ const FAQS: FaqItem[] = [
 
 export function MarketingFaq() {
   return (
-    <section id="faq" className="bg-white py-24 md:py-28">
+    <section id="faq" className="border-t border-[#1a1a1a] bg-[#0a0a0a] py-32">
       <div className="mx-auto max-w-3xl px-6">
         <div className="text-center">
-          <h2 className="text-4xl font-bold tracking-tight text-zinc-900 md:text-5xl">
-            Restou alguma dúvida?
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
+            FAQ
+          </p>
+          <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+            Restou alguma{' '}
+            <span className="font-serif italic font-normal text-[#888]">dúvida?</span>
           </h2>
-          <p className="mt-4 text-lg text-zinc-500">
+          <p className="mt-5 text-base text-[#888]">
             Respostas honestas. Sem letra miúda, sem rodeio comercial.
           </p>
         </div>
 
-        <div className="mt-12 space-y-3">
+        <div className="mt-14 space-y-3">
           {FAQS.map((faq) => (
             <FaqItem key={faq.question} {...faq} />
           ))}
@@ -87,21 +91,31 @@ export function MarketingFaq() {
 function FaqItem({ question, answer }: FaqItem) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white transition-colors hover:border-zinc-300">
+    <div
+      className={`overflow-hidden rounded-2xl border bg-[#111] transition-colors ${
+        open ? 'border-[#00E676]/30' : 'border-[#1a1a1a] hover:border-[#1a1a1a]'
+      }`}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between px-6 py-5 text-left transition-colors hover:bg-zinc-50"
+        className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition-colors hover:bg-white/[0.02]"
       >
-        <span className="pr-4 text-base font-medium text-zinc-900">{question}</span>
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-500 transition-colors group-hover:border-zinc-300">
+        <span className="pr-4 text-base font-medium text-white">{question}</span>
+        <span
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 transition-colors ${
+            open
+              ? 'bg-[#00E676]/15 text-[#00E676] ring-[#00E676]/30'
+              : 'bg-[#0a0a0a] text-[#00E676] ring-[#1a1a1a]'
+          }`}
+        >
           {open ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
         </span>
       </button>
       {open && (
         <div className="px-6 pb-5">
-          <p className="text-sm leading-relaxed text-zinc-600">{answer}</p>
+          <p className="text-sm leading-relaxed text-[#888]">{answer}</p>
         </div>
       )}
     </div>

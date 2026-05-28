@@ -42,7 +42,7 @@ function Hero() {
     <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-20 text-center">
       <BackgroundDecor />
 
-      <div className="animate-fade-up relative mb-8 inline-flex items-center gap-2 rounded-full border border-[#00E676]/25 bg-[#00E676]/[0.06] px-3 py-1.5 text-xs font-medium text-[#00E676]">
+      <div className="animate-fade-up delay-1 relative mb-8 inline-flex items-center gap-2 rounded-full border border-[#00E676]/25 bg-[#00E676]/[0.06] px-3 py-1.5 text-xs font-medium text-[#00E676]">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-60" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00E676]" />
@@ -50,17 +50,17 @@ function Hero() {
         Agente IA · WhatsApp Cloud API oficial Meta
       </div>
 
-      <h1 className="animate-fade-up animate-delay-1 relative max-w-4xl text-[clamp(3rem,9vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.04em] text-white">
+      <h1 className="animate-fade-up delay-2 relative max-w-4xl text-[clamp(3rem,9vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.04em] text-white">
         Seu WhatsApp,{' '}
         <span className="text-[#00E676]">com inteligência real.</span>
       </h1>
 
-      <p className="animate-fade-up animate-delay-2 relative mt-8 max-w-xl text-lg leading-relaxed text-[#888]">
+      <p className="animate-fade-up delay-3 relative mt-8 max-w-xl text-lg leading-relaxed text-[#888]">
         Configure conversando com o Forge. Publica em minutos no Cloud API oficial da Meta.
         Atende 24/7, faz handoff pra equipe, nunca fica em risco de ban.
       </p>
 
-      <div className="animate-fade-up animate-delay-3 relative mt-10 flex flex-wrap items-center justify-center gap-3">
+      <div className="animate-fade-up delay-4 relative mt-10 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/signup"
           className="group inline-flex items-center gap-2 rounded-full bg-[#00E676] px-7 py-3.5 text-sm font-semibold text-[#0a0a0a] transition-transform hover:scale-[1.02]"
@@ -76,7 +76,10 @@ function Hero() {
         </Link>
       </div>
 
-      <p className="animate-fade-up animate-delay-4 relative mt-5 text-xs text-[#666]">
+      <p
+        className="animate-fade-up relative mt-5 text-xs text-[#666]"
+        style={{ animationDelay: '500ms' }}
+      >
         7 dias grátis · sem cartão · cancele quando quiser
       </p>
     </section>
@@ -176,7 +179,7 @@ const STEPS: Step[] = [
 
 function HowItWorks() {
   return (
-    <section id="como-funciona" className="border-t border-[#1a1a1a] py-[120px]">
+    <section id="como-funciona" className="border-t border-[#1a1a1a] py-32">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
@@ -214,7 +217,7 @@ function StepCard({ step, delay }: { step: Step; delay: number }) {
 
       <div className="relative">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#00E676]/10 ring-1 ring-[#00E676]/20">
-          <Icon className="h-6 w-6 text-[#00E676]" strokeWidth={1.75} />
+          <Icon className="h-7 w-7 text-[#00E676]" strokeWidth={1.75} />
         </div>
         <h3 className="mt-8 text-xl font-semibold tracking-tight text-white">{step.title}</h3>
         <p className="mt-3 text-sm leading-relaxed text-[#888]">{step.body}</p>
@@ -231,35 +234,42 @@ interface Feature {
   title: string;
   body: string;
   icon: typeof Bot;
+  pill: string;
 }
 
 const FEATURES: Feature[] = [
   {
+    pill: 'IA',
     title: 'Agente IA com contexto',
     body: 'Claude Sonnet 4.5 com prompt caching. Responde em <3s, lembra do histórico, não inventa quando não sabe.',
     icon: Brain,
   },
   {
+    pill: 'BUILDER',
     title: 'Forge Builder',
     body: 'State machine declarativa que entrevista o cliente em 10 fases. Gera system prompt, escolhe tools, publica versão.',
     icon: Workflow,
   },
   {
+    pill: 'CORE',
     title: 'RAG nativo',
     body: 'Base de conhecimento com busca híbrida (semântica via Voyage AI + FTS Postgres). Upload por URL ou arquivo.',
     icon: Database,
   },
   {
+    pill: 'INBOX',
     title: 'Inbox humano',
     body: 'Assume conversa numa tecla, devolve pra IA quando quiser. Atalhos J/K/R/A/E. Pusher real-time sub-segundo.',
     icon: Inbox,
   },
   {
+    pill: 'ANALYTICS',
     title: 'Analytics tempo real',
     body: 'Tickets resolvidos, % handoff, tempo até primeira resposta, top intents. Sparklines + drill-down por conversa.',
     icon: BarChart3,
   },
   {
+    pill: 'INFRA',
     title: 'Multi-tenant nativo',
     body: 'Vários números, vários workspaces, uma plataforma. Cada workspace tem agente, equipe, billing e auditoria isolados.',
     icon: Users,
@@ -268,7 +278,7 @@ const FEATURES: Feature[] = [
 
 function Features() {
   return (
-    <section className="border-t border-[#1a1a1a] py-[120px]">
+    <section className="border-t border-[#1a1a1a] py-32">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 max-w-2xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
@@ -296,10 +306,15 @@ function FeatureCard({ feature, delay }: { feature: Feature; delay: number }) {
   const Icon = feature.icon;
   return (
     <div
-      className={`animate-fade-up delay-${delay} group rounded-2xl border border-[#1a1a1a] bg-[#111] p-8 transition-colors hover:border-[#00E676]/30`}
+      className={`animate-fade-up delay-${delay} group rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-8 transition-all duration-200 hover:scale-[1.01] hover:border-[#00E676]/25 hover:bg-[#111]`}
     >
-      <Icon className="h-8 w-8 text-[#00E676]" strokeWidth={1.75} />
-      <h3 className="mt-7 text-xl font-semibold tracking-tight text-white">{feature.title}</h3>
+      <span className="mb-3 inline-block rounded-full bg-[#00E676]/10 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#00E676]">
+        {feature.pill}
+      </span>
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#00E676]/10">
+        <Icon className="h-5 w-5 text-[#00E676]" strokeWidth={1.75} />
+      </div>
+      <h3 className="text-xl font-semibold tracking-tight text-white">{feature.title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-[#888]">{feature.body}</p>
     </div>
   );
@@ -315,12 +330,14 @@ interface Testimonial {
   vertical: string;
   city: string;
   initials: string;
+  metric: string;
 }
 
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
       'Antes perdia cliente que mandava no fim de semana. Agora o agente do Zapfy responde tudo, anota o tutor e marca o banho. Acordo segunda com a agenda lotada.',
+    metric: '+340% de agendamentos no fim de semana',
     name: 'Ana Lima',
     vertical: 'Dona de pet shop',
     city: 'São Paulo',
@@ -329,6 +346,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     quote:
       'Configurei em uma manhã, conversando com o Forge. Ele entendeu que clínica odontológica precisa filtrar urgência e já montou o handoff direto pra mim em casos sérios.',
+    metric: 'Setup completo em 1 manhã',
     name: 'Dr. Carlos Mendes',
     vertical: 'Dentista',
     city: 'Belo Horizonte',
@@ -337,6 +355,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     quote:
       'Recebia 200 dúvidas por dia sobre tamanho e prazo. O Zapfy resolve 70% sozinho e quando precisa transferir já chega com contexto, foto e endereço. Equipe agradeceu.',
+    metric: '70% das dúvidas resolvidas pela IA',
     name: 'Loja Moda Clara',
     vertical: 'E-commerce de moda',
     city: 'Fortaleza',
@@ -346,7 +365,7 @@ const TESTIMONIALS: Testimonial[] = [
 
 function Testimonials() {
   return (
-    <section className="border-t border-[#1a1a1a] py-[120px]">
+    <section className="border-t border-[#1a1a1a] py-32">
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
@@ -371,27 +390,38 @@ function Testimonials() {
 function TestimonialCard({ t, delay }: { t: Testimonial; delay: number }) {
   return (
     <figure
-      className={`animate-fade-up delay-${delay} flex flex-col rounded-2xl border border-[#1a1a1a] bg-[#111] p-8`}
+      className={`animate-fade-up delay-${delay} relative flex flex-col overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-8`}
     >
-      <div className="flex gap-1 text-[#00E676]">
+      {/* Aspas decorativas gigantes — marca d'água */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-4 right-6 select-none font-serif text-[80px] leading-[0.8] text-[#00E676]/20"
+      >
+        &ldquo;
+      </span>
+
+      <div className="relative flex gap-1 text-[#00E676]">
         {Array.from({ length: 5 }, (_, i) => (
           <Star key={i} className="h-4 w-4 fill-current" />
         ))}
       </div>
-      <blockquote className="mt-5 flex-1">
+      <blockquote className="relative mt-5 flex-1">
         <p className="font-serif text-[18px] italic leading-relaxed text-zinc-100">
-          &ldquo;{t.quote}&rdquo;
+          {t.quote}
         </p>
       </blockquote>
-      <figcaption className="mt-7 flex items-center gap-3 border-t border-[#1a1a1a] pt-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00E676]/15 text-sm font-bold text-[#00E676]">
-          {t.initials}
-        </div>
-        <div>
-          <p className="text-sm font-medium text-white">{t.name}</p>
-          <p className="text-[13px] text-[#888]">
-            {t.vertical} · {t.city}
-          </p>
+      <figcaption className="relative mt-7 border-t border-[#1a1a1a] pt-5">
+        <p className="mb-2 text-sm font-medium text-[#00E676]">{t.metric}</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00E676]/15 text-sm font-bold text-[#00E676]">
+            {t.initials}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">{t.name}</p>
+            <p className="text-[13px] text-[#888]">
+              {t.vertical} · {t.city}
+            </p>
+          </div>
         </div>
       </figcaption>
     </figure>
@@ -404,7 +434,7 @@ function TestimonialCard({ t, delay }: { t: Testimonial; delay: number }) {
 
 function FinalCta() {
   return (
-    <section className="border-t border-[#1a1a1a] bg-[#00E676] py-[120px] text-[#0a0a0a]">
+    <section className="border-t border-[#1a1a1a] bg-[#00E676] py-32 text-[#0a0a0a]">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-5xl font-bold leading-[1.05] tracking-[-0.03em] md:text-6xl">
           Pronto para automatizar
