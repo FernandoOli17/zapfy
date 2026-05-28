@@ -27,12 +27,12 @@ const HEADER_STYLES = `
 
 const BUTTON_STYLES = `
   display: inline-block;
-  background-color: #60A5FA;
-  color: #ffffff;
+  background-color: #00E676;
+  color: #0a0a0a;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: 999px;
   margin: 20px 0;
 `;
 
@@ -50,13 +50,13 @@ function wrap(inner: string): string {
   <div style="${BASE_STYLES}">
     <div style="${CONTAINER_STYLES}">
       <div style="${HEADER_STYLES}; padding-bottom: 12px;">
-        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#60A5FA;vertical-align:middle;margin-right:8px"></span>
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#00E676;vertical-align:middle;margin-right:8px"></span>
         Zapfy
       </div>
       ${inner}
       <div style="${FOOTER_STYLES}">
-        Zapfy · O WhatsApp da sua empresa, com cérebro próprio.<br/>
-        Não esperava esse email? <a href="mailto:oi@Zapfy.dev" style="color:#60A5FA">avisa pra gente</a>.
+        Zapfy · Agente IA para WhatsApp.<br/>
+        Não esperava esse email? <a href="mailto:supportezapfy@gmail.com" style="color:#00E676">avisa pra gente</a>.
       </div>
     </div>
   </div>
@@ -89,7 +89,7 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
       <li>Comece a atender 24/7.</li>
     </ol>
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
-    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#60A5FA">dashboard</a>.</p>
+    <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#00E676">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
     <p style="color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
@@ -107,10 +107,10 @@ export function contactNotificationEmail(input: {
     <h1 style="font-size:20px;margin:24px 0 8px">Novo contato pelo site</h1>
     <table style="width:100%;border-collapse:collapse;margin:16px 0">
       <tr><td style="padding:6px 0;color:#71717a;width:80px">Nome:</td><td>${escapeHtml(input.name)}</td></tr>
-      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#60A5FA">${escapeHtml(input.email)}</a></td></tr>
+      <tr><td style="padding:6px 0;color:#71717a">E-mail:</td><td><a href="mailto:${escapeHtml(input.email)}" style="color:#00E676">${escapeHtml(input.email)}</a></td></tr>
       <tr><td style="padding:6px 0;color:#71717a">Assunto:</td><td>${escapeHtml(input.subject)}</td></tr>
     </table>
-    <div style="border-left:3px solid #60A5FA;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
+    <div style="border-left:3px solid #00E676;padding:12px 16px;background:#f4f4f5;margin:16px 0;white-space:pre-wrap">${escapeHtml(input.message)}</div>
     <p style="color:#71717a;font-size:13px">Responda direto pelo Reply-To deste email.</p>
   `);
   const text = `Novo contato:\n\nNome: ${input.name}\nE-mail: ${input.email}\nAssunto: ${input.subject}\n\n---\n${input.message}`;
@@ -182,8 +182,8 @@ export function day6TrialEndingEmail(input: { name: string; appUrl: string }) {
       </tr>
       <tr><td style="padding:4px"></td></tr>
       <tr>
-        <td style="padding:12px;border:2px solid #60A5FA;border-radius:8px;background:#eff6ff">
-          <strong style="font-size:16px;color:#1e40af">Pro — R$ 297/mês</strong> <span style="background:#60A5FA;color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-transform:uppercase">recomendado</span><br/>
+        <td style="padding:12px;border:2px solid #00E676;border-radius:8px;background:#0a0a0a0d">
+          <strong style="font-size:16px;color:#0a0a0a">Pro — R$ 297/mês</strong> <span style="background:#00E676;color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-transform:uppercase">recomendado</span><br/>
           <span style="color:#3b3b3f;font-size:13px">10.000 conversas IA · 3 números · 5 atendentes · Custom tools · Broadcasts</span>
         </td>
       </tr>
@@ -224,11 +224,119 @@ export function activationEmail(input: { name: string; workspaceSlug: string; ap
     </div>
 
     <a href="${inboxUrl}" style="${BUTTON_STYLES}">Ver Inbox ao vivo</a>
-    <p style="color:#71717a;font-size:13px">Ou acompanhe métricas em <a href="${analyticsUrl}" style="color:#60A5FA">analytics</a>.</p>
+    <p style="color:#71717a;font-size:13px">Ou acompanhe métricas em <a href="${analyticsUrl}" style="color:#00E676">analytics</a>.</p>
     <p style="margin-top:32px;color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
   const text = `Seu agente está no ar! 🎉\n\nParabéns, ${input.name}. O workspace "${input.workspaceSlug}" tá ativo.\n\nVer inbox: ${inboxUrl}\nAnalytics: ${analyticsUrl}\n\nPróximos passos:\n- Subir documentos pra RAG\n- Convidar time pra handoff\n- Configurar templates HSM\n\n— Time Zapfy`;
   return { html, text, subject: 'Seu agente Zapfy está no ar 🎉' };
+}
+
+/**
+ * Email de verificação de novo dispositivo / IP.
+ *
+ * Dispara quando o user faz login de um IP nunca visto antes pra essa
+ * conta (heurística simples: comparar request IP com a tabela de
+ * `KnownDevice`/`Session.ipAddress` históricos do user). O email manda
+ * o link de aprovação + código curto pra digitar na própria página.
+ *
+ * Tom: amigável, sem alarme exagerado — não queremos assustar o user
+ * legítimo viajando, mas damos a saída clara se for tentativa de
+ * invasão.
+ */
+export function newDeviceVerificationEmail(input: {
+  name: string;
+  ip: string;
+  /** Cidade/região resolvida do IP — opcional. Ex: "São Paulo, BR". */
+  location?: string;
+  device: string;
+  /** Hora do acesso em horário do user. */
+  timestampLabel: string;
+  /** Link que valida + libera a sessão. */
+  verifyUrl: string;
+  /** Código curto (6 dígitos) que o user pode digitar manualmente. */
+  code: string;
+  /** Link pra invalidar a sessão se não foi o user. */
+  revokeUrl: string;
+}) {
+  const safeIp = escapeHtml(input.ip);
+  const safeDevice = escapeHtml(input.device);
+  const safeLocation = input.location ? escapeHtml(input.location) : null;
+  const safeName = escapeHtml(input.name);
+  const safeCode = escapeHtml(input.code);
+  const safeTimestamp = escapeHtml(input.timestampLabel);
+
+  const html = wrap(`
+    <h1 style="font-size:24px;margin:24px 0 8px;color:#18181b">
+      Olá, ${safeName} 👋
+    </h1>
+    <p>
+      A gente detectou um <strong>acesso novo</strong> à sua conta Zapfy
+      a partir de um dispositivo que nunca vimos antes. Pra manter sua
+      conta segura, precisamos confirmar que foi você.
+    </p>
+
+    <div style="margin:24px 0;padding:16px;background-color:#fafafa;border:1px solid #e4e4e7;border-radius:12px">
+      <p style="margin:0 0 4px;color:#71717a;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Detalhes do acesso</p>
+      <p style="margin:8px 0 4px;font-size:14px"><strong>📍 Local:</strong> ${safeLocation ?? 'não identificado'}</p>
+      <p style="margin:4px 0;font-size:14px"><strong>🌐 IP:</strong> <span style="font-family:monospace">${safeIp}</span></p>
+      <p style="margin:4px 0;font-size:14px"><strong>💻 Dispositivo:</strong> ${safeDevice}</p>
+      <p style="margin:4px 0;font-size:14px"><strong>🕒 Quando:</strong> ${safeTimestamp}</p>
+    </div>
+
+    <p style="margin-top:24px"><strong>Foi você?</strong> Clica no botão pra liberar essa sessão:</p>
+    <a href="${input.verifyUrl}" style="${BUTTON_STYLES}">Sim, fui eu — liberar acesso</a>
+
+    <p style="color:#71717a;font-size:13px;margin-top:16px">Ou digita esse código de 6 dígitos na tela que abriu:</p>
+    <p style="font-family:monospace;font-size:28px;font-weight:700;letter-spacing:8px;color:#0a0a0a;background:#f4f4f5;padding:16px;border-radius:8px;text-align:center;margin:8px 0">${safeCode}</p>
+    <p style="color:#71717a;font-size:12px;margin:0">O código expira em 10 minutos.</p>
+
+    <div style="margin:32px 0;padding:16px;background-color:#fef2f2;border:1px solid #fee2e2;border-radius:12px">
+      <p style="margin:0;font-size:14px;color:#991b1b">
+        <strong>Não foi você?</strong> Sua senha pode ter vazado.
+      </p>
+      <p style="margin:8px 0 0;font-size:13px;color:#7f1d1d">
+        Clica aqui pra <a href="${input.revokeUrl}" style="color:#dc2626;font-weight:600">bloquear esse acesso e trocar a senha</a> agora.
+      </p>
+    </div>
+
+    <p style="color:#71717a;font-size:12px;margin-top:24px">
+      Mandamos esse aviso toda vez que detectamos um IP/dispositivo novo —
+      é normal receber se você está viajando, trocou de internet ou está
+      em outro computador. Se reconhece o acesso, é só clicar no botão
+      verde acima e seguir trabalhando. 💚
+    </p>
+  `);
+
+  const text = `Olá, ${input.name}!
+
+Detectamos um acesso novo à sua conta Zapfy:
+
+📍 Local: ${input.location ?? 'não identificado'}
+🌐 IP: ${input.ip}
+💻 Dispositivo: ${input.device}
+🕒 Quando: ${input.timestampLabel}
+
+FOI VOCÊ?
+Libere o acesso aqui: ${input.verifyUrl}
+
+Ou digite esse código de 6 dígitos na tela aberta:
+${input.code}
+(expira em 10 min)
+
+NÃO FOI VOCÊ?
+Bloqueie e troque a senha: ${input.revokeUrl}
+
+Esse aviso é automático — toda vez que detectamos IP/dispositivo
+novo a gente confere com você. Se está viajando ou em outro PC,
+é só confirmar e seguir. 💚
+
+— Time Zapfy`;
+
+  return {
+    html,
+    text,
+    subject: '🔐 Novo acesso na sua conta Zapfy — confirme que foi você',
+  };
 }
 
 function escapeHtml(s: string): string {
