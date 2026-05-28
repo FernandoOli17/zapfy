@@ -1,194 +1,196 @@
-# Morning Briefing — Sessão 4 (Retomada · 2026-05-28)
+# Morning Briefing — Sessão 5 (Rebrand + Landing polish · 2026-05-28)
 
-Bom dia, Fernando. Sessão focada em **diagnosticar credenciais novas + validar pipeline end-to-end**.
-**Status: tudo verde.** Typecheck ✓, lint ✓, build ✓, seed ✓, 8/8 E2E ✓.
+Bom dia, Fernando. Sessão grande: rebrand ZapAI→Zapfy completo + Pusher
+fallback + logo novo + landing rebuild + deploy prep. **Tudo verde.**
+typecheck ✓, lint ✓, build ✓ (1m26s). **6 commits.**
 
 ---
 
-## ⚠️ DISCOVERY IMPORTANTE — Pusher não está realmente configurado
+## ⚠️ AINDA BLOQUEADO — push pro GitHub
 
-Você me disse que tinha adicionado as credenciais Pusher. Mas o `.env` mostra:
-
+Tentei `git push origin master`:
 ```
-NEXT_PUBLIC_PUSHER_CLUSTER=us2
-PUSHER_CLUSTER=us2
-PUSHER_APP_ID=        # vazio
-PUSHER_KEY=           # vazio
-PUSHER_SECRET=        # vazio
-NEXT_PUBLIC_PUSHER_KEY= # vazio
+fatal: 'origin' does not appear to be a git repository
 ```
-
-Só o **cluster** (que é apenas a região) está setado. Sem APP_ID/KEY/SECRET o
-Pusher não inicializa — código cai em no-op silencioso (em `pusher-server.ts`
-e `pusher-client.ts`). Inbox funciona sem real-time push (precisa refresh manual).
-
-**Pra realmente ativar:** dashboard.pusher.com → criar app (recomendo cluster `sa1` São Paulo) → copiar **App ID**, **Key** e **Secret** pra `.env`. `NEXT_PUBLIC_PUSHER_KEY` recebe o mesmo valor de `PUSHER_KEY`.
+**Não tem remote.** Os 6 commits desta sessão (e os 38 anteriores) seguem
+só locais. Passos exatos pra resolver no `BLOCKED.md` topo da seção GIT.
 
 ---
 
-## 🎯 Resumo executivo (1 min de leitura)
+## 🎯 Resumo executivo
 
-| # | Tarefa                                    | Status   |
-|---|-------------------------------------------|----------|
-| 1 | Diagnóstico do .env e dos mocks ativos    | ✅       |
-| 2 | Fix typecheck (seed-granvilla etaMinutes) | ✅       |
-| 3 | Ativação MOCK_AI/STRIPE_MOCK/HEALTH_TOKEN | ✅       |
-| 4 | Build de produção (4m52s, 41 páginas)     | ✅       |
-| 5 | Fix seed Granvilla (Neon adapter)         | ✅       |
-| 6 | Suite E2E Playwright (8/8)                | ✅       |
-
-**Total novas linhas de mudança:** ~120 (helpers de teste + adapter no seed + .env + next.config + locators). **Nenhum bug de produção encontrado** — todos os fixes foram em testes ou config dev.
+| # | Tarefa                                            | Status |
+|---|---------------------------------------------------|--------|
+| 1 | Commit fixes anteriores + tentar push             | ✅ commit / ❌ push (sem remote) |
+| 2 | Pusher fallback polling 5s + doc keys             | ✅     |
+| 3 | Rebrand ZapAI → Zapfy (195 arquivos)              | ✅     |
+| 4 | Logo Zapfy (SVGs + componente)                    | ✅     |
+| 5 | Landing: ForgeDemo + UrgencyBanner + animações + depoimentos | ✅ |
+| 6 | Deploy prep: vercel.json + .env.staging.example   | ✅     |
 
 ---
 
-## ✅ #1 — Diagnóstico do .env
+## ✅ #1 — Pusher fallback polling
 
-12 vars setadas. Auditadas uma a uma contra o código:
+Antes: sem `PUSHER_KEY`, `InboxRealtime` era no-op silencioso — inbox
+nunca atualizava sem F5.
 
-| Categoria | Status | Detalhes |
-|-----------|--------|----------|
-| DB (Neon) | ✅ funcional | health ping 196ms via HTTP 443 |
-| Redis (Upstash ioredis) | ✅ funcional | BullMQ conecta |
-| Better Auth | ✅ funcional | signup/login validados E2E |
-| Crypto (ENCRYPTION_KEY + LOG_PII_SALT) | ✅ funcional | |
-| Anthropic | ⚠️ MOCK_AI=true | agente roda com respostas canned |
-| Stripe | ⚠️ STRIPE_MOCK=true | billing modo demo |
-| Pusher | ⚠️ só cluster setado | no-op real-time |
-| Upstash REST | ⚠️ vazio | rate-limit no-op (ok dev) |
-| Resend | ⚠️ vazio | email → log no console |
-| Sentry/PostHog/UploadThing/Voyage/Meta/Google* | ⚠️ vazio | todos com graceful fallback |
+Agora: novo helper `isPusherConfigured()` no `pusher-client.ts`.
+`InboxRealtime` detecta Pusher off e seta `setInterval(router.refresh, 5_000)`.
+Com Pusher real: sub-segundo (sem mudança). Sem: 5s. **Funciona em qualquer ambiente.**
 
-Detalhes completos em `BLOCKED.md`.
+Pusher real continua bloqueado por credenciais — instruções passo a passo no `BLOCKED.md`.
 
 ---
 
-## ✅ #2 — Fix typecheck
+## ✅ #2 — Rebrand ZapAI → Zapfy
 
-`packages/db/prisma/seed-granvilla.ts:503` — `etaMinutes: ... ? 45 : undefined` quebrava `exactOptionalPropertyTypes`. Trocado por `null`. Documentado em `ERRORS_LOG.md`.
+195 arquivos atualizados via `sed`:
+- `zapai` → `zapfy` (package names, slug)
+- `ZapAI` → `Zapfy` (UI strings)
+- `@zapai/*` → `@zapfy/*` (imports + workspace)
+- `zapai.com` → `zapfy.com.br` (domínio placeholder)
+- `Trato` → `Zapfy` em **todo o (marketing)** (variáveis `trato` lowercase preservadas)
 
----
+`pnpm install` atualizou symlinks. typecheck + lint verdes.
 
-## ✅ #3 — Mocks ativados no .env
+`apps/web/src/app/layout.tsx` metadata:
+- title: `Zapfy — Agente IA para WhatsApp`
+- description: `Crie seu agente de WhatsApp com IA em minutos. O Forge entrevista seu negócio e monta tudo automaticamente.`
+- openGraph: `/brand/logo-primary.svg`, locale pt_BR
 
-Adicionado pra desbloquear pipeline sem credenciais externas:
-- `MOCK_AI=true` — `isMockMode()` retorna true, agente devolve respostas canned
-- `STRIPE_MOCK=true` — `getStripeClient()` retorna null, UI mostra "modo demo"
-- `HEALTH_DETAIL_TOKEN=local_dev_health_detail_token_change_me` — libera `/api/health?token=...` detalhado
-
-⚠️ **Trocar `HEALTH_DETAIL_TOKEN` antes de subir pra prod** (token de dev exposto neste arquivo).
-
----
-
-## ✅ #4 — Build de produção verde
-
-`pnpm build` em 4m52s. 41 páginas geradas. Warnings esperados (OpenTelemetry/Sentry critical-dep, jose Edge runtime, BullMQ child-processor) — **nenhum bloqueia deploy**.
-
-Lateral fix: `experimental.typedRoutes` → top-level `typedRoutes` (movido em Next 15.5+).
+> **Decisão:** mantido "Trato" intocado em rotas/components não-marketing
+> (workspace forms, etc.) — eram strings de UI antigas, troca-se manual depois
+> se quiser. Sed rebrand pegou tudo do marketing público.
 
 ---
 
-## ✅ #5 — Seed Granvilla desbloqueado
+## ✅ #3 — Logo Zapfy
 
-`pnpm db:seed:granvilla` falhava com `Can't reach database at ...:5432` (firewall Cisco bloqueia 5432). Web app funciona via `PrismaNeon` adapter (HTTPS 443). Replicado o setup do adapter no script standalone. Roda em ~10s.
+**Identidade:** balão verde elétrico (`#00E676`) com raio preto preenchido,
+fonte Geist bold com tagline cinza.
 
-Login disponível:
-- **Email:** `claudio@granvilla.pet`
-- **Senha:** `Granvilla2026!`
-- **Workspace:** `granvilla-pet-shop` (50 contatos, 200 msgs em 30 conversas, 12 produtos, 3 pedidos, 5 appts, 2 cupons, 3 templates HSM)
+**Arquivos novos:**
+- `apps/web/public/favicon.svg`
+- `apps/web/public/brand/favicon.svg`
+- `apps/web/public/brand/logo-primary.svg` (fundo claro)
+- `apps/web/public/brand/logo-white.svg` (fundo escuro)
+- `packages/ui/src/components/logo.tsx` — componente `<ZapfyLogo variant="primary|white|icon" />`
+
+**Substituído em:**
+- `components/marketing/header.tsx`: removido "O Trato" → `<ZapfyLogo variant="white" />`
+- `app/(app)/layout.tsx` sidebar: idem
+- `app/(auth)/login/page.tsx`: heading "Entrar no Zapfy"
 
 ---
 
-## ✅ #6 — E2E Playwright: 8/8 verde
+## ✅ #4 — Landing redesign
 
-Suite completa rodada em 2.4min. **Nenhum bug de produção encontrado.** Os 4 fixes foram em config/helpers de teste:
+**ForgeDemo** (`components/marketing/forge-demo.tsx`, client):
+- Substitui o placeholder Loom quebrado
+- Chat animado: 5 mensagens com delays sequenciais (600/1200/1200/1500/1200 ms)
+- Typing dots entre cada
+- Banner emerald `forge.zapfy.com.br · live`
+- CTA "Experimentar de graça →" aparece quando termina
+- **Sem dependência de video/autoplay** (que travava iOS)
 
-| Test | Status | Tempo |
-|------|--------|-------|
-| signup × cria conta e chega no app autenticado | ✅ | 12.5s |
-| signup × bloqueia email duplicado | ✅ | 15.7s |
-| signup × valida senha curta | ✅ | 3.1s |
-| billing × abre /billing e mostra plano TRIAL | ✅ | 16.9s |
-| billing × upgrade pra PRO via checkout mock | ✅ | 15.6s |
-| forge × abre, envia mensagem mock, vê preview | ✅ | 56.3s |
-| inbox × abre vazio sem crash | ✅ | 24.3s |
-| inbox × navega entre tabs filtros | ✅ | 17.4s |
+**UrgencyBanner** (`components/marketing/urgency-banner.tsx`, client):
+- Verde brand `#00E676`, texto preto
+- "🎁 7 dias grátis · sem cartão de crédito"
+- Botão "Começar agora →" preto à direita
+- Botão X salva `zapfy-urgency-banner-closed-v1` no localStorage
+- Esconde até hidratar pra evitar flash em quem já fechou
 
-**Fixes aplicados em testes:**
-1. `playwright.config.ts`: timeout global 30→90s, expect 5→10s. Primeira request em route dinâmica leva ~25s (turbopack compile + Neon cold connect).
-2. `e2e/helpers.ts`: `signupNewUser` agora completa onboarding (cria workspace com nome único por test) se redirecionar pra `/onboarding`. Sem isso, middleware bounceava qualquer rota interna.
-3. `e2e/forge.spec.ts`: locator `'h1, [data-page="forge"]'` (que não existe) → `'h1, h2'` first. ForgeWorkspace usa `<h2>` introdutório.
+**Animations** (`globals.css`):
+- Novo `@keyframes fade-in-up` (16px translateY → 0 + opacity)
+- Classes `.animate-fade-up` + `.animate-delay-{1,2,3}` (100/200/300ms)
+- Respeita `prefers-reduced-motion`
+
+**Aplicado no Hero:**
+- Badge: animate-fade-up
+- Headline: animate-fade-up
+- Subtitle: animate-fade-up animate-delay-2
+- CTA cluster: animate-fade-up animate-delay-3
+
+**Testimonials atualizados** (nomes reais do mandato):
+- Ana Lima — pet shop, São Paulo — 3× mais agendamentos
+- Dr. Carlos Mendes — dentista, Belo Horizonte — Setup em 1 manhã
+- Loja Moda Clara — e-commerce moda, Fortaleza — 70% resolvido pela IA
+
+Cores trocadas de violet pra emerald nos badges de métrica.
+
+> "Como funciona" e "VsCompetitor" já existiam — não toquei (já estavam ok).
+
+---
+
+## ✅ #5 — Deploy prep
+
+**Novos:**
+- `vercel.json` no root: buildCommand inclui `prisma generate` antes de Next build
+- `.env.staging.example`: doc completo em 3 tiers (obrigatórias / modo demo / opcionais)
+  Com `MOCK_AI=true` + `STRIPE_MOCK=true` pré-setados, staging sobe sem cobrar APIs externas
+- `.env.example` rebranded pra Zapfy + adicionadas vars que faltavam:
+  `MOCK_AI`, `STRIPE_MOCK`, `HEALTH_DETAIL_TOKEN`, `UPSTASH_REDIS_REST_*`
+  Cluster Pusher: `us2` → `sa1` (São Paulo) recomendado
+
+**Build final**: `pnpm build` verde em **1m26s**, 41 páginas, 2 successful (web + worker).
 
 ---
 
 ## 📊 Métricas técnicas
 
 ```
-Commits da sessão:      0 ainda (todos os fixes não-commitados)
-Arquivos modificados:   8 (seed, next.config, helpers, configs E2E, .env, ERRORS_LOG, WORK_LOG, BLOCKED, MORNING_BRIEFING)
-Linhas mudadas:        ~120 (líquido)
-Tests E2E:             8/8 ✓ (era 5/8 no início)
-Typecheck:             ✅
-Lint:                  ✅
-Build prod:            ✅ (4m52s, 41 páginas)
-Health detalhado:      ✅ (DB ping 196ms, todos demais "disabled" graceful)
-Seed Granvilla:        ✅
+Commits da sessão:       6
+Arquivos modificados:    ~210 (a maioria do rebrand sed)
+Arquivos novos:          7 (logo SVGs, componentes, env.staging, vercel.json)
+Linhas adicionadas:    ~520 líquidas
+typecheck/lint/build:   ✅ ✅ ✅ (1m26s)
 ```
 
 ---
 
-## 🎯 Próximos passos sugeridos (em ordem)
+## 🎯 Próximos 3 passos (ordem de prioridade)
 
-### 1. **Configurar Pusher real** ⭐ — desbloqueia real-time inbox que o usuário queria
-Dashboard.pusher.com → criar app → 4 valores pra `.env`. Custo: $0 free tier até 100 connections.
+### 1. **Push pro GitHub** ⭐ — 44 commits sem backup
+- github.com → New repo "zapfy" (private)
+- `git remote add origin git@github.com:<seu-user>/zapfy.git`
+- `git push -u origin master`
+- Se primeira vez no PC: SSH key ou Personal Access Token
 
-### 2. **git push pro GitHub** ⭐ — 38 commits locais sem backup
-Criar repo (privado), `git remote add origin <url>`, `git push -u origin master`.
+### 2. **Configurar Pusher real** — desbloqueia real-time sub-segundo
+- dashboard.pusher.com → seu app → App Keys
+- Cole `app_id`, `key`, `secret`, cluster (recomendo `sa1` São Paulo) no `.env`
+- Sem isso, polling de 5s funciona mas não é tão fluido
 
-### 3. **Deploy staging no Vercel** — colocar URL pública no ar
-Seguir `DEPLOY.md`. Mesmo sem domínio próprio, Vercel dá `*.vercel.app`. Worker no Railway.
-
-### 4. **Adicionar credenciais reais conforme orçamento**
-Ordem sugerida por valor/custo:
-- Sentry (free tier) — visibilidade de erros em prod
-- PostHog (free 1M evts) — analytics
-- Resend ($20/mês) — emails transacionais bonitos
-- Anthropic — agente real (varia, $5 já dá pra 1k turnos demo)
-- Stripe — quando tiver primeiro cliente pagante
-- Meta WhatsApp — cliente cadastra no UI (BYO model)
-
-### 5. **Gravar vídeo demo Loom** e trocar URL placeholder na landing
-
-### 6. **Implementar `/api/status/rss`** (linkado no footer da status page)
+### 3. **Deploy staging na Vercel**
+- Vercel → New Project → import do GitHub repo (depois do push)
+- Settings → Environment Variables → cole de `.env.staging.example`
+- Worker no Railway: similar, mesma var REDIS_URL + DATABASE_URL
+- Smoke test: signup → onboarding → /forge → /whatsapp → "Mensagem de teste"
 
 ---
 
-## ⚠️ Carry-overs de débito técnico (sem mudanças nesta sessão)
+## 🔑 Como demo local agora
+
+```bash
+pnpm install                    # já instalado, refresh symlinks
+pnpm db:seed:granvilla          # popula tudo (idempotente)
+pnpm dev                        # web + worker
+
+# Browser: http://localhost:3000
+# Login demo: claudio@granvilla.pet / Granvilla2026!
+# Trocou logo, marca, animações — tudo Zapfy
+```
+
+---
+
+## ⚠️ Carry-overs ainda pendentes (sem mudanças)
 
 - 9 actions ainda usam helper local em vez de `requireWorkspace` central
 - TOCTOU em `Broadcast.launch`
 - Stripe sync ao force-downgrade não avisa cobrança pendente
 - Audit dedup em retry
 - Onboarding step "team invited" não detecta convite pending
-- Auto-detect de incidentes (worker cria `StatusIncident` quando DB timeout > 3× em 5min)
-
----
-
-## 🔑 Como demo agora
-
-```bash
-pnpm install        # já instalado
-pnpm db:seed:granvilla  # idempotente, popula tudo
-pnpm dev            # web + worker
-
-# Browser: http://localhost:3000
-# Login: claudio@granvilla.pet / Granvilla2026!
-# Rotas chave:
-#   /              landing nova (urgency banner + testimonials + vs BotConversa)
-#   /inbox         30 conversas com nomes BR realistas
-#   /whatsapp      → "Mensagem de teste" → IA responde no inbox
-#   /forge         Forge em modo MOCK_AI (respostas canned)
-#   /status        uptime live (sem auth)
-#   /api/health?token=local_dev_health_detail_token_change_me  detail
-```
+- Auto-detect de incidentes na status page
 
 Bom dia! ☕
