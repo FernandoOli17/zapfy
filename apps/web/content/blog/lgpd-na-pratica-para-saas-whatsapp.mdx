@@ -2,13 +2,13 @@
 title: "LGPD na prática pra SaaS de WhatsApp"
 description: "Controlador, operador, base legal, retenção, endpoints. O que muda na arquitetura quando você leva LGPD a sério desde o dia zero."
 publishedAt: "2026-05-05"
-author: "Time ZapAI"
+author: "Time Zapfy"
 tags: ["lgpd", "compliance", "engenharia"]
 ---
 
 LGPD virou checkbox em quase todo SaaS brasileiro: política copy-pasted, banner de cookie genérico, e na hora que a ANPD bate na porta a empresa descobre que não tem nada disso implementado de verdade.
 
-A gente quer fazer diferente. Esse post é como **endereçamos LGPD na arquitetura do ZapAI** — não só na política, mas no código, na infra e nos endpoints.
+A gente quer fazer diferente. Esse post é como **endereçamos LGPD na arquitetura do Zapfy** — não só na política, mas no código, na infra e nos endpoints.
 
 ## Controlador vs operador (e por que isso importa)
 
@@ -17,9 +17,9 @@ A LGPD distingue dois papéis:
 - **Controlador**: quem decide *o quê* e *por quê* tratar dados pessoais
 - **Operador**: quem trata em nome do controlador
 
-No ZapAI temos os dois papéis simultaneamente:
+No Zapfy temos os dois papéis simultaneamente:
 
-| Dado | Papel do ZapAI | Papel do cliente |
+| Dado | Papel do Zapfy | Papel do cliente |
 |------|----------------|-------------------|
 | Cadastro do cliente (e-mail, senha) | Controlador | — |
 | Faturamento (Stripe) | Controlador | — |
@@ -28,15 +28,15 @@ No ZapAI temos os dois papéis simultaneamente:
 
 Isso muda **muita coisa** na prática:
 
-1. Quando um contato final pede "apaga meus dados", o ZapAI não pode agir unilateralmente — o cliente é quem decide. Por isso oferecemos endpoint que o cliente chama (não o titular direto).
+1. Quando um contato final pede "apaga meus dados", o Zapfy não pode agir unilateralmente — o cliente é quem decide. Por isso oferecemos endpoint que o cliente chama (não o titular direto).
 2. Cliente Premium pode assinar **DPA** (Data Processing Agreement) conosco — formalizando o tratamento de dados de terceiros.
-3. Em caso de incidente envolvendo conversas, o ZapAI notifica o cliente, que decide se notifica a ANPD e os titulares.
+3. Em caso de incidente envolvendo conversas, o Zapfy notifica o cliente, que decide se notifica a ANPD e os titulares.
 
 ## Endpoints que funcionam de verdade
 
 A maioria dos SaaS tem botão "Apagar conta" que envia e-mail pra suporte, alguém manualmente roda DELETE... duas semanas depois. Isso não é cumprimento da LGPD, é teatro.
 
-No ZapAI:
+No Zapfy:
 
 ```http
 POST /api/lgpd/export
@@ -109,7 +109,7 @@ Quando incluímos novo sub-operador relevante, notificamos clientes com 30 dias 
 
 DPO não é cargo decorativo. É a pessoa que aceita reclamação, orienta funcionários, mantém canal direto com a ANPD.
 
-No ZapAI o DPO tem e-mail dedicado (`dpo@zapai.dev`), responde em até 15 dias úteis, e tem autonomia pra recomendar mudança em produto/operação quando identificar risco.
+No Zapfy o DPO tem e-mail dedicado (`dpo@zapfy.dev`), responde em até 15 dias úteis, e tem autonomia pra recomendar mudança em produto/operação quando identificar risco.
 
 Quando lançarmos oficialmente, vamos publicar o nome e currículo do DPO. Não dá pra ser um "fulano de tal" anônimo — o titular tem direito de saber quem.
 
@@ -127,7 +127,7 @@ A gente acha que LGPD bem implementada é **diferencial competitivo**, não cust
 
 ## Quer revisar nossa política?
 
-Política de privacidade detalhada em [/privacidade](/privacidade). Página específica de direitos do titular em [/lgpd](/lgpd). Encarregado de dados em `dpo@zapai.dev`.
+Política de privacidade detalhada em [/privacidade](/privacidade). Página específica de direitos do titular em [/lgpd](/lgpd). Encarregado de dados em `dpo@zapfy.dev`.
 
 Se você é DPO de outra empresa e quer trocar figurinha, [manda mensagem](/contato). A gente lê.
 

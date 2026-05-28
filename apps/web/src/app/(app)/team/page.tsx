@@ -1,5 +1,5 @@
 ﻿import { Crown, ShieldCheck, UserPlus, Users } from 'lucide-react';
-import { prisma, type WorkspaceRole } from '@zapai/db';
+import { prisma, type WorkspaceRole } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 

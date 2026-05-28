@@ -1,11 +1,11 @@
-/* ZapAI design tokens — Tailwind v4 (@theme block).
+/* Zapfy design tokens — Tailwind v4 (@theme block).
  * Paleta: dark cosmic (#05070f) + sky-blue accent (#60a5fa).
  * Tipografia: Geist (configurada via next/font no app).
  *
  * Importe esse arquivo na ordem após `@import "tailwindcss";` no globals.css do app:
  *
  *   @import "tailwindcss";
- *   @import "@zapai/ui/styles";
+ *   @import "@zapfy/ui/styles";
  *
  * Dark-first. O modo light é mantido só pra acessibilidade — produto é cosmic dark.
  */

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Copy, Loader2 } from 'lucide-react';
-import { Button, Input, Label, cn } from '@zapai/ui';
+import { Button, Input, Label, cn } from '@zapfy/ui';
 
 import { createApiKey } from './actions';
 

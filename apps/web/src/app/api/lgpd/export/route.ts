@@ -1,6 +1,6 @@
 ﻿import { NextResponse, type NextRequest } from 'next/server';
-import { prisma } from '@zapai/db';
-import { AppError, createLogger, phoneE164Schema } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { AppError, createLogger, phoneE164Schema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { authenticateApiKey, requireScope } from '@/lib/api-auth';

@@ -1,27 +1,27 @@
-name: zapai
+name: zapfy
 
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: zapai-postgres
+    container_name: zapfy-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: zapai
-      POSTGRES_PASSWORD: zapai
-      POSTGRES_DB: zapai
+      POSTGRES_USER: zapfy
+      POSTGRES_PASSWORD: zapfy
+      POSTGRES_DB: zapfy
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U zapai -d zapai']
+      test: ['CMD-SHELL', 'pg_isready -U zapfy -d zapfy']
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
     image: redis:7-alpine
-    container_name: zapai-redis
+    container_name: zapfy-redis
     restart: unless-stopped
     ports:
       - '6379:6379'

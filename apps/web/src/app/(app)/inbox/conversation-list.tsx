@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Bot, Headset, Inbox as InboxIcon, Keyboard, Search, X } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 import { useInboxChannel } from '@/lib/realtime/pusher-client';
 

@@ -1,8 +1,8 @@
 ﻿'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma, WorkspaceRole } from '@zapai/db';
-import { createLogger, emailSchema } from '@zapai/shared';
+import { prisma, WorkspaceRole } from '@zapfy/db';
+import { createLogger, emailSchema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { env } from '@/env';

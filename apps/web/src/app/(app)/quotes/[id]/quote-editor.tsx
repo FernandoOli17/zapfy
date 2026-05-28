@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Plus, Send, Trash2 } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
+import { Button, useToast } from '@zapfy/ui';
 
 import { changeQuoteStatus, saveQuoteDraft } from './actions';
 

@@ -5,7 +5,7 @@ import { GeistMono } from 'geist/font/mono';
 
 import { Suspense } from 'react';
 
-import { ToastProvider, Toaster } from '@zapai/ui';
+import { ToastProvider, Toaster } from '@zapfy/ui';
 
 import { ThemeProvider } from '@/components/theme-provider';
 import { PostHogProvider } from '@/components/posthog-provider';
@@ -22,12 +22,20 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Trato — O WhatsApp da sua empresa, com cérebro próprio',
-    template: '%s · Trato',
+    default: 'Zapfy — Agente IA para WhatsApp',
+    template: '%s · Zapfy',
   },
   description:
-    'Agente IA pra WhatsApp Business que vende, agenda e atende 24/7. Configure conversando — sem formulário.',
+    'Crie seu agente de WhatsApp com IA em minutos. O Forge entrevista seu negócio e monta tudo automaticamente.',
   metadataBase: new URL(process.env['NEXT_PUBLIC_APP_URL'] ?? 'http://localhost:3000'),
+  openGraph: {
+    title: 'Zapfy — Agente IA para WhatsApp',
+    description:
+      'Crie seu agente de WhatsApp com IA em minutos. O Forge entrevista seu negócio e monta tudo automaticamente.',
+    images: ['/brand/logo-primary.svg'],
+    type: 'website',
+    locale: 'pt_BR',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

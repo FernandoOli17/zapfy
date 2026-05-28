@@ -261,7 +261,7 @@ README + deploy guide (Vercel + Railway).
   esbarrou em virtualização. Plugado Neon HTTP driver pra runtime via porta 443. Plugado
   dotenv no next.config.ts pra ler `.env` do monorepo root. **Validação E2E completa:**
   signup → workspace "Granvilla" → dashboard. Fase 1 ✅ fechada.
-- **2026-05-26** — Auditoria profunda + hardening: novo módulo `@zapai/ai/knowledge`
+- **2026-05-26** — Auditoria profunda + hardening: novo módulo `@zapfy/ai/knowledge`
   (chunker + embeddings batch + processador idempotente), job BullMQ `process-knowledge`,
   prompt caching cross-provider em agente e Forge, guardrails de prompt injection,
   webhooks outgoing migrados pra fila BullMQ, atalhos J/K/R/A/E no inbox, mobile menu no

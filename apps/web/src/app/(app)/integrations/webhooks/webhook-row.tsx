@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Loader2, Power, PowerOff, Trash2 } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 import { deleteWebhook, toggleWebhook } from './actions';
 

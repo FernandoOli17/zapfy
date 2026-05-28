@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { AlertCircle, CheckCircle2, FileUp, Loader2 } from 'lucide-react';
-import { Button, Label } from '@zapai/ui';
+import { Button, Label } from '@zapfy/ui';
 
 import { importContactsCsv, type ImportResult } from './actions';
 

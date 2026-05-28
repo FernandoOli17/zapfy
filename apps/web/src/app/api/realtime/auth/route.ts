@@ -1,5 +1,5 @@
 ﻿import { NextResponse, type NextRequest } from 'next/server';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { authorizePrivateChannel } from '@/lib/realtime/pusher-server';

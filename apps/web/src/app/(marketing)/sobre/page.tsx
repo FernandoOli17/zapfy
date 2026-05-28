@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 export const metadata = {
   title: 'Sobre',

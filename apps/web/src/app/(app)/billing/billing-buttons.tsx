@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
-import type { PlanId } from '@zapai/shared';
+import { Button, useToast } from '@zapfy/ui';
+import type { PlanId } from '@zapfy/shared';
 
 import { createCheckoutSession, createPortalSession } from './actions';
 

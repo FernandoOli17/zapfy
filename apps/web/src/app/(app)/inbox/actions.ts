@@ -9,9 +9,9 @@ import {
   prisma,
   WhatsAppStatus,
   type Prisma,
-} from '@zapai/db';
-import { AppError, createLogger, decrypt } from '@zapai/shared';
-import { createWaClient, isWithin24hWindow, splitText, WaApiError } from '@zapai/wa';
+} from '@zapfy/db';
+import { AppError, createLogger, decrypt } from '@zapfy/shared';
+import { createWaClient, isWithin24hWindow, splitText, WaApiError } from '@zapfy/wa';
 import { z } from 'zod';
 
 import { env } from '@/env';

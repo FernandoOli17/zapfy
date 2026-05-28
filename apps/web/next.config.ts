@@ -5,7 +5,7 @@ import type { NextConfig } from 'next';
 
 // Em monorepo, Next so carrega .env da pasta da app por padrao.
 // Aqui forcamos load do .env da raiz (../../.env) ANTES do Next inicializar,
-// pra todos os modulos (Better Auth, @zapai/db, etc.) verem as vars.
+// pra todos os modulos (Better Auth, @zapfy/db, etc.) verem as vars.
 const here = dirname(fileURLToPath(import.meta.url));
 loadDotenv({ path: resolve(here, '../../.env'), override: false });
 
@@ -58,7 +58,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@zapai/ui', '@zapai/shared', '@zapai/db'],
+  transpilePackages: ['@zapfy/ui', '@zapfy/shared', '@zapfy/db'],
   typedRoutes: true,
   images: {
     remotePatterns: [

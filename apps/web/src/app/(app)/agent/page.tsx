@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { ArrowRight, Bot, Code2, GitBranch, Sparkles } from 'lucide-react';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 

@@ -4,9 +4,9 @@ import {
   MessageDirection,
   MessageStatus,
   MessageType,
-} from '@zapai/db';
-import { createLogger, decrypt } from '@zapai/shared';
-import { createWaClient, splitText, isWithin24hWindow, type WaTemplateComponent } from '@zapai/wa';
+} from '@zapfy/db';
+import { createLogger, decrypt } from '@zapfy/shared';
+import { createWaClient, splitText, isWithin24hWindow, type WaTemplateComponent } from '@zapfy/wa';
 import {
   classifyMessage,
   executeFlow,
@@ -14,7 +14,7 @@ import {
   runAgent,
   type AgentToolDeps,
   type VerticalToolDeps,
-} from '@zapai/ai';
+} from '@zapfy/ai';
 import { env } from '../env';
 import { invokeCustomTool } from '../custom-tool-dispatcher';
 

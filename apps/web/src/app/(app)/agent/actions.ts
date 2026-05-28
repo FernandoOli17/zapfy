@@ -3,9 +3,9 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
-import { runAgent, searchKnowledge, executeFlow } from '@zapai/ai';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
+import { runAgent, searchKnowledge, executeFlow } from '@zapfy/ai';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

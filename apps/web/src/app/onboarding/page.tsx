@@ -1,7 +1,7 @@
 ﻿import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { SignOutLink } from '@/components/sign-out-link';

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Check, MessageSquareText, Phone, Sparkles, Users } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 interface ChecklistItem {
   id: string;

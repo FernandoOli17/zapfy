@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { ArrowUpRight, FileUp, Pencil, Search, UserPlus, UserX, Users } from 'lucide-react';
-import { prisma, type Prisma } from '@zapai/db';
+import { prisma, type Prisma } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 

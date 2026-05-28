@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Package, ShoppingCart } from 'lucide-react';
-import { prisma, type OrderStatus } from '@zapai/db';
-import { cn, EmptyState } from '@zapai/ui';
+import { prisma, type OrderStatus } from '@zapfy/db';
+import { cn, EmptyState } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

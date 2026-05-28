@@ -56,19 +56,19 @@ importers:
       '@xyflow/react':
         specifier: ^12.10.2
         version: 12.10.2(@types/react@19.2.14)(immer@11.1.8)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      '@zapai/ai':
+      '@zapfy/ai':
         specifier: workspace:^
         version: link:../../packages/ai
-      '@zapai/db':
+      '@zapfy/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@zapai/shared':
+      '@zapfy/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@zapai/ui':
+      '@zapfy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@zapai/wa':
+      '@zapfy/wa':
         specifier: workspace:^
         version: link:../../packages/wa
       better-auth:
@@ -171,16 +171,16 @@ importers:
       '@t3-oss/env-core':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.4.3)
-      '@zapai/ai':
+      '@zapfy/ai':
         specifier: workspace:*
         version: link:../../packages/ai
-      '@zapai/db':
+      '@zapfy/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@zapai/shared':
+      '@zapfy/shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@zapai/wa':
+      '@zapfy/wa':
         specifier: workspace:*
         version: link:../../packages/wa
       bullmq:
@@ -217,10 +217,10 @@ importers:
       '@ai-sdk/openai':
         specifier: ^3.0.63
         version: 3.0.63(zod@4.4.3)
-      '@zapai/db':
+      '@zapfy/db':
         specifier: workspace:*
         version: link:../db
-      '@zapai/shared':
+      '@zapfy/shared':
         specifier: workspace:*
         version: link:../shared
       ai:
@@ -248,7 +248,7 @@ importers:
       '@prisma/client':
         specifier: ^6.1.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
-      '@zapai/shared':
+      '@zapfy/shared':
         specifier: workspace:*
         version: link:../shared
       ws:
@@ -335,7 +335,7 @@ importers:
 
   packages/wa:
     dependencies:
-      '@zapai/shared':
+      '@zapfy/shared':
         specifier: workspace:*
         version: link:../shared
       zod:

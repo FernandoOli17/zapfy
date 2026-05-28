@@ -85,7 +85,7 @@ Web em `http://localhost:3000`. Worker conecta no Redis e processa filas.
 
 ```bash
 docker compose up -d
-# Postgres em localhost:5432 com user/pwd/db = zapai
+# Postgres em localhost:5432 com user/pwd/db = zapfy
 # Redis em localhost:6379
 
 pnpm install
@@ -96,7 +96,7 @@ pnpm dev
 ## Estrutura
 
 ```
-zapai/
+zapfy/
 ├── apps/
 │   ├── web/                 # Next.js (marketing + dashboard + APIs)
 │   │   ├── content/blog/    # MDX dos posts
@@ -184,7 +184,7 @@ vercel --prod
 
 **Configurações importantes no dashboard Vercel:**
 - Root Directory: raiz do repo (não `apps/web` — Turborepo precisa do root)
-- Build Command: `pnpm db:generate && pnpm --filter @zapai/web build`
+- Build Command: `pnpm db:generate && pnpm --filter @zapfy/web build`
 - Output Directory: `apps/web/.next`
 - Install Command: `pnpm install`
 - Node.js Version: 20+

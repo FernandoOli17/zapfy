@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { headers } from 'next/headers';
 
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';

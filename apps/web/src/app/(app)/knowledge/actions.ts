@@ -7,9 +7,9 @@ import {
   KnowledgeDocStatus,
   KnowledgeSource,
   prisma,
-} from '@zapai/db';
-import { processKnowledgeDocument } from '@zapai/ai';
-import { createLogger, PlanLimitError } from '@zapai/shared';
+} from '@zapfy/db';
+import { processKnowledgeDocument } from '@zapfy/ai';
+import { createLogger, PlanLimitError } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

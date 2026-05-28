@@ -53,7 +53,7 @@ fatal: 'origin' does not appear to be a git repository
 
 ### [RESEND] E-mails transacionais
 **Status:** sem `RESEND_API_KEY`, `sendEmail()` cai em modo dev (log no console). Worker `email-sequences.ts` AINDA persiste em `EmailSent` pra idempotência.
-**Pra prod:** preencher `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (já tem placeholder `noreply@zapai.dev` — trocar pra `ola@trato.dev` quando registrar domínio).
+**Pra prod:** preencher `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (já tem placeholder `noreply@zapfy.dev` — trocar pra `ola@trato.dev` quando registrar domínio).
 
 ### [PUSHER] Real-time inbox
 **Status:** **somente cluster setado** (`PUSHER_CLUSTER=us2`). `APP_ID`, `KEY`, `SECRET` vazios.

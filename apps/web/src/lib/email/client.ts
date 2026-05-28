@@ -1,7 +1,7 @@
 ﻿import 'server-only';
 
 import { Resend } from 'resend';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 
 import { env } from '@/env';
 

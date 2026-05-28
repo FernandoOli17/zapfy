@@ -1,8 +1,8 @@
 ﻿import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { magicLink } from 'better-auth/plugins';
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 import { env } from '@/env';
 import { isEmailConfigured, sendEmail } from '@/lib/email/client';

@@ -39,14 +39,14 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
-import { defaultFlowGraph, NODE_KINDS, type FlowNodeKind } from '@zapai/ai/flow/types';
+import { defaultFlowGraph, NODE_KINDS, type FlowNodeKind } from '@zapfy/ai/flow/types';
 
 import { saveFlowGraph, clearFlowGraph } from './actions';
 
 /**
- * Tipos locais — alinhados com `@zapai/ai/flow/types` mas mantemos cópia leve
+ * Tipos locais — alinhados com `@zapfy/ai/flow/types` mas mantemos cópia leve
  * porque ReactFlow usa shape `{ id, position, data, type }` (data carrega
  * `kind` + `config`).
  */

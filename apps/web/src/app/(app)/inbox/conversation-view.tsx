@@ -16,7 +16,7 @@ import {
   UserCheck,
   Wrench,
 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import type { InboxConversationDetail, InboxMessage } from '@/lib/inbox';
 

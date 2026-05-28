@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AlertTriangle, ArrowUpRight, Building2, ScrollText } from 'lucide-react';
 
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 import { requireWorkspace } from '@/lib/inbox';
 
 import { DangerZone } from './danger-zone';

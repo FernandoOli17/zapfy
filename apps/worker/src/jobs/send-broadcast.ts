@@ -5,9 +5,9 @@ import {
   MessageDirection,
   MessageStatus,
   MessageType,
-} from '@zapai/db';
-import { createLogger, decrypt } from '@zapai/shared';
-import { createWaClient, type WaTemplateComponent } from '@zapai/wa';
+} from '@zapfy/db';
+import { createLogger, decrypt } from '@zapfy/shared';
+import { createWaClient, type WaTemplateComponent } from '@zapfy/wa';
 import { env } from '../env';
 
 const log = createLogger('worker:send-broadcast');

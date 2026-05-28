@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, Copy, Loader2, MailWarning, Send } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { inviteTeamMember, type InviteResult } from './actions';
 

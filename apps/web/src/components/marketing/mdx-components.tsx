@@ -10,7 +10,7 @@
 import type { MDXComponents } from 'mdx/types';
 import Link from 'next/link';
 
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 type HeadingAttrs = HTMLAttributes<HTMLHeadingElement>;
 type ParagraphAttrs = HTMLAttributes<HTMLParagraphElement>;

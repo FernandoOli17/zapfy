@@ -4,8 +4,8 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import Papa from 'papaparse';
-import { prisma, type Prisma } from '@zapai/db';
-import { createLogger, phoneE164Schema } from '@zapai/shared';
+import { prisma, type Prisma } from '@zapfy/db';
+import { createLogger, phoneE164Schema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

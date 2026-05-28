@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { Prisma, prisma } from '@zapai/db';
-import type { AppointmentStatus } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { Prisma, prisma } from '@zapfy/db';
+import type { AppointmentStatus } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 import { requireOwnerOrAdmin } from '@/lib/inbox';
 

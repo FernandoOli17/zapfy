@@ -9,7 +9,7 @@ import {
   Trash2,
   Users,
 } from 'lucide-react';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 

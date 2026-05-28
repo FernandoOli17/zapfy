@@ -2,9 +2,9 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, ShieldAlert, TrendingUp, Users } from 'lucide-react';
-import { prisma, type Prisma } from '@zapai/db';
-import { PLANS, type PlanId } from '@zapai/shared';
-import { Button, cn, EmptyState } from '@zapai/ui';
+import { prisma, type Prisma } from '@zapfy/db';
+import { PLANS, type PlanId } from '@zapfy/shared';
+import { Button, cn, EmptyState } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
 import { getImpersonatedWorkspaceId } from '@/lib/impersonation';

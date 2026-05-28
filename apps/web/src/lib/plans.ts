@@ -1,7 +1,7 @@
 ﻿import 'server-only';
 
-import { prisma, PlanId as DbPlanId } from '@zapai/db';
-import { PLANS, PlanLimitError, type PlanFeature, type PlanId } from '@zapai/shared';
+import { prisma, PlanId as DbPlanId } from '@zapfy/db';
+import { PLANS, PlanLimitError, type PlanFeature, type PlanId } from '@zapfy/shared';
 
 /**
  * Resolve features ativas no workspace baseado no plano da Subscription.

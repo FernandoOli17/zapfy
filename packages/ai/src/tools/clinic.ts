@@ -1,7 +1,7 @@
 import { tool, type Tool } from 'ai';
 import { z } from 'zod';
-import { prisma, AppointmentStatus, type Prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma, AppointmentStatus, type Prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 import type { VerticalRuntimeDeps } from './runtime/types';
 
 const log = createLogger('tools:clinic');

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { CheckCircle2, ChevronDown, Loader2, RotateCcw } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { rollbackToVersion } from './actions';
 

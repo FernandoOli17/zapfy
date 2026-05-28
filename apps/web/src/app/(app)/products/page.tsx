@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Plus, Tag, Upload } from 'lucide-react';
-import { prisma } from '@zapai/db';
-import { Button, EmptyState } from '@zapai/ui';
+import { prisma } from '@zapfy/db';
+import { Button, EmptyState } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

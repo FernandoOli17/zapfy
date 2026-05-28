@@ -2,7 +2,7 @@
 
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 
 import { env } from '@/env';
 

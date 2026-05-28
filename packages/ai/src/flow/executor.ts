@@ -1,4 +1,4 @@
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 import { classifyMessage, type MessageClassification } from '../agent/classifier';
 import { searchKnowledge, type RagChunk } from '../agent/rag';
 import { runAgent, type RunAgentInput, type RunAgentResult } from '../agent/runner';

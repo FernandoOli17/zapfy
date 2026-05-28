@@ -2,8 +2,8 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { prisma, PlanId, SubscriptionStatus, WorkspaceRole } from '@zapai/db';
-import { AppError, createLogger, createWorkspaceSchema, TRIAL_DAYS } from '@zapai/shared';
+import { prisma, PlanId, SubscriptionStatus, WorkspaceRole } from '@zapfy/db';
+import { AppError, createLogger, createWorkspaceSchema, TRIAL_DAYS } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';

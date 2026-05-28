@@ -5,9 +5,9 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'node:crypto';
 
-import { prisma, WhatsAppStatus } from '@zapai/db';
-import { AppError, createLogger, decrypt, encrypt } from '@zapai/shared';
-import { createWaClient, WaApiError } from '@zapai/wa';
+import { prisma, WhatsAppStatus } from '@zapfy/db';
+import { AppError, createLogger, decrypt, encrypt } from '@zapfy/shared';
+import { createWaClient, WaApiError } from '@zapfy/wa';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
@@ -15,7 +15,7 @@ import { env } from '@/env';
 import { assertPlanLimit } from '@/lib/plans';
 import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
-import { PlanLimitError } from '@zapai/shared';
+import { PlanLimitError } from '@zapfy/shared';
 
 const log = createLogger('whatsapp-actions');
 

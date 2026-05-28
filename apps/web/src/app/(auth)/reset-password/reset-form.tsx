@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { authClient } from '@/lib/auth-client';
 

@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, FileText, MessageSquare, User } from 'lucide-react';
-import { prisma, type QuoteStatus } from '@zapai/db';
-import { cn } from '@zapai/ui';
+import { prisma, type QuoteStatus } from '@zapfy/db';
+import { cn } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

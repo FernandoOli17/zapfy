@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { MDXRemote } from 'next-mdx-remote/rsc';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 import { mdxComponents } from '@/components/marketing/mdx-components';
 import { formatPublishedDate, getPost, listSlugs } from '@/lib/blog';

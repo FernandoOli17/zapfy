@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { Check, Loader2, Save } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { saveRawPrompt } from './actions';
 

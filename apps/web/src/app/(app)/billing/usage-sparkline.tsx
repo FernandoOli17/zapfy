@@ -1,4 +1,4 @@
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 /**
  * Sparkline SVG simples — barras verticais com gradiente. Sem Recharts,

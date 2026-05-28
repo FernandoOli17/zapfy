@@ -1,6 +1,6 @@
 import { Stethoscope } from 'lucide-react';
-import { prisma } from '@zapai/db';
-import { EmptyState } from '@zapai/ui';
+import { prisma } from '@zapfy/db';
+import { EmptyState } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

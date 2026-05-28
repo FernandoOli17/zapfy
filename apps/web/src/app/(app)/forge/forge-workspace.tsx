@@ -11,12 +11,12 @@ import {
   Sparkles,
   Wrench,
 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 import {
   FORGE_PHASE_IDS,
   type ForgePhaseId,
   type ForgeState,
-} from '@zapai/ai/forge/types';
+} from '@zapfy/ai/forge/types';
 
 import { resetForgeSession, sendForgeMessage } from './actions';
 import { AudioRecorder } from './audio-recorder';

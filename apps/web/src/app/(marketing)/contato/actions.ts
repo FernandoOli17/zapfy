@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 
 import { sendEmail } from '@/lib/email/client';
 import { contactNotificationEmail } from '@/lib/email/templates';

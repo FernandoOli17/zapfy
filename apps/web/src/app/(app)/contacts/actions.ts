@@ -1,8 +1,8 @@
 ﻿'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma } from '@zapai/db';
-import { createLogger, phoneE164Schema } from '@zapai/shared';
+import { prisma, type Prisma } from '@zapfy/db';
+import { createLogger, phoneE164Schema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { requireWorkspace } from '@/lib/inbox';

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 const NAV = [
   { href: '/precos', label: 'Preços' },

@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { Loader2, PlugZap, Unplug } from 'lucide-react';
-import type { WhatsAppStatus } from '@zapai/db';
-import { Button } from '@zapai/ui';
+import type { WhatsAppStatus } from '@zapfy/db';
+import { Button } from '@zapfy/ui';
 
 import { disconnectWhatsAppAction, testWhatsAppConnectionAction } from './actions';
 

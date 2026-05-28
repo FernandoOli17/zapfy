@@ -1,5 +1,5 @@
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 const log = createLogger('worker:lgpd-hard-delete');
 

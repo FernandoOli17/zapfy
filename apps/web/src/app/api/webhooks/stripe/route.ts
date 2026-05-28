@@ -1,7 +1,7 @@
 ﻿import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
-import { PlanId, prisma, SubscriptionStatus } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { PlanId, prisma, SubscriptionStatus } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 import { env } from '@/env';
 import { captureException } from '@/lib/sentry';

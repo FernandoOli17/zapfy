@@ -9,8 +9,8 @@ import {
   Phone,
   Sparkles,
 } from 'lucide-react';
-import { prisma, type WhatsAppStatus } from '@zapai/db';
-import { cn } from '@zapai/ui';
+import { prisma, type WhatsAppStatus } from '@zapfy/db';
+import { cn } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';

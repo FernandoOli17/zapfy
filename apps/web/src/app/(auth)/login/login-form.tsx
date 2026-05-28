@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { signIn } from '@/lib/auth-client';
 

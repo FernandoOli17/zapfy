@@ -1,5 +1,5 @@
 ﻿import { BarChart3, Bot, Clock, Headset, Inbox, MessageSquare, Users, Zap } from 'lucide-react';
-import { prisma, type Prisma } from '@zapai/db';
+import { prisma, type Prisma } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 import { Sparkline } from '@/components/charts/sparkline';

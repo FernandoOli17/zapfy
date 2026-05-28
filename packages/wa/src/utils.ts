@@ -55,7 +55,7 @@ export function hoursSince(lastIncomingAt: Date): number {
 
 /**
  * Normaliza telefone pra E.164 sem `+`. Remove tudo que não é dígito.
- * Não valida país — só formata. Caller deve validar via `phoneE164Schema` de @zapai/shared.
+ * Não valida país — só formata. Caller deve validar via `phoneE164Schema` de @zapfy/shared.
  */
 export function normalizePhone(raw: string): string {
   return raw.replace(/\D/g, '');

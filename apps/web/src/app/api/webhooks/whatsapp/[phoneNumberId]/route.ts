@@ -7,8 +7,8 @@ import {
   MessageType,
   ConversationStatus,
   type Prisma,
-} from '@zapai/db';
-import { AppError, createLogger, decrypt, hashPii } from '@zapai/shared';
+} from '@zapfy/db';
+import { AppError, createLogger, decrypt, hashPii } from '@zapfy/shared';
 import {
   flattenWebhookEvents,
   handleWebhookVerification,
@@ -18,7 +18,7 @@ import {
   type WaIncomingMessage,
   type WaStatusUpdate,
   type WaMessageType,
-} from '@zapai/wa';
+} from '@zapfy/wa';
 
 import { env } from '@/env';
 import { publishInboxEvent } from '@/lib/realtime/pusher-server';

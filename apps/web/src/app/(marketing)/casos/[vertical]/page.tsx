@@ -1,7 +1,7 @@
 ﻿import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 import { VERTICALS, VERTICAL_SLUGS, isVerticalSlug, type VerticalContent } from './content';
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { signIn, signUp } from '@/lib/auth-client';
 

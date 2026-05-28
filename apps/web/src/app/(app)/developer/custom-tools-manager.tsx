@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { AlertCircle, Check, Copy, Loader2, Plus, Power, Trash2 } from 'lucide-react';
-import { Button, cn, Input, Label } from '@zapai/ui';
+import { Button, cn, Input, Label } from '@zapfy/ui';
 
 import { createCustomTool, deleteCustomTool, toggleCustomTool } from './actions';
 

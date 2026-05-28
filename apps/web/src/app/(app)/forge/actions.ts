@@ -8,7 +8,7 @@ import {
   ForgePhase as DbForgePhase,
   prisma,
   type Prisma,
-} from '@zapai/db';
+} from '@zapfy/db';
 import {
   forgeAnswersSchema,
   forgeMessageSchema,
@@ -17,8 +17,8 @@ import {
   type ForgeState,
   type ForgeAnswers,
   type ForgeMessage,
-} from '@zapai/ai';
-import { createLogger } from '@zapai/shared';
+} from '@zapfy/ai';
+import { createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import {

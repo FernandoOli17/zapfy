@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, ChevronDown, Loader2 } from 'lucide-react';
-import type { AppointmentStatus } from '@zapai/db';
-import { Button, cn, useToast } from '@zapai/ui';
+import type { AppointmentStatus } from '@zapfy/db';
+import { Button, cn, useToast } from '@zapfy/ui';
 
 import { useDropdown } from '@/components/hooks/use-dropdown';
 

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { createMessageTemplate } from '../actions';
 

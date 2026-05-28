@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
-import { Button, Input } from '@zapai/ui';
+import { Button, Input } from '@zapfy/ui';
 
 import { deleteWorkspace } from './actions';
 

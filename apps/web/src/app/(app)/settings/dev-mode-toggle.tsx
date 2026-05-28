@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { AlertTriangle, Code2, Loader2 } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 import { toggleDeveloperMode } from './actions';
 

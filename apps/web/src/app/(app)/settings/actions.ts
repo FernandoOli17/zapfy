@@ -3,8 +3,8 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma } from '@zapai/db';
-import { AppError, createLogger, workspaceSlugSchema } from '@zapai/shared';
+import { prisma, type Prisma } from '@zapfy/db';
+import { AppError, createLogger, workspaceSlugSchema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

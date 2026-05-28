@@ -32,7 +32,7 @@ Antes de fazer deploy pra produção pela primeira vez:
 - [ ] **DNS**: domínio `trato.dev` registrado, CNAME apontando pra Vercel
 - [ ] **Neon**: instância criada, `pgvector` extension habilitada, branch `production` configurado
 - [ ] **Upstash**: Redis criado em região US-East-1 (próximo da Vercel default)
-- [ ] **Vercel**: projeto vinculado ao repo, build command `pnpm build --filter=@zapai/web`
+- [ ] **Vercel**: projeto vinculado ao repo, build command `pnpm build --filter=@zapfy/web`
 - [ ] **Railway**: serviço worker apontando pra `apps/worker`, start command `pnpm start`
 - [ ] **Stripe**: 3 produtos criados (STARTER R$97, PRO R$297, PREMIUM R$697), prices coletados
 - [ ] **Meta**: App Business criado, WhatsApp Cloud API habilitada, webhook URL configurada
@@ -136,13 +136,13 @@ HEALTH_DETAIL_TOKEN="$(openssl rand -hex 16)"        # /api/health?detail=<token
    ```
 4. **Configurar Vercel project**
    - Root directory: `.` (monorepo, build filtra)
-   - Build command: `pnpm build --filter=@zapai/web`
+   - Build command: `pnpm build --filter=@zapfy/web`
    - Install: `pnpm install`
    - Output: `apps/web/.next`
 5. **Configurar Railway worker**
    - Source: `apps/worker`
-   - Build: `pnpm install && pnpm --filter=@zapai/worker build`
-   - Start: `pnpm --filter=@zapai/worker start`
+   - Build: `pnpm install && pnpm --filter=@zapfy/worker build`
+   - Start: `pnpm --filter=@zapfy/worker start`
 6. **Wire webhooks**
    - **Stripe**: dashboard.stripe.com → webhooks → `https://trato.dev/api/webhooks/stripe` →
      events: `customer.subscription.*`, `invoice.payment_failed`, `checkout.session.completed`

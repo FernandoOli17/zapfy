@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Package } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 /**
  * Imagem de produto com fallback automático pro placeholder Package quando:

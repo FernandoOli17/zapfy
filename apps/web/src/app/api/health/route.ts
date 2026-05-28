@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { isStripeConfigured } from '@/lib/stripe';
 import { env } from '@/env';

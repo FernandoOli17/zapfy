@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { revokeApiKey } from './actions';
 

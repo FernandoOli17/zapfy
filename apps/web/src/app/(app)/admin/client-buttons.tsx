@@ -3,8 +3,8 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, ChevronDown } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
-import type { PlanId } from '@zapai/shared';
+import { Button, useToast } from '@zapfy/ui';
+import type { PlanId } from '@zapfy/shared';
 
 import { useDropdown } from '@/components/hooks/use-dropdown';
 

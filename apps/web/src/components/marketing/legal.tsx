@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 interface LegalPageProps {
   eyebrow: string;

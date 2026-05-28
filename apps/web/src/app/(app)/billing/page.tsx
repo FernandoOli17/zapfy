@@ -11,9 +11,9 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { prisma } from '@zapai/db';
-import { PLANS, type PlanId, type PlanFeature } from '@zapai/shared';
-import { Button, cn } from '@zapai/ui';
+import { prisma } from '@zapfy/db';
+import { PLANS, type PlanId, type PlanFeature } from '@zapfy/shared';
+import { Button, cn } from '@zapfy/ui';
 
 import {
   countAiConversationsThisCycle,

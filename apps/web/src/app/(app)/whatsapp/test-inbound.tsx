@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Beaker, Loader2, Send } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
+import { Button, useToast } from '@zapfy/ui';
 
 import { sendTestInboundMessage } from './actions';
 

@@ -1,5 +1,5 @@
 import { generateText, stepCountIs, type ModelMessage, type Tool } from 'ai';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 import { getAiModels, isMockMode } from '../provider';
 import { systemMessage } from '../caching';
 import { detectPromptInjection, detectBlockedTopics } from '../guards';

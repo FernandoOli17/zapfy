@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, MapPin, MessageSquare, Package, Truck, User } from 'lucide-react';
 
 import { ProductImage } from '@/components/product-image';
-import { prisma, type OrderStatus } from '@zapai/db';
-import { cn } from '@zapai/ui';
+import { prisma, type OrderStatus } from '@zapfy/db';
+import { cn } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

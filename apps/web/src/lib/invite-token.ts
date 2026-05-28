@@ -2,7 +2,7 @@
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-import { AppError } from '@zapai/shared';
+import { AppError } from '@zapfy/shared';
 
 import { env } from '@/env';
 

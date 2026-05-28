@@ -13,7 +13,7 @@ import type { VerticalId } from '../../forge/types';
  *
  * Mudança da Fase 7: antes era um Record com callbacks (`listProducts`,
  * `getMenu`, etc.) que o worker implementava. Agora as tools acessam Postgres
- * direto via `prisma` em `@zapai/ai/tools/*.ts`. O worker só passa os IDs.
+ * direto via `prisma` em `@zapfy/ai/tools/*.ts`. O worker só passa os IDs.
  *
  * Mantemos `conversationId` opcional pra backward-compat (algumas tools antigas
  * funcionavam sem ele).

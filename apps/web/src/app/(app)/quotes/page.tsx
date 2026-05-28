@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { FileText, ScrollText } from 'lucide-react';
-import { prisma, type QuoteStatus } from '@zapai/db';
-import { cn, EmptyState } from '@zapai/ui';
+import { prisma, type QuoteStatus } from '@zapfy/db';
+import { cn, EmptyState } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

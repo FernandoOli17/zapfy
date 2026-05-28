@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { Button, cn, EmptyState, Input, Label, useToast } from '@zapai/ui';
+import { Button, cn, EmptyState, Input, Label, useToast } from '@zapfy/ui';
 
 import { deleteCoupon, saveCoupon } from './actions';
 

@@ -1,6 +1,6 @@
-import { prisma } from '@zapai/db';
-import { createLogger, decrypt } from '@zapai/shared';
-import { createWaClient, WaApiError } from '@zapai/wa';
+import { prisma } from '@zapfy/db';
+import { createLogger, decrypt } from '@zapfy/shared';
+import { createWaClient, WaApiError } from '@zapfy/wa';
 
 import { env } from '../env';
 

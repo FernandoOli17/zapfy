@@ -1,5 +1,5 @@
 {
-  "name": "@zapai/worker",
+  "name": "@zapfy/worker",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.11",
-    "@zapai/ai": "workspace:*",
-    "@zapai/db": "workspace:*",
-    "@zapai/shared": "workspace:*",
-    "@zapai/wa": "workspace:*",
+    "@zapfy/ai": "workspace:*",
+    "@zapfy/db": "workspace:*",
+    "@zapfy/shared": "workspace:*",
+    "@zapfy/wa": "workspace:*",
     "bullmq": "^5.34.5",
     "ioredis": "^5.4.2",
     "pusher": "^5.3.3",

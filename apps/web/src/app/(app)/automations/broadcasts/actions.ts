@@ -7,8 +7,8 @@ import {
   BroadcastStatus,
   prisma,
   type Prisma,
-} from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+} from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

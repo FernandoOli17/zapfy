@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Calendar, Clock, MessageSquare, Stethoscope, User } from 'lucide-react';
-import { prisma, type AppointmentStatus } from '@zapai/db';
-import { cn } from '@zapai/ui';
+import { prisma, type AppointmentStatus } from '@zapfy/db';
+import { cn } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

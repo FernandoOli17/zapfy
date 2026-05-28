@@ -4,9 +4,9 @@ import { createHash, randomBytes } from 'node:crypto';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { prisma, type Prisma, type WorkspaceRole } from '@zapai/db';
-import { AppError, createLogger, assertSafeUrl, SsrfError } from '@zapai/shared';
-import { flowGraphSchema, defaultFlowGraph } from '@zapai/ai/flow/types';
+import { prisma, type Prisma, type WorkspaceRole } from '@zapfy/db';
+import { AppError, createLogger, assertSafeUrl, SsrfError } from '@zapfy/shared';
+import { flowGraphSchema, defaultFlowGraph } from '@zapfy/ai/flow/types';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';

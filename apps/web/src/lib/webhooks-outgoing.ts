@@ -2,8 +2,8 @@
 
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 
 import { enqueue, QUEUE_NAMES, type OutgoingWebhookJob } from '@/lib/queues';
 

@@ -12,7 +12,7 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { deleteKnowledgeDocument, reprocessKnowledgeDocument } from './actions';
 

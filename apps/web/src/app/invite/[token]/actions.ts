@@ -2,8 +2,8 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { prisma, WorkspaceRole } from '@zapai/db';
-import { AppError, createLogger } from '@zapai/shared';
+import { prisma, WorkspaceRole } from '@zapfy/db';
+import { AppError, createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { verifyInviteToken } from '@/lib/invite-token';

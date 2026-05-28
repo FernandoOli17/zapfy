@@ -6,13 +6,13 @@ import {
   TemplateStatus,
   type Prisma,
   type TemplateCategory,
-} from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+} from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { requireWorkspace } from '@/lib/inbox';
-import { decrypt } from '@zapai/shared';
-import { createWaClient, WaApiError } from '@zapai/wa';
+import { decrypt } from '@zapfy/shared';
+import { createWaClient, WaApiError } from '@zapfy/wa';
 import { env } from '@/env';
 import { captureEvent } from '@/lib/posthog';
 

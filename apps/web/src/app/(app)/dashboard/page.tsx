@@ -11,8 +11,8 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { prisma } from '@zapai/db';
-import { Button } from '@zapai/ui';
+import { prisma } from '@zapfy/db';
+import { Button } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
 

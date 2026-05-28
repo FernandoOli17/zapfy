@@ -23,7 +23,7 @@ export default async function ConversationPage({ params }: Props) {
 }
 
 async function markRead(workspaceId: string, conversationId: string) {
-  const { prisma } = await import('@zapai/db');
+  const { prisma } = await import('@zapfy/db');
   await prisma.conversation
     .update({
       where: { id: conversationId, workspaceId } as never,

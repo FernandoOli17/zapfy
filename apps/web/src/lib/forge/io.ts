@@ -1,13 +1,13 @@
 ﻿import 'server-only';
 
-import { prisma, Prisma, Vertical } from '@zapai/db';
+import { prisma, Prisma, Vertical } from '@zapfy/db';
 import {
   GLOBAL_AGENT_TOOLS,
   VERTICAL_TOOL_CATALOG,
   type ForgeAnswers,
   type VerticalId,
-} from '@zapai/ai';
-import { createLogger, assertSafeUrl, SsrfError } from '@zapai/shared';
+} from '@zapfy/ai';
+import { createLogger, assertSafeUrl, SsrfError } from '@zapfy/shared';
 
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
 

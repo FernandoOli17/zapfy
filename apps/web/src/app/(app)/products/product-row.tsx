@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useTransition } from 'react';
 import { Loader2, Pencil, Trash2 } from 'lucide-react';
-import { Button, cn, useToast } from '@zapai/ui';
+import { Button, cn, useToast } from '@zapfy/ui';
 
 import { deleteProduct } from './actions';
 

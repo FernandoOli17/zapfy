@@ -23,7 +23,7 @@ uma convenção mudar.
 
 ## Estrutura
 ```
-zapai/
+zapfy/
 ├── apps/
 │   ├── web/         # Next.js (marketing + dashboard + admin + APIs)
 │   └── worker/      # processa BullMQ (mensagens, embeddings, broadcasts)

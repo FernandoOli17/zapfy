@@ -11,7 +11,7 @@ import {
   PlayCircle,
   Wrench,
 } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { testAgent, type TestAgentResult } from './actions';
 

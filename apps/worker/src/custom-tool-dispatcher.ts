@@ -1,5 +1,5 @@
-import { prisma } from '@zapai/db';
-import { assertSafeUrl, createLogger, SsrfError } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { assertSafeUrl, createLogger, SsrfError } from '@zapfy/shared';
 import { createHmac } from 'node:crypto';
 
 const log = createLogger('worker:custom-tool');

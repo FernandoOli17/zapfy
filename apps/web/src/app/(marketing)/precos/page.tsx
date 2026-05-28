@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { ArrowRight, Check, Sparkles, X } from 'lucide-react';
-import { Button, cn } from '@zapai/ui';
+import { Button, cn } from '@zapfy/ui';
 
 import { CosmicBackground } from '@/components/cosmic-bg';
 

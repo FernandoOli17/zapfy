@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { AlertCircle, CheckCircle2, ChevronLeft, Clock, ServerCog, XCircle } from 'lucide-react';
-import { prisma } from '@zapai/db';
-import type { StatusComponent } from '@zapai/db';
+import { prisma } from '@zapfy/db';
+import type { StatusComponent } from '@zapfy/db';
 
 import { runStatusChecks, type ComponentStatus } from '@/lib/status-checks';
 

@@ -2,7 +2,7 @@ import { tool, type Tool } from 'ai';
 import { z } from 'zod';
 import type { RagChunk } from '../rag';
 
-/** Callbacks injetados pelo worker — mantém packages/ai sem dep em @zapai/wa */
+/** Callbacks injetados pelo worker — mantém packages/ai sem dep em @zapfy/wa */
 export interface AgentToolDeps {
   workspaceId: string;
   contactId: string;

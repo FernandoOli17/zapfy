@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 export type ComponentStatus = 'operational' | 'degraded' | 'down';
 

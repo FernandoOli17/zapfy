@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { PostHog } from 'posthog-node';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 
 const log = createLogger('posthog');
 

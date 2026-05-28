@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { AlertCircle, CheckCircle2, FileText, Loader2 } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
+import { Button, useToast } from '@zapfy/ui';
 
 import { importProductsCsv, type ImportResult } from '../actions';
 

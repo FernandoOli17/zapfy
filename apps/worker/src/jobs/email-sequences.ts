@@ -10,8 +10,8 @@
  *
  * **welcome** é enviado direto no signup, não aqui (instantâneo).
  */
-import { prisma } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 import { Resend } from 'resend';
 
 import { env } from '../env';

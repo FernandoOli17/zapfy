@@ -1,8 +1,8 @@
 ﻿import 'server-only';
 
 import Stripe from 'stripe';
-import { createLogger } from '@zapai/shared';
-import type { PlanId } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
+import type { PlanId } from '@zapfy/shared';
 
 import { env } from '@/env';
 

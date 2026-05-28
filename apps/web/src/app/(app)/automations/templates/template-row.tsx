@@ -12,7 +12,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
-import { Button, useToast } from '@zapai/ui';
+import { Button, useToast } from '@zapfy/ui';
 
 import {
   deleteMessageTemplate,

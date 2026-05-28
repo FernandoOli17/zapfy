@@ -1,5 +1,5 @@
-import { createLogger } from '@zapai/shared';
-import { processKnowledgeDocument } from '@zapai/ai';
+import { createLogger } from '@zapfy/shared';
+import { processKnowledgeDocument } from '@zapfy/ai';
 
 const log = createLogger('worker:process-knowledge');
 

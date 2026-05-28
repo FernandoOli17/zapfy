@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Code2, Network, Wrench } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 import { FlowEditor } from './flow-editor';
 import { RawPromptEditor } from './raw-prompt-editor';

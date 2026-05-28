@@ -2,7 +2,7 @@
 
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { prisma, type Prisma } from '@zapai/db';
+import { prisma, type Prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { getImpersonatedWorkspaceId } from '@/lib/impersonation';

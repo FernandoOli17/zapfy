@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { createLogger } from '@zapai/shared';
-import type { PlanId } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
+import type { PlanId } from '@zapfy/shared';
 
 import { getPriceIdForPlan, getStripeClient, isStripeMock } from '@/lib/stripe';
 

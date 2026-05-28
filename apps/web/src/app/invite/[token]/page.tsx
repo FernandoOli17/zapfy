@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link';
 import { headers } from 'next/headers';
 import { AlertCircle, Mail, ShieldCheck, UserPlus } from 'lucide-react';
-import { Button } from '@zapai/ui';
+import { Button } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
 import { ThemeToggle } from '@/components/theme-toggle';

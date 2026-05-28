@@ -3,13 +3,13 @@ import { PrismaClient, WorkspaceRole, Vertical, PlanId, SubscriptionStatus } fro
 const prisma = new PrismaClient();
 
 async function main() {
-  console.info('🌱 Seeding ZapAI dev data…');
+  console.info('🌱 Seeding Zapfy dev data…');
 
   const user = await prisma.user.upsert({
-    where: { email: 'demo@zapai.dev' },
+    where: { email: 'demo@zapfy.dev' },
     update: {},
     create: {
-      email: 'demo@zapai.dev',
+      email: 'demo@zapfy.dev',
       name: 'Demo Owner',
       emailVerified: true,
     },
@@ -71,7 +71,7 @@ async function main() {
         agentId: agent.id,
         versionNumber: 1,
         systemPrompt:
-          'Você é o agente demo do ZapAI. Atende em pt-BR, tom amigável e direto. Quando não souber, ofereça falar com um humano.',
+          'Você é o agente demo do Zapfy. Atende em pt-BR, tom amigável e direto. Quando não souber, ofereça falar com um humano.',
         personality: {
           tone: 'amigável',
           formality: 'informal',

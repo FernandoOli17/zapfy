@@ -11,7 +11,7 @@ import {
   Trash2,
   XCircle,
 } from 'lucide-react';
-import type { BroadcastStatus } from '@zapai/db';
+import type { BroadcastStatus } from '@zapfy/db';
 
 import { cancelBroadcast, deleteBroadcast, launchBroadcast } from './actions';
 

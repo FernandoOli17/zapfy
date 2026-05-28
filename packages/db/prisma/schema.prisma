@@ -1,4 +1,4 @@
-// ZapAI — schema completo
+// Zapfy — schema completo
 // pgvector via Prisma postgresqlExtensions (preview)
 // Vetor: vector(1024) — voyage-3
 //
@@ -404,7 +404,7 @@ model AgentVersion {
   /// Grafo de fluxo customizado (modo desenvolvedor). Quando preenchido,
   /// substitui o pipeline default (classifier → RAG → agent). Formato:
   /// { nodes: FlowNode[], edges: FlowEdge[] }. Validação Zod em
-  /// `@zapai/ai/flow`.
+  /// `@zapfy/ai/flow`.
   flowGraph       Json?
   /// IDs de CustomTool habilitadas nessa versão. Cada nome é resolvido
   /// pelo worker contra Workspace.customTools.

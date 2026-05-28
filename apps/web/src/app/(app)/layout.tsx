@@ -2,7 +2,7 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { SignOutLink } from '@/components/sign-out-link';

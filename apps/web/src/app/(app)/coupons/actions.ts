@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { prisma, type CouponDiscountType } from '@zapai/db';
-import { createLogger } from '@zapai/shared';
+import { prisma, type CouponDiscountType } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { requireWorkspace } from '@/lib/inbox';

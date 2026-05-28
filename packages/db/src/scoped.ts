@@ -1,4 +1,4 @@
-import { ForbiddenError } from '@zapai/shared';
+import { ForbiddenError } from '@zapfy/shared';
 
 import { prisma } from './index';
 

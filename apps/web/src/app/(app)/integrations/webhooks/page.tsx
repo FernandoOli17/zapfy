@@ -1,6 +1,6 @@
 ﻿import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ShieldCheck, Webhook } from 'lucide-react';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { OUTGOING_EVENT_DESCRIPTIONS } from '@/lib/webhooks-outgoing';
 import { requireWorkspace } from '@/lib/inbox';

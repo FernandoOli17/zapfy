@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { Button, Input, Label } from '@zapai/ui';
+import { Button, Input, Label } from '@zapfy/ui';
 
 import { sendContactAction, type ContactState } from './actions';
 

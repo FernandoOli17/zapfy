@@ -25,7 +25,7 @@ Formato:
 
 **Detalhe importante do db push:** Prisma CLI roda do `packages/db/`, mas `.env` tá no root do monorepo. Precisei carregar manualmente:
 ```bash
-cd zapai
+cd zapfy
 export $(grep -E "^DATABASE_URL=" .env | xargs)
 cd packages/db
 npx prisma db push
@@ -41,7 +41,7 @@ Em sessão futura, considerar adicionar `--schema` + load explícito do .env, ou
 
 ## [2026-05-26] Sed rename Orbe→Trato deixou README.md de fora
 
-**Sintoma:** Usuário ainda viu "ZapAI" no `README.md` do root depois do rename.
+**Sintoma:** Usuário ainda viu "Zapfy" no `README.md` do root depois do rename.
 
 **Causa raiz:** Meu `find apps packages -type f ...` só varreu `apps/` e `packages/`. Arquivos do root (`README.md`, `PLAN.md`, `CLAUDE.md`) ficaram com o nome antigo.
 
@@ -89,7 +89,7 @@ const adapter = new PrismaNeon({ connectionString });
 const prisma = new PrismaClient({ adapter });
 ```
 
-**Prevenção:** todo script standalone que toca DB (seeds, migrations programáticas, scripts de manutenção) deve usar o mesmo adapter. Considerar mover esse setup pra um helper `@zapai/db/script-client` reusável.
+**Prevenção:** todo script standalone que toca DB (seeds, migrations programáticas, scripts de manutenção) deve usar o mesmo adapter. Considerar mover esse setup pra um helper `@zapfy/db/script-client` reusável.
 
 ---
 

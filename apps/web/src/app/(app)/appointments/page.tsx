@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Calendar, Clock } from 'lucide-react';
-import { prisma, type AppointmentStatus } from '@zapai/db';
-import { cn, EmptyState } from '@zapai/ui';
+import { prisma, type AppointmentStatus } from '@zapfy/db';
+import { cn, EmptyState } from '@zapfy/ui';
 
 import { requireWorkspace } from '@/lib/inbox';
 

@@ -1,5 +1,5 @@
 {
-  "name": "zapai",
+  "name": "zapfy",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,13 +16,13 @@
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yaml,yml}\"",
-    "db:migrate": "pnpm --filter @zapai/db db:migrate",
-    "db:generate": "pnpm --filter @zapai/db db:generate",
-    "db:seed": "pnpm --filter @zapai/db seed",
-    "db:seed:granvilla": "pnpm --filter @zapai/db seed:granvilla",
-    "db:studio": "pnpm --filter @zapai/db db:studio",
-    "db:push": "pnpm --filter @zapai/db db:push",
-    "db:reset": "pnpm --filter @zapai/db exec prisma migrate reset"
+    "db:migrate": "pnpm --filter @zapfy/db db:migrate",
+    "db:generate": "pnpm --filter @zapfy/db db:generate",
+    "db:seed": "pnpm --filter @zapfy/db seed",
+    "db:seed:granvilla": "pnpm --filter @zapfy/db seed:granvilla",
+    "db:studio": "pnpm --filter @zapfy/db db:studio",
+    "db:push": "pnpm --filter @zapfy/db db:push",
+    "db:reset": "pnpm --filter @zapfy/db exec prisma migrate reset"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

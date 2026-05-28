@@ -1,6 +1,6 @@
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 import { getAiModels, isMockMode } from '../provider';
 
 const log = createLogger('classifier');

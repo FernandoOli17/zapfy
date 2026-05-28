@@ -1,6 +1,6 @@
 import { Worker, type Job } from 'bullmq';
 import IORedis from 'ioredis';
-import { createLogger } from '@zapai/shared';
+import { createLogger } from '@zapfy/shared';
 
 import { env } from './env';
 import { QUEUE_NAMES } from './queues';

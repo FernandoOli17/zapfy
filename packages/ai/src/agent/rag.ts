@@ -1,4 +1,4 @@
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 import { embedQuery } from '../knowledge/embeddings';
 
 export interface RagChunk {
@@ -11,7 +11,7 @@ export interface RagChunk {
  * Busca híbrida: pgvector (cosine) + FTS Portuguese.
  * Se VOYAGE_API_KEY não estiver configurada, usa apenas FTS.
  *
- * Indexação dos documentos é feita pelo módulo @zapai/ai/knowledge — aqui
+ * Indexação dos documentos é feita pelo módulo @zapfy/ai/knowledge — aqui
  * só consultamos.
  */
 export async function searchKnowledge(

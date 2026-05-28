@@ -1,5 +1,5 @@
-import { prisma, KnowledgeDocStatus, KnowledgeSource } from '@zapai/db';
-import { createLogger, assertSafeUrl, SsrfError } from '@zapai/shared';
+import { prisma, KnowledgeDocStatus, KnowledgeSource } from '@zapfy/db';
+import { createLogger, assertSafeUrl, SsrfError } from '@zapfy/shared';
 import { chunkText } from './chunker';
 import { embedBatch } from './embeddings';
 

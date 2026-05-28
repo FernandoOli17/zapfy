@@ -1,7 +1,7 @@
 ﻿import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { prisma } from '@zapai/db';
+import { prisma } from '@zapfy/db';
 
 import { requireWorkspace } from '@/lib/inbox';
 

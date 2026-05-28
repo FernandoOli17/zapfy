@@ -6,7 +6,7 @@ Diário de bordo em tempo real. Última entrada no topo.
 
 ## 00:00 — Setup do modo autônomo
 **Arquivos:** `WORK_LOG.md`, `ERRORS_LOG.md`, `BLOCKED.md`, `MORNING_BRIEFING.md` (stub)
-**Decisão:** Marca Trato (não ZapAI) — usuário aprovou rename há algumas mensagens. Mandato menciona ZapAI por ser pré-rename; ignoro essa parte e mantenho Trato.
+**Decisão:** Marca Trato (não Zapfy) — usuário aprovou rename há algumas mensagens. Mandato menciona Zapfy por ser pré-rename; ignoro essa parte e mantenho Trato.
 **Decisão:** Trabalhar com mocks/stubs quando faltar credencial. Tudo registrado em BLOCKED.md.
 **Decisão:** Nenhuma chamada à API Anthropic durante a noite — budget $5 do usuário fica preservado.
 

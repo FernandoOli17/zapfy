@@ -1,4 +1,4 @@
-import { AppError } from '@zapai/shared';
+import { AppError } from '@zapfy/shared';
 
 /**
  * Erros lançados pelo cliente Cloud API. Mantém a hierarquia AppError do shared

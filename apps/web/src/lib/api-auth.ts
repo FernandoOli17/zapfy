@@ -2,8 +2,8 @@
 
 import { createHash, randomBytes } from 'node:crypto';
 
-import { prisma } from '@zapai/db';
-import { AppError } from '@zapai/shared';
+import { prisma } from '@zapfy/db';
+import { AppError } from '@zapfy/shared';
 
 const API_KEY_PREFIX_LEN = 8; // chars visíveis no UI ('zk_xxxx')
 

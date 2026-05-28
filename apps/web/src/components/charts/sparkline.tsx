@@ -1,4 +1,4 @@
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 /**
  * Contador module-scope pra gerar IDs únicos de gradient. Como o Sparkline

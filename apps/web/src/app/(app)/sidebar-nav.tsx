@@ -27,7 +27,7 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react';
-import { cn } from '@zapai/ui';
+import { cn } from '@zapfy/ui';
 
 /**
  * Em Next 15, Server Components não podem passar funções/forwardRefs (incluindo
