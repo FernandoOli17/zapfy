@@ -1,196 +1,164 @@
-# Morning Briefing — Sessão 5 (Rebrand + Landing polish · 2026-05-28)
+# Morning Briefing — Sessão 6 (Landing redesign · 2026-05-28)
 
-Bom dia, Fernando. Sessão grande: rebrand ZapAI→Zapfy completo + Pusher
-fallback + logo novo + landing rebuild + deploy prep. **Tudo verde.**
-typecheck ✓, lint ✓, build ✓ (1m26s). **6 commits.**
+Bom dia, Fernando. Sessão focada: **redesign completo da landing pra
+eliminar mistura de cores e impor identidade Zapfy verde elétrico.**
+Tudo verde: typecheck ✓, lint ✓, build ✓. **1 commit grande.**
 
 ---
 
 ## ⚠️ AINDA BLOQUEADO — push pro GitHub
-
-Tentei `git push origin master`:
 ```
 fatal: 'origin' does not appear to be a git repository
 ```
-**Não tem remote.** Os 6 commits desta sessão (e os 38 anteriores) seguem
-só locais. Passos exatos pra resolver no `BLOCKED.md` topo da seção GIT.
+**46 commits** locais sem backup remoto. Passos no `BLOCKED.md` ↑.
 
 ---
 
-## 🎯 Resumo executivo
+## 🎯 Diagnóstico atendido
 
-| # | Tarefa                                            | Status |
-|---|---------------------------------------------------|--------|
-| 1 | Commit fixes anteriores + tentar push             | ✅ commit / ❌ push (sem remote) |
-| 2 | Pusher fallback polling 5s + doc keys             | ✅     |
-| 3 | Rebrand ZapAI → Zapfy (195 arquivos)              | ✅     |
-| 4 | Logo Zapfy (SVGs + componente)                    | ✅     |
-| 5 | Landing: ForgeDemo + UrgencyBanner + animações + depoimentos | ✅ |
-| 6 | Deploy prep: vercel.json + .env.staging.example   | ✅     |
+Os 4 problemas listados no briefing foram corrigidos:
 
----
-
-## ✅ #1 — Pusher fallback polling
-
-Antes: sem `PUSHER_KEY`, `InboxRealtime` era no-op silencioso — inbox
-nunca atualizava sem F5.
-
-Agora: novo helper `isPusherConfigured()` no `pusher-client.ts`.
-`InboxRealtime` detecta Pusher off e seta `setInterval(router.refresh, 5_000)`.
-Com Pusher real: sub-segundo (sem mudança). Sem: 5s. **Funciona em qualquer ambiente.**
-
-Pusher real continua bloqueado por credenciais — instruções passo a passo no `BLOCKED.md`.
+| Problema | Antes | Depois |
+|----------|-------|--------|
+| Cores inconsistentes | Roxo (#7C3AED) + teal + azul (#67e8f9) + verde misturados | **#00E676 único acento** em toda landing. Roxo/teal/blue eliminados |
+| Tipografia sem hierarquia | Headlines similares em peso/tamanho | Hero `clamp(3rem,9vw,5.5rem)` bold vs body 18px regular. Instrument Serif italic em momentos editoriais |
+| Seções sem respiro | Padding 24-48px aleatório | **`py-[120px]` em TODA seção**. Gap cards 24px (`gap-6`) ou 32px (`gap-8`) |
+| Falta de identidade | Logo placeholder "O" violet | **ZapfyLogo** (balão + raio verde) no header e footer. Destaque "com inteligência real" em #00E676 |
 
 ---
 
-## ✅ #2 — Rebrand ZapAI → Zapfy
+## 📐 Layout antes/depois — seção por seção
 
-195 arquivos atualizados via `sed`:
-- `zapai` → `zapfy` (package names, slug)
-- `ZapAI` → `Zapfy` (UI strings)
-- `@zapai/*` → `@zapfy/*` (imports + workspace)
-- `zapai.com` → `zapfy.com.br` (domínio placeholder)
-- `Trato` → `Zapfy` em **todo o (marketing)** (variáveis `trato` lowercase preservadas)
-
-`pnpm install` atualizou symlinks. typecheck + lint verdes.
-
-`apps/web/src/app/layout.tsx` metadata:
-- title: `Zapfy — Agente IA para WhatsApp`
-- description: `Crie seu agente de WhatsApp com IA em minutos. O Forge entrevista seu negócio e monta tudo automaticamente.`
-- openGraph: `/brand/logo-primary.svg`, locale pt_BR
-
-> **Decisão:** mantido "Trato" intocado em rotas/components não-marketing
-> (workspace forms, etc.) — eram strings de UI antigas, troca-se manual depois
-> se quiser. Sed rebrand pegou tudo do marketing público.
-
----
-
-## ✅ #3 — Logo Zapfy
-
-**Identidade:** balão verde elétrico (`#00E676`) com raio preto preenchido,
-fonte Geist bold com tagline cinza.
-
-**Arquivos novos:**
-- `apps/web/public/favicon.svg`
-- `apps/web/public/brand/favicon.svg`
-- `apps/web/public/brand/logo-primary.svg` (fundo claro)
-- `apps/web/public/brand/logo-white.svg` (fundo escuro)
-- `packages/ui/src/components/logo.tsx` — componente `<ZapfyLogo variant="primary|white|icon" />`
-
-**Substituído em:**
-- `components/marketing/header.tsx`: removido "O Trato" → `<ZapfyLogo variant="white" />`
-- `app/(app)/layout.tsx` sidebar: idem
-- `app/(auth)/login/page.tsx`: heading "Entrar no Zapfy"
-
----
-
-## ✅ #4 — Landing redesign
-
-**ForgeDemo** (`components/marketing/forge-demo.tsx`, client):
-- Substitui o placeholder Loom quebrado
-- Chat animado: 5 mensagens com delays sequenciais (600/1200/1200/1500/1200 ms)
-- Typing dots entre cada
-- Banner emerald `forge.zapfy.com.br · live`
-- CTA "Experimentar de graça →" aparece quando termina
-- **Sem dependência de video/autoplay** (que travava iOS)
-
-**UrgencyBanner** (`components/marketing/urgency-banner.tsx`, client):
-- Verde brand `#00E676`, texto preto
-- "🎁 7 dias grátis · sem cartão de crédito"
-- Botão "Começar agora →" preto à direita
-- Botão X salva `zapfy-urgency-banner-closed-v1` no localStorage
-- Esconde até hidratar pra evitar flash em quem já fechou
-
-**Animations** (`globals.css`):
-- Novo `@keyframes fade-in-up` (16px translateY → 0 + opacity)
-- Classes `.animate-fade-up` + `.animate-delay-{1,2,3}` (100/200/300ms)
-- Respeita `prefers-reduced-motion`
-
-**Aplicado no Hero:**
-- Badge: animate-fade-up
-- Headline: animate-fade-up
-- Subtitle: animate-fade-up animate-delay-2
-- CTA cluster: animate-fade-up animate-delay-3
-
-**Testimonials atualizados** (nomes reais do mandato):
-- Ana Lima — pet shop, São Paulo — 3× mais agendamentos
-- Dr. Carlos Mendes — dentista, Belo Horizonte — Setup em 1 manhã
-- Loja Moda Clara — e-commerce moda, Fortaleza — 70% resolvido pela IA
-
-Cores trocadas de violet pra emerald nos badges de métrica.
-
-> "Como funciona" e "VsCompetitor" já existiam — não toquei (já estavam ok).
-
----
-
-## ✅ #5 — Deploy prep
-
-**Novos:**
-- `vercel.json` no root: buildCommand inclui `prisma generate` antes de Next build
-- `.env.staging.example`: doc completo em 3 tiers (obrigatórias / modo demo / opcionais)
-  Com `MOCK_AI=true` + `STRIPE_MOCK=true` pré-setados, staging sobe sem cobrar APIs externas
-- `.env.example` rebranded pra Zapfy + adicionadas vars que faltavam:
-  `MOCK_AI`, `STRIPE_MOCK`, `HEALTH_DETAIL_TOKEN`, `UPSTASH_REDIS_REST_*`
-  Cluster Pusher: `us2` → `sa1` (São Paulo) recomendado
-
-**Build final**: `pnpm build` verde em **1m26s**, 41 páginas, 2 successful (web + worker).
-
----
-
-## 📊 Métricas técnicas
-
+### Hero
+**Antes:**
 ```
-Commits da sessão:       6
-Arquivos modificados:    ~210 (a maioria do rebrand sed)
-Arquivos novos:          7 (logo SVGs, componentes, env.staging, vercel.json)
-Linhas adicionadas:    ~520 líquidas
-typecheck/lint/build:   ✅ ✅ ✅ (1m26s)
+[badge violet] Agente IA · WhatsApp...
+                                              
+"Seu WhatsApp, com inteligência real."
+                  ^^^^^^^^^^^^^^^^^^^^^
+                  gradient violet→azul→ciano
+                                              
+[CTA violet]  [secondary]
 ```
 
+**Depois:**
+```
+[badge verde·25% bg] Agente IA · Cloud API
+                                              
+"Seu WhatsApp, com inteligência real."
+                  ^^^^^^^^^^^^^^^^^^^^^
+                       #00E676 sólido
+                                              
+[CTA verde sólido]  [secondary border]
+```
+
+### Como funciona
+**Antes:** 3 cards simples com ícones violet.
+
+**Depois:** 3 cards com **número GIGANTE de marca d'água** (`120px` font-weight bold, opacity 5%, posicionado top-right) virando 10% no hover. Ícone outline verde 24px. fadeInUp escalonado (delay-1/2/3).
+
+### Features
+**Antes:** mistura de cards + "FeatureBento" extra confuso (2 seções diferentes pra mesma coisa).
+
+**Depois:** **uma única grid 2×3** com 6 features. Hover border vai pra `#00E676/30`. Card: `bg-[#111] border-[#1a1a1a] rounded-2xl p-8`. Ícone 32px verde no topo.
+
+### ForgeDemo
+**Antes:** chat com bolhas em emerald-500/15 + violet residual no header.
+
+**Depois:** **100% paleta brand**: bolhas em `#00E676/12 ring-[#00E676]/25`, typing dots com nova `@keyframes cursor-blink`, CTA com `@keyframes pulse-green` (anel verde expandindo).
+
+### ComparisonTable (componente novo)
+**Antes:** tabela grande no meio da página com 10 features, cores violet pra Zapfy / zinc pra BotConversa.
+
+**Depois:** **componente isolado** `comparison-table.tsx`. Header com badge verde "Recomendado" sobre Zapfy. Linhas alternadas (`#0d0d0d` / `#111`). ✓ verde para Zapfy (`bg-[#00E676]/15`), ✗ vermelho (`bg-red-500/10`), texto neutro #888 para empate. CTA "Ver todos os detalhes →" em verde no footer.
+
+### Depoimentos
+**Antes:** quotes em texto regular, badge violet pra métrica.
+
+**Depois:** **5 estrelas verdes** no topo. Quote em `font-serif italic 18px`. Avatar inicial em `bg-[#00E676]/15 text-[#00E676]`. Border separa quote de nome/cidade.
+
+### FinalCta
+**Antes:** dois CTAs no fim, fundo zinc-950 padrão.
+
+**Depois:** **única seção com fundo #00E676 sólido**. Headline 5xl/6xl com "seu atendimento?" em Instrument Serif italic. CTA inverso preto com texto verde. Forte contraste como remate visual.
+
+### Header
+**Antes:** sempre opaco com bg-zinc-950/80. Botão "Criar conta" violet.
+
+**Depois:** **transparente no topo, blur ao scrollar** (Y>12). Border #1a1a1a/08 só aparece com scroll. CTA "Criar agente grátis" verde sólido + scale hover.
+
+### Footer
+**Antes:** 3 colunas (Produto/Empresa/Legal), logo placeholder violet "O Trato".
+
+**Depois:** **4 colunas** (+Redes sociais com Instagram/Twitter/LinkedIn/GitHub placeholders). Bg `#080808` mais escuro que landing pra separar. Texto `#444` discreto. Hover dos links em `#00E676`.
+
 ---
 
-## 🎯 Próximos 3 passos (ordem de prioridade)
+## 🔧 Mudanças técnicas
 
-### 1. **Push pro GitHub** ⭐ — 44 commits sem backup
-- github.com → New repo "zapfy" (private)
-- `git remote add origin git@github.com:<seu-user>/zapfy.git`
-- `git push -u origin master`
-- Se primeira vez no PC: SSH key ou Personal Access Token
+### globals.css
+```css
+:root {
+  --green: #00E676;
+  --black: #0a0a0a;
+  --surface: #111111;
+  --border: #1a1a1a;
+  --text-muted: #888888;
+}
 
-### 2. **Configurar Pusher real** — desbloqueia real-time sub-segundo
-- dashboard.pusher.com → seu app → App Keys
-- Cole `app_id`, `key`, `secret`, cluster (recomendo `sa1` São Paulo) no `.env`
-- Sem isso, polling de 5s funciona mas não é tão fluido
+@keyframes cursor-blink { /* typing dots */ }
+@keyframes pulse-green   { /* CTA ring */ }
 
-### 3. **Deploy staging na Vercel**
-- Vercel → New Project → import do GitHub repo (depois do push)
-- Settings → Environment Variables → cole de `.env.staging.example`
-- Worker no Railway: similar, mesma var REDIS_URL + DATABASE_URL
-- Smoke test: signup → onboarding → /forge → /whatsapp → "Mensagem de teste"
+.animate-cursor      { animation: cursor-blink 1s ... infinite; }
+.animate-pulse-green { animation: pulse-green  2s ... infinite; }
+.delay-{1,2,3,4}     /* aliases sem prefixo "animate-" */
+```
+
+### Estatísticas
+```
+page.tsx:        1.177 → 343 linhas (-71%)
+                 Eliminadas: TechStrip, FeatureBento, Comparison,
+                 Pricing, Principles (cabiam na FAQ ou eram redundantes)
+
+8 arquivos modificados, 1 criado (comparison-table.tsx)
++549 / -1004 linhas líquidas
+
+typecheck: ✅ exit 0
+lint:      ✅ exit 0 (após remover import Sparkles unused)
+build:     ✅ 2 successful tasks
+```
+
+### Arquivos auditados — paleta limpa
+Marketing files com violet/indigo/purple/teal/sky/cyan: **0**.
+Pages dashboard (`(app)/`) ainda têm — fora do escopo desta sessão.
 
 ---
 
-## 🔑 Como demo local agora
+## ⚠️ Carry-overs
+
+- **Push pro GitHub** — bloqueador #1, 46 commits sem backup
+- **Pusher real** — só cluster setado, real-time ainda via polling 5s
+- **Logos da faixa "Infraestrutura"** — atualmente são wordmarks em texto, sem SVG real (sem dependência de assets externos, mas pode trocar quando tiver os logos)
+- **9 actions** ainda sem `requireWorkspace` central (carry-over antigo)
+
+---
+
+## 🎯 Próximos 3 passos sugeridos
+
+1. **Subir o repo no GitHub** e dar push (46 commits)
+2. **Deploy Vercel staging** — `.env.staging.example` pronto, cole no dashboard
+3. **Gravar vídeo demo curto** (se quiser substituir o ForgeDemo animado pelo video real depois)
+
+---
+
+## 🔑 Como ver localmente
 
 ```bash
-pnpm install                    # já instalado, refresh symlinks
-pnpm db:seed:granvilla          # popula tudo (idempotente)
-pnpm dev                        # web + worker
-
-# Browser: http://localhost:3000
-# Login demo: claudio@granvilla.pet / Granvilla2026!
-# Trocou logo, marca, animações — tudo Zapfy
+pnpm dev
+# http://localhost:3000 — landing nova
+# Scroll: header ganha blur + border após Y>12
+# ForgeDemo: chat animado 5 msgs, CTA pulse verde no fim
+# FinalCta: bloco verde grandalhão no rodapé
 ```
-
----
-
-## ⚠️ Carry-overs ainda pendentes (sem mudanças)
-
-- 9 actions ainda usam helper local em vez de `requireWorkspace` central
-- TOCTOU em `Broadcast.launch`
-- Stripe sync ao force-downgrade não avisa cobrança pendente
-- Audit dedup em retry
-- Onboarding step "team invited" não detecta convite pending
-- Auto-detect de incidentes na status page
 
 Bom dia! ☕
