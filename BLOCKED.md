@@ -13,22 +13,46 @@ Atualizado: 2026-05-28 (sessão 4 — retomada pós-credenciais)
 
 ## 🔴 CRÍTICO — bloqueiam features grandes
 
-### [GIT] Repositório remoto
-**Status:** ainda local, sem `git remote`. ~39 commits acumulados (incluindo `b75eff6` desta sessão).
-**Tentei** `git push origin master` e recebi:
+### [GIT] Repositório remoto — ✅ RESOLVIDO nesta sessão
+`origin` aponta pra `https://github.com/FernandoOli17/zapfy.git`, master pushed.
+
+### [VERCEL] Root Directory pra monorepo
+**Tentei deploy `vercel --prod` e recebi:**
 ```
-fatal: 'origin' does not appear to be a git repository
+Error: No Next.js version detected. Make sure your package.json has "next"
+in either "dependencies" or "devDependencies". Also check your Root Directory
+setting matches the directory of your package.json file.
 ```
+**Causa:** Vercel inspeciona o `package.json` do root do projeto linkado e
+não encontra `next` porque é monorepo — o Next mora em `apps/web/package.json`.
+
 **Pra resolver (passos exatos):**
-1. github.com → New repository → **Private** → nome `zapfy` → Create
-2. Localmente:
-   ```bash
-   git remote add origin git@github.com:<seu-user>/zapfy.git
-   # ou via HTTPS se preferir token
-   # git remote add origin https://github.com/<seu-user>/zapfy.git
-   git push -u origin master
-   ```
-3. Se primeira vez no PC: configurar SSH key ou Personal Access Token antes.
+1. https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings
+2. **General → Root Directory** → clica em **Edit**
+3. Cola: `apps/web`
+4. Importante: deixar marcado **"Include source files outside of the Root
+   Directory in the Build Step"** (pra build acessar `packages/*` do monorepo)
+5. Save
+6. Localmente, redeploy: `pnpm dlx vercel --prod --yes`
+
+**Alternativa programática:** se preferir, gera Personal Access Token em
+https://vercel.com/account/tokens (full scope) e me passa pra eu fazer via REST API:
+```bash
+curl -X PATCH "https://api.vercel.com/v9/projects/zapfy?teamId=team_E234FGaFeFaKQBnIi5Tgez5g" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"rootDirectory":"apps/web"}'
+```
+
+**Env vars já configuradas no projeto Vercel:**
+- DATABASE_URL · REDIS_URL · BETTER_AUTH_SECRET · BETTER_AUTH_URL · ENCRYPTION_KEY
+- LOG_PII_SALT · MOCK_AI=true · STRIPE_MOCK=true · HEALTH_DETAIL_TOKEN
+- PUSHER_CLUSTER · NEXT_PUBLIC_PUSHER_CLUSTER (sem APP_ID/KEY/SECRET ainda)
+- NEXT_PUBLIC_POSTHOG_HOST · NEXT_PUBLIC_APP_URL · RESEND_FROM_EMAIL
+
+**Atenção:** `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` foram pré-setados como
+`https://zapfy.vercel.app`. Se Vercel atribuir outro domínio, atualizar via
+`vercel env rm` + `vercel env add` (sou eu) ou no dashboard.
 
 ### [META WhatsApp] Credenciais do app
 **Status:** modelo BYO funcional — cada workspace cadastra suas próprias credenciais Meta na UI `/whatsapp`.
@@ -56,7 +80,8 @@ fatal: 'origin' does not appear to be a git repository
 **Pra prod:** preencher `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (já tem placeholder `noreply@zapfy.dev` — trocar pra `ola@trato.dev` quando registrar domínio).
 
 ### [PUSHER] Real-time inbox
-**Status:** **somente cluster setado** (`PUSHER_CLUSTER=us2`). `APP_ID`, `KEY`, `SECRET` vazios.
+**Status:** **somente cluster setado** (`PUSHER_CLUSTER=us2`) tanto no `.env` local
+quanto no Vercel production. `APP_ID`, `KEY`, `SECRET` continuam vazios.
 **Atualizado nesta sessão:** sem Pusher, o `InboxRealtime` agora faz polling
 de 5s via `router.refresh()` (era no-op silencioso). Inbox atualiza dentro
 de 5s sem precisar refresh manual.
@@ -77,6 +102,14 @@ de 5s sem precisar refresh manual.
 5. `pnpm dev` — verifique no `/api/health?token=...` que `pusher: ok`.
 
 Se preferir manter o app `us2` que você criou, troque os dois valores de `CLUSTER` por `us2` em vez de `sa1`.
+
+**Setar no Vercel também (após pegar as keys):**
+```bash
+printf '%s' '<APP_ID>'  | pnpm dlx vercel env add PUSHER_APP_ID production
+printf '%s' '<KEY>'     | pnpm dlx vercel env add PUSHER_KEY production
+printf '%s' '<SECRET>'  | pnpm dlx vercel env add PUSHER_SECRET production
+printf '%s' '<KEY>'     | pnpm dlx vercel env add NEXT_PUBLIC_PUSHER_KEY production
+```
 
 ### [UPSTASH REST] Rate limit produção
 **Status:** `REDIS_URL` (BullMQ via ioredis) funcionando. Mas `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` vazios — rate limit em `apps/web/src/lib/rate-limit.ts` cai em no-op silencioso (sempre permite). Aceitável em dev, **não pra prod**.
