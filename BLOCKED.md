@@ -14,8 +14,21 @@ Atualizado: 2026-05-28 (sessão 4 — retomada pós-credenciais)
 ## 🔴 CRÍTICO — bloqueiam features grandes
 
 ### [GIT] Repositório remoto
-**Status:** ainda local, sem `git remote`. ~38 commits acumulados.
-**Pra resolver:** criar repo no GitHub e rodar `git remote add origin <url> && git push -u origin master`.
+**Status:** ainda local, sem `git remote`. ~39 commits acumulados (incluindo `b75eff6` desta sessão).
+**Tentei** `git push origin master` e recebi:
+```
+fatal: 'origin' does not appear to be a git repository
+```
+**Pra resolver (passos exatos):**
+1. github.com → New repository → **Private** → nome `zapfy` → Create
+2. Localmente:
+   ```bash
+   git remote add origin git@github.com:<seu-user>/zapfy.git
+   # ou via HTTPS se preferir token
+   # git remote add origin https://github.com/<seu-user>/zapfy.git
+   git push -u origin master
+   ```
+3. Se primeira vez no PC: configurar SSH key ou Personal Access Token antes.
 
 ### [META WhatsApp] Credenciais do app
 **Status:** modelo BYO funcional — cada workspace cadastra suas próprias credenciais Meta na UI `/whatsapp`.
@@ -43,8 +56,27 @@ Atualizado: 2026-05-28 (sessão 4 — retomada pós-credenciais)
 **Pra prod:** preencher `RESEND_API_KEY` + `RESEND_FROM_EMAIL` (já tem placeholder `noreply@zapai.dev` — trocar pra `ola@trato.dev` quando registrar domínio).
 
 ### [PUSHER] Real-time inbox
-**Status:** **somente cluster setado** (`PUSHER_CLUSTER=us2`). `APP_ID`, `KEY`, `SECRET` vazios. Inbox funciona via refresh manual; sem real-time push de novas mensagens.
-**Pra resolver:** criar app no [dashboard.pusher.com](https://dashboard.pusher.com), copiar credenciais pra `.env`. Cluster `sa1` (São Paulo) é recomendado pra latência BR.
+**Status:** **somente cluster setado** (`PUSHER_CLUSTER=us2`). `APP_ID`, `KEY`, `SECRET` vazios.
+**Atualizado nesta sessão:** sem Pusher, o `InboxRealtime` agora faz polling
+de 5s via `router.refresh()` (era no-op silencioso). Inbox atualiza dentro
+de 5s sem precisar refresh manual.
+
+**Pra ativar real-time sub-segundo (passo a passo):**
+1. Acesse https://dashboard.pusher.com (você já tem conta Sandbox)
+2. Selecione (ou crie) seu app — recomendo cluster `sa1` (São Paulo) pra latência BR
+3. Vá em **App Keys**
+4. Copie os 4 valores e cole no `.env`:
+   ```
+   PUSHER_APP_ID=<app_id>
+   PUSHER_KEY=<key>
+   PUSHER_SECRET=<secret>
+   PUSHER_CLUSTER=sa1
+   NEXT_PUBLIC_PUSHER_KEY=<key>        # MESMO valor do PUSHER_KEY
+   NEXT_PUBLIC_PUSHER_CLUSTER=sa1
+   ```
+5. `pnpm dev` — verifique no `/api/health?token=...` que `pusher: ok`.
+
+Se preferir manter o app `us2` que você criou, troque os dois valores de `CLUSTER` por `us2` em vez de `sa1`.
 
 ### [UPSTASH REST] Rate limit produção
 **Status:** `REDIS_URL` (BullMQ via ioredis) funcionando. Mas `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN` vazios — rate limit em `apps/web/src/lib/rate-limit.ts` cai em no-op silencioso (sempre permite). Aceitável em dev, **não pra prod**.

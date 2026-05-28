@@ -19,6 +19,11 @@ function getClient(): PusherClient | null {
   return cachedClient;
 }
 
+/** True se NEXT_PUBLIC_PUSHER_KEY + CLUSTER estão presentes no client. */
+export function isPusherConfigured(): boolean {
+  return Boolean(process.env['NEXT_PUBLIC_PUSHER_KEY'] && process.env['NEXT_PUBLIC_PUSHER_CLUSTER']);
+}
+
 /**
  * Hook que inscreve num canal privado e dispara o handler em cada evento do nome dado.
  * Faz no-op silencioso se Pusher não configurado.
