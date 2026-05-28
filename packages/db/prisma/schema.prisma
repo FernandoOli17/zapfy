@@ -12,6 +12,10 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  // Vercel serverless functions rodam em Amazon Linux (RHEL openssl 3).
+  // Sem binaryTarget explícito, Prisma só gera o .node nativo (Windows local)
+  // e o serverless falha com "Query Engine not found for runtime rhel-openssl-3.0.x".
+  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
