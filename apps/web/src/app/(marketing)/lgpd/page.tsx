@@ -5,7 +5,7 @@ import { LegalDt, LegalList, LegalPage, LegalSection } from '@/components/market
 
 export const metadata = {
   title: 'LGPD',
-  description: 'Como o Trato cumpre a Lei Geral de Proteção de Dados. DPO, direitos do titular, endpoints práticos.',
+  description: 'Como o Zapfy cumpre a Lei Geral de Proteção de Dados. DPO, direitos do titular, endpoints práticos.',
 };
 
 const TOC = [
@@ -52,7 +52,7 @@ export default function LgpdPage() {
       toc={TOC}
     >
       <p className="text-lg leading-relaxed text-muted-foreground">
-        Esta página explica em <LegalDt>linguagem direta</LegalDt> como o Trato cumpre a Lei
+        Esta página explica em <LegalDt>linguagem direta</LegalDt> como o Zapfy cumpre a Lei
         Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD). Pra detalhes formais,
         veja a{' '}
         <Link href="/privacidade" className="text-foreground underline-offset-4 hover:underline">
@@ -98,7 +98,7 @@ export default function LgpdPage() {
           </p>
           <LegalList>
             <li>
-              Em relação a <LegalDt>dados de Clientes do Trato</LegalDt> (você, dono da conta) —
+              Em relação a <LegalDt>dados de Clientes do Zapfy</LegalDt> (você, dono da conta) —
               somos <LegalDt>controladores</LegalDt>. Decidimos como cadastro, faturamento e
               autenticação funcionam.
             </li>
@@ -142,8 +142,8 @@ export default function LgpdPage() {
             </li>
             <li>
               <LegalDt>E-mail:</LegalDt>{' '}
-              <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
-                dpo@Trato.dev
+              <a href="mailto:dpo@Zapfy.dev" className="text-foreground underline-offset-4 hover:underline">
+                dpo@Zapfy.dev
               </a>{' '}
               com cópia de identidade.
             </li>
@@ -151,7 +151,7 @@ export default function LgpdPage() {
         </LegalSection>
 
         <LegalSection id="endpoints" number={5} title="Endpoints LGPD">
-          <p>Pra Clientes do Trato que querem automatizar atendimento ao titular:</p>
+          <p>Pra Clientes do Zapfy que querem automatizar atendimento ao titular:</p>
           <div className="mt-3 space-y-3 rounded-xl border border-border/60 bg-card/40 p-5 text-sm">
             <div>
               <div className="flex items-center gap-2">
@@ -183,7 +183,7 @@ export default function LgpdPage() {
           </div>
           <p>
             Auth: header <code>Authorization: Bearer zk_xxx</code> (API key do workspace). Veja{' '}
-            <Link href="/blog/api-publica-Trato" className="text-foreground underline-offset-4 hover:underline">
+            <Link href="/blog/api-publica-Zapfy" className="text-foreground underline-offset-4 hover:underline">
               docs da API
             </Link>
             .
@@ -197,8 +197,8 @@ export default function LgpdPage() {
             </li>
             <li>
               <LegalDt>E-mail:</LegalDt>{' '}
-              <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
-                dpo@Trato.dev
+              <a href="mailto:dpo@Zapfy.dev" className="text-foreground underline-offset-4 hover:underline">
+                dpo@Zapfy.dev
               </a>
             </li>
             <li>
@@ -215,10 +215,10 @@ export default function LgpdPage() {
         <LegalSection id="dpa" number={7} title="DPA — Data Processing Agreement">
           <p>
             Para Clientes do plano <LegalDt>Premium</LegalDt> que precisam formalizar o tratamento
-            de dados de seus titulares conosco (com o Trato atuando como operador), oferecemos um
+            de dados de seus titulares conosco (com o Zapfy atuando como operador), oferecemos um
             DPA padrão que pode ser assinado eletronicamente. Solicite em{' '}
-            <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
-              dpo@Trato.dev
+            <a href="mailto:dpo@Zapfy.dev" className="text-foreground underline-offset-4 hover:underline">
+              dpo@Zapfy.dev
             </a>{' '}
             informando CNPJ do controlador.
           </p>
@@ -281,8 +281,8 @@ export default function LgpdPage() {
             <h3 className="text-xl font-medium tracking-tight">Tem alguma dúvida ou pedido?</h3>
             <p className="mt-2 text-muted-foreground">
               Manda direto pro DPO em{' '}
-              <a href="mailto:dpo@Trato.dev" className="text-foreground underline-offset-4 hover:underline">
-                dpo@Trato.dev
+              <a href="mailto:dpo@Zapfy.dev" className="text-foreground underline-offset-4 hover:underline">
+                dpo@Zapfy.dev
               </a>
               . Resposta em até 15 dias úteis.
             </p>

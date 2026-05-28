@@ -5,7 +5,7 @@ import { formatPublishedDate, listPosts } from '@/lib/blog';
 
 export const metadata = {
   title: 'Blog',
-  description: 'Como construímos o Trato: engenharia, produto, LGPD, e o que aprendemos.',
+  description: 'Como construímos o Zapfy: engenharia, produto, LGPD, e o que aprendemos.',
 };
 
 export default async function BlogPage() {
@@ -19,7 +19,7 @@ export default async function BlogPage() {
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Blog</p>
           <h1 className="mt-4 text-5xl font-medium leading-[1.05] tracking-tight md:text-7xl">
             Notas sobre construir{' '}
-            <span className="font-serif italic font-normal text-primary">o Trato.</span>
+            <span className="font-serif italic font-normal text-primary">o Zapfy.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
             Engenharia, produto, design, LGPD, decisões de arquitetura. O que tá funcionando
@@ -37,8 +37,8 @@ export default async function BlogPage() {
                 Estamos escrevendo sobre como funciona o Forge por dentro, a arquitetura
                 multi-tenant, e o que aprendemos colocando agentes IA no WhatsApp de empresas
                 reais. Avisamos por e-mail quando publicar — ou siga{' '}
-                <a href="mailto:oi@trato.dev" className="text-primary underline">
-                  oi@trato.dev
+                <a href="mailto:oi@zapfy.com.br" className="text-primary underline">
+                  oi@zapfy.com.br
                 </a>{' '}
                 pra entrar na lista.
               </p>

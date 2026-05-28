@@ -17,6 +17,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { MarketingFaq } from '@/components/marketing/faq';
+import { ForgeDemo } from '@/components/marketing/forge-demo';
+import { UrgencyBanner } from '@/components/marketing/urgency-banner';
 
 /* ─────────────────────────────────────────────────────────────────
    PAGE
@@ -27,7 +29,7 @@ export default function HomePage() {
     <div className="bg-zinc-950 text-zinc-100">
       <UrgencyBanner />
       <Hero />
-      <DemoVideo />
+      <ForgeDemo />
       <TechStrip />
       <Features />
       <FeatureBento />
@@ -43,121 +45,8 @@ export default function HomePage() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   URGENCY BANNER — top fixo, dismissible via CSS-only details
-   ───────────────────────────────────────────────────────────────── */
-
-function UrgencyBanner() {
-  return (
-    <div className="bg-gradient-to-r from-violet-600 via-violet-500 to-indigo-500 px-4 py-2 text-center text-xs font-medium text-white md:text-sm">
-      <span className="mr-2 inline-block animate-pulse">✨</span>
-      <strong className="font-semibold">Trial grátis por 7 dias</strong>
-      <span className="opacity-90"> — sem cartão de crédito, sem letra miúda. </span>
-      <Link href="/signup" className="underline decoration-white/40 underline-offset-2 hover:decoration-white">
-        Começar agora →
-      </Link>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   DEMO VIDEO — placeholder com thumbnail clicável + play
-   Quando o user clicar, abre modal com vídeo real (placeholder de
-   vimeo/loom — substituir URL quando gravar).
-   ───────────────────────────────────────────────────────────────── */
-
-function DemoVideo() {
-  return (
-    <section className="border-t border-white/[0.06] py-20">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="mb-10 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Demo · 90s</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-4xl">
-            Veja o Trato em ação
-          </h2>
-          <p className="mt-3 text-sm text-zinc-400">
-            Do signup ao primeiro cliente respondido pelo agente IA — sem cortes.
-          </p>
-        </div>
-
-        <a
-          href="https://www.loom.com/share/placeholder-trato-demo"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group relative block overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 shadow-2xl shadow-violet-950/40 transition-all hover:border-violet-500/30 hover:shadow-violet-900/50"
-        >
-          {/* Thumbnail — composição simulando uma captura */}
-          <div className="relative aspect-video w-full">
-            {/* Background gradient */}
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                background:
-                  'radial-gradient(ellipse 80% 60% at 50% 40%, rgba(124,58,237,0.25), transparent 70%)',
-              }}
-            />
-            {/* Grid */}
-            <div
-              aria-hidden
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right,rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(to bottom,rgba(255,255,255,0.04) 1px,transparent 1px)',
-                backgroundSize: '40px 40px',
-              }}
-            />
-
-            {/* Fake terminal/chat mockup */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-8">
-              <div className="w-full max-w-md rounded-xl border border-white/[0.08] bg-zinc-900/80 p-4 shadow-2xl backdrop-blur-sm">
-                <p className="font-mono text-[10px] text-zinc-500">forge.trato.dev</p>
-                <div className="mt-3 space-y-2">
-                  <div className="flex justify-start">
-                    <div className="rounded-lg bg-violet-600/20 px-3 py-1.5 text-[11px] text-violet-200">
-                      Detectei vertical: clínica veterinária 🐾
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="rounded-lg bg-zinc-800 px-3 py-1.5 text-[11px] text-zinc-300">Perfeito!</div>
-                  </div>
-                  <div className="flex justify-start">
-                    <div className="rounded-lg bg-violet-600/20 px-3 py-1.5 text-[11px] text-violet-200">
-                      ✓ agente publicado · pronto pra atender
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Play button */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-600/90 shadow-2xl shadow-violet-900/60 ring-4 ring-violet-500/30 backdrop-blur-sm transition-transform group-hover:scale-110 md:h-20 md:w-20">
-                <svg
-                  className="ml-1 h-7 w-7 text-white md:h-9 md:w-9"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Duration badge */}
-            <div className="absolute bottom-4 right-4 rounded-md bg-black/60 px-2 py-1 font-mono text-[11px] text-white backdrop-blur-sm">
-              1:30
-            </div>
-          </div>
-        </a>
-
-        <p className="mt-6 text-center text-xs text-zinc-500">
-          Sem áudio comercial chato. Sem voiceover. Só a tela.
-        </p>
-      </div>
-    </section>
-  );
-}
+/* UrgencyBanner agora em @/components/marketing/urgency-banner (client + localStorage). */
+/* ForgeDemo substituiu DemoVideo — em @/components/marketing/forge-demo. */
 
 /* ─────────────────────────────────────────────────────────────────
    TESTIMONIALS — placeholder honesto pra MVP
@@ -167,6 +56,7 @@ function DemoVideo() {
 
 interface Testimonial {
   quote: string;
+  name: string;
   vertical: string;
   city: string;
   metric: string;
@@ -176,27 +66,30 @@ interface Testimonial {
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      'Atendo sozinha. Antes perdia cliente que mandava mensagem 22h. Agora o agente responde tudo e eu retomo na manhã seguinte com contexto.',
-    vertical: 'Salão de beleza',
-    city: 'Curitiba',
-    metric: '3x mais agendamentos',
-    initials: 'MS',
-  },
-  {
-    quote:
-      'Configurei em 8 minutos conversando com o Forge. Não precisei desenhar fluxograma. Em uma semana já estava respondendo dúvida sobre ração.',
-    vertical: 'Pet shop',
-    city: 'Rio de Janeiro',
-    metric: 'Setup em 8min',
-    initials: 'CG',
-  },
-  {
-    quote:
-      'O handoff humano é o que vendeu pra mim. Se a IA não sabe, transfere com contexto completo e a equipe não precisa ler 50 mensagens.',
-    vertical: 'E-commerce de roupas',
+      'Antes perdia cliente que mandava no final de semana. Agora o agente do Zapfy responde tudo, anota o tutor e marca o banho. Acordo segunda com a agenda lotada.',
+    name: 'Ana Lima',
+    vertical: 'Dona de pet shop',
     city: 'São Paulo',
-    metric: '67% resolvido pela IA',
-    initials: 'JF',
+    metric: '3× mais agendamentos',
+    initials: 'AL',
+  },
+  {
+    quote:
+      'Configurei em uma manhã, conversando com o Forge. Ele entendeu que clínica odontológica precisa filtrar emergência de avaliação e já montou o handoff direto pra mim quando é caso urgente.',
+    name: 'Dr. Carlos Mendes',
+    vertical: 'Dentista',
+    city: 'Belo Horizonte',
+    metric: 'Setup em 1 manhã',
+    initials: 'CM',
+  },
+  {
+    quote:
+      'Recebia 200 dúvidas por dia sobre tamanho e prazo. O Zapfy resolve 70% sozinho e quando precisa transferir já chega com contexto, foto do produto e endereço. Equipe agradeceu.',
+    name: 'Loja Moda Clara',
+    vertical: 'E-commerce de moda',
+    city: 'Fortaleza',
+    metric: '70% resolvido pela IA',
+    initials: 'MC',
   },
 ];
 
@@ -237,15 +130,15 @@ function Testimonials() {
 
               <div className="mt-6 flex items-center justify-between border-t border-white/[0.07] pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600/15 text-xs font-bold text-violet-300">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-bold text-emerald-300">
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-xs font-medium text-zinc-200">{t.vertical}</p>
-                    <p className="text-[11px] text-zinc-500">{t.city}</p>
+                    <p className="text-xs font-medium text-zinc-200">{t.name}</p>
+                    <p className="text-[11px] text-zinc-500">{t.vertical} · {t.city}</p>
                   </div>
                 </div>
-                <span className="rounded-md border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-violet-300">
+                <span className="rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-300">
                   {t.metric}
                 </span>
               </div>
@@ -263,7 +156,7 @@ function Testimonials() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   VS COMPETITOR TABLE — Trato vs BotConversa
+   VS COMPETITOR TABLE — Zapfy vs BotConversa
    Comparação direta, factual. Não trash-talk, mas claro o que falta no concorrente.
    ───────────────────────────────────────────────────────────────── */
 
@@ -275,8 +168,8 @@ interface ComparisonRow {
 }
 
 const COMP_ROWS: ComparisonRow[] = [
-  { feature: 'WhatsApp Cloud API oficial (Meta)', trato: true, botconversa: 'parcial', detail: 'Trato usa só Cloud API. BotConversa começou com web.whatsapp.com (risco de ban).' },
-  { feature: 'Configuração conversacional (Forge)', trato: true, botconversa: false, detail: 'Trato: você conversa, IA monta. BotConversa: fluxograma manual visual.' },
+  { feature: 'WhatsApp Cloud API oficial (Meta)', trato: true, botconversa: 'parcial', detail: 'Zapfy usa só Cloud API. BotConversa começou com web.whatsapp.com (risco de ban).' },
+  { feature: 'Configuração conversacional (Forge)', trato: true, botconversa: false, detail: 'Zapfy: você conversa, IA monta. BotConversa: fluxograma manual visual.' },
   { feature: 'Agente IA com contexto (não bot de menu)', trato: true, botconversa: 'limitado' },
   { feature: 'RAG nativo (base de conhecimento)', trato: true, botconversa: false },
   { feature: 'Handoff humano com contexto', trato: true, botconversa: true },
@@ -296,7 +189,7 @@ function VsCompetitorTable() {
             Comparação direta
           </p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-white md:text-4xl">
-            Trato vs BotConversa
+            Zapfy vs BotConversa
           </h2>
           <p className="mt-3 max-w-xl mx-auto text-sm text-zinc-400">
             Pesquisamos a concorrência. Aqui tá o que muda na prática.
@@ -308,7 +201,7 @@ function VsCompetitorTable() {
           <div className="grid grid-cols-[1fr_120px_120px] items-center gap-2 border-b border-white/[0.06] bg-zinc-900/80 px-5 py-4 md:grid-cols-[1fr_160px_160px]">
             <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Feature</p>
             <p className="text-center text-xs font-semibold uppercase tracking-wider text-violet-300">
-              Trato
+              Zapfy
             </p>
             <p className="text-center text-xs font-semibold uppercase tracking-wider text-zinc-500">
               BotConversa
@@ -425,7 +318,7 @@ function Hero() {
       />
 
       {/* Badge */}
-      <div className="relative mb-6 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300">
+      <div className="animate-fade-up relative mb-6 inline-flex items-center gap-2 rounded-full border border-violet-500/25 bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-300">
         <span className="relative flex h-1.5 w-1.5">
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
@@ -434,7 +327,7 @@ function Hero() {
       </div>
 
       {/* Headline */}
-      <h1 className="relative max-w-4xl text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[1] tracking-[-0.04em] text-white">
+      <h1 className="animate-fade-up relative max-w-4xl text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[1] tracking-[-0.04em] text-white">
         Seu WhatsApp,{' '}
         <span
           style={{
@@ -448,13 +341,13 @@ function Hero() {
       </h1>
 
       {/* Subtext */}
-      <p className="relative mt-6 max-w-xl text-lg leading-relaxed text-zinc-400">
+      <p className="animate-fade-up animate-delay-2 relative mt-6 max-w-xl text-lg leading-relaxed text-zinc-400">
         Configure conversando com o Forge. Publica em minutos no Cloud API oficial da Meta.
         Atende 24/7, faz handoff pra equipe, nunca fica em risco de ban.
       </p>
 
       {/* CTAs */}
-      <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
+      <div className="animate-fade-up animate-delay-3 relative mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/signup"
           className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-900/40 transition-all hover:bg-violet-500 hover:-translate-y-0.5"
@@ -481,7 +374,7 @@ function Hero() {
             <span className="h-3 w-3 rounded-full bg-zinc-700" />
             <div className="mx-auto flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-zinc-800 px-3 py-1 text-[11px] text-zinc-500">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              trato.dev/forge
+              zapfy.com.br/forge
             </div>
           </div>
           {/* Chat content */}
@@ -889,9 +782,9 @@ function Comparison() {
           </h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Sem Trato */}
+          {/* Sem Zapfy */}
           <div className="rounded-2xl border border-white/[0.06] bg-zinc-900/50 p-8">
-            <h3 className="mb-6 text-lg font-semibold text-zinc-500">Sem Trato</h3>
+            <h3 className="mb-6 text-lg font-semibold text-zinc-500">Sem Zapfy</h3>
             <ul className="space-y-4">
               {WITHOUT_ITEMS.map((item) => (
                 <li key={item} className="flex items-center gap-3">
@@ -903,13 +796,13 @@ function Comparison() {
               ))}
             </ul>
           </div>
-          {/* Com Trato */}
+          {/* Com Zapfy */}
           <div className="rounded-2xl border border-violet-500/25 bg-violet-950/20 p-8">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600">
                 <span className="text-xs font-bold text-white">O</span>
               </div>
-              <h3 className="text-lg font-semibold text-white">Com Trato</h3>
+              <h3 className="text-lg font-semibold text-white">Com Zapfy</h3>
             </div>
             <ul className="space-y-4">
               {WITH_ITEMS.map((item) => (

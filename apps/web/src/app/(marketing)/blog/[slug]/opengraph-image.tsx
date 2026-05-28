@@ -3,7 +3,7 @@
 import { getPost } from '@/lib/blog';
 
 export const runtime = 'nodejs';
-export const alt = 'Post no blog Trato';
+export const alt = 'Post no blog Zapfy';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -13,7 +13,7 @@ interface Props {
 
 export default async function BlogOG({ params }: Props) {
   const post = await getPost(params.slug);
-  const title = post?.title ?? 'Trato';
+  const title = post?.title ?? 'Zapfy';
   const description = post?.description ?? '';
   const date = post?.publishedAt ?? '';
   const author = post?.author ?? '';
@@ -51,7 +51,7 @@ export default async function BlogOG({ params }: Props) {
               background: '#60A5FA',
             }}
           />
-          Trato Blog
+          Zapfy Blog
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -95,7 +95,7 @@ export default async function BlogOG({ params }: Props) {
             {author}
             {date ? ` · ${date}` : ''}
           </div>
-          <div style={{ color: '#60A5FA' }}>Trato.dev</div>
+          <div style={{ color: '#60A5FA' }}>Zapfy.dev</div>
         </div>
       </div>
     ),

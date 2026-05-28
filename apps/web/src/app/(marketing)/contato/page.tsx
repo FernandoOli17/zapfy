@@ -11,22 +11,22 @@ const CHANNELS = [
   {
     icon: Mail,
     label: 'E-mail',
-    value: 'oi@trato.dev',
-    href: 'mailto:oi@trato.dev',
+    value: 'oi@zapfy.com.br',
+    href: 'mailto:oi@zapfy.com.br',
     blurb: 'Respondemos em até 1 dia útil.',
   },
   {
     icon: MessageCircle,
     label: 'WhatsApp',
     value: 'em breve',
-    href: 'mailto:oi@trato.dev?subject=Quero%20falar%20no%20WhatsApp',
+    href: 'mailto:oi@zapfy.com.br?subject=Quero%20falar%20no%20WhatsApp',
     blurb: 'Estamos terminando o número oficial — por enquanto, manda e-mail.',
   },
   {
     icon: Send,
     label: 'Comercial',
-    value: 'comercial@trato.dev',
-    href: 'mailto:comercial@trato.dev',
+    value: 'comercial@zapfy.com.br',
+    href: 'mailto:comercial@zapfy.com.br',
     blurb: 'Pra empresa querendo Premium ou parceria.',
   },
 ];

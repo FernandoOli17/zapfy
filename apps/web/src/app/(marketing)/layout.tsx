@@ -6,15 +6,15 @@ import { MarketingHeader } from '@/components/marketing/header';
 const ORGANIZATION_LD = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'Trato',
-  url: 'https://trato.dev',
-  logo: 'https://trato.dev/icon-512.png',
+  name: 'Zapfy',
+  url: 'https://zapfy.com.br',
+  logo: 'https://zapfy.com.br/icon-512.png',
   description:
     'SaaS multi-tenant de agente IA pra WhatsApp Business. O Forge constrói o agente conversando com você — sem fluxograma.',
   sameAs: [],
   contactPoint: {
     '@type': 'ContactPoint',
-    email: 'oi@trato.dev',
+    email: 'oi@zapfy.com.br',
     contactType: 'customer support',
     availableLanguage: ['Portuguese'],
   },
@@ -23,7 +23,7 @@ const ORGANIZATION_LD = {
 const SOFTWARE_APP_LD = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
-  name: 'Trato',
+  name: 'Zapfy',
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'Web',
   description:
