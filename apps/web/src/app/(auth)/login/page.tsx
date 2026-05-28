@@ -13,7 +13,7 @@ export default function LoginPage() {
     <div>
       <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-[34px]">
         Entrar no{' '}
-        <span className="font-serif italic font-normal text-primary">Trato</span>
+        <span className="font-serif italic font-normal text-primary">Zapfy</span>
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Use e-mail e senha, Google, ou peça um link mágico.

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120">
+  <rect x="16" y="12" width="88" height="82" rx="26" fill="#00E676"/>
+  <path d="M46 94 L36 114 L62 94" fill="#00E676"/>
+  <path d="M72 30 L52 60 L63 60 L48 90 L78 56 L66 56 Z" fill="#0a0a0a"/>
+  <text x="124" y="62" font-family="'Geist',system-ui,sans-serif"
+    font-size="44" font-weight="700" fill="#ffffff" letter-spacing="-2">Zapfy</text>
+  <text x="125" y="86" font-family="'Geist',system-ui,sans-serif"
+    font-size="14" fill="#888">agente IA para WhatsApp</text>
+</svg>

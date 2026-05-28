@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowRight, Menu, X } from 'lucide-react';
-import { Button } from '@zapfy/ui';
+import { Button, ZapfyLogo } from '@zapfy/ui';
 
 const NAV = [
   { href: '/precos', label: 'Preços' },
@@ -48,12 +48,10 @@ export function MarketingHeader() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link
             href="/"
-            className="flex items-center gap-2.5 font-semibold tracking-tight text-white"
+            className="flex items-center gap-2 font-semibold tracking-tight text-white"
+            aria-label="Zapfy — página inicial"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-xs font-bold text-white shadow-lg shadow-violet-900/40">
-              O
-            </span>
-            <span>Trato</span>
+            <ZapfyLogo variant="white" height={28} />
           </Link>
 
           <nav

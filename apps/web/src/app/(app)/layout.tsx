@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
 import { prisma } from '@zapfy/db';
+import { ZapfyLogo } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
 import { SignOutLink } from '@/components/sign-out-link';
@@ -157,12 +158,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* ── Sidebar desktop ─────────────────────────────────── */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-card md:flex lg:w-[260px]">
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <span className="text-xs font-bold text-primary-foreground">O</span>
-          </div>
-          <span className="text-base font-semibold tracking-tight">Trato</span>
-        </div>
+        <Link href="/dashboard" className="flex items-center px-5 py-5" aria-label="Zapfy">
+          <ZapfyLogo variant="white" height={26} />
+        </Link>
 
         {/* Workspace card */}
         <div className="mx-3 mb-3">
