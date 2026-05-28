@@ -22,7 +22,16 @@ export type PlanId = (typeof PLAN_IDS)[number];
 
 export type PlanFeature = {
   priceBRLCents: number;
-  aiConversations: number | 'unlimited';
+  /**
+   * Limite de contatos únicos que enviaram/receberam mensagem no ciclo do mês.
+   * Substituiu `aiConversations` em 2026-05 — Meta mudou pricing WhatsApp
+   * Cloud API em jul/2025: service messages (resposta do agente dentro da
+   * janela 24h) ficaram **gratuitas**. Não faz mais sentido cobrar por
+   * conversa do agente — só por contatos ativos e broadcasts proativos.
+   */
+  activeContacts: number | 'unlimited';
+  /** Limite de broadcasts (mensagens proativas via template HSM) por mês. */
+  broadcasts: number | 'unlimited';
   whatsappNumbers: number | 'unlimited';
   teamSeats: number | 'unlimited';
   knowledgeDocs: number | 'unlimited';
@@ -34,9 +43,10 @@ export type PlanFeature = {
 export const PLANS: Record<PlanId, PlanFeature> = {
   STARTER: {
     priceBRLCents: 9700,
-    aiConversations: 1_000,
+    activeContacts: 500,
+    broadcasts: 2,
     whatsappNumbers: 1,
-    teamSeats: 1,
+    teamSeats: 2,
     knowledgeDocs: 10,
     forgeRefinements: 'unlimited',
     customTools: false,
@@ -44,9 +54,10 @@ export const PLANS: Record<PlanId, PlanFeature> = {
   },
   PRO: {
     priceBRLCents: 29700,
-    aiConversations: 10_000,
+    activeContacts: 3_000,
+    broadcasts: 'unlimited',
     whatsappNumbers: 3,
-    teamSeats: 5,
+    teamSeats: 10,
     knowledgeDocs: 100,
     forgeRefinements: 'unlimited',
     customTools: true,
@@ -54,7 +65,8 @@ export const PLANS: Record<PlanId, PlanFeature> = {
   },
   PREMIUM: {
     priceBRLCents: 69700,
-    aiConversations: 'unlimited',
+    activeContacts: 'unlimited',
+    broadcasts: 'unlimited',
     whatsappNumbers: 'unlimited',
     teamSeats: 'unlimited',
     knowledgeDocs: 'unlimited',
@@ -63,6 +75,9 @@ export const PLANS: Record<PlanId, PlanFeature> = {
     apiAccess: true,
   },
 };
+
+/** Janela considerada pra "contato ativo": mensagem enviada/recebida nos últimos 30 dias. */
+export const ACTIVE_CONTACT_WINDOW_DAYS = 30;
 
 export const TRIAL_DAYS = 7;
 

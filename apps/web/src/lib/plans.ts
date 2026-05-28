@@ -25,10 +25,34 @@ export async function getWorkspacePlan(workspaceId: string): Promise<{
 }
 
 /**
- * Atual uso de Conversas IA no ciclo do mês corrente (ou desde início do trial).
- * Conta UsageRecord do tipo 'ai_message' agrupado por contato (1 contato = 1 conversa).
+ * Contatos únicos ativos nos últimos 30 dias.
+ *
+ * "Contato ativo" = enviou OU recebeu pelo menos uma mensagem nos últimos
+ * `ACTIVE_CONTACT_WINDOW_DAYS` dias. Este é o novo limite de plano desde
+ * 2026-05 — substituiu `aiConversations` por causa da mudança Meta jul/2025.
  */
-export async function countAiConversationsThisCycle(workspaceId: string): Promise<number> {
+export async function countActiveContactsThisCycle(workspaceId: string): Promise<number> {
+  const { ACTIVE_CONTACT_WINDOW_DAYS } = await import('@zapfy/shared');
+  const since = new Date(Date.now() - ACTIVE_CONTACT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  // Conta contatos distintos que aparecem em Message dentro da janela.
+  const rows = await prisma.message.findMany({
+    where: {
+      workspaceId,
+      createdAt: { gte: since },
+      conversation: { contactId: { not: '' } },
+    },
+    distinct: ['conversationId'],
+    select: { conversation: { select: { contactId: true } } },
+  });
+  return new Set(rows.map((r) => r.conversation.contactId)).size;
+}
+
+/**
+ * Broadcasts disparados no ciclo do mês corrente.
+ * Cada `Broadcast` conta 1 vez, independente do número de destinatários.
+ */
+export async function countBroadcastsThisCycle(workspaceId: string): Promise<number> {
   const sub = await prisma.subscription.findUnique({ where: { workspaceId } });
   const since =
     sub?.currentPeriodStart ??
@@ -36,26 +60,17 @@ export async function countAiConversationsThisCycle(workspaceId: string): Promis
       ? new Date(sub.trialEndsAt.getTime() - 7 * 24 * 60 * 60 * 1000)
       : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
-  const rows = await prisma.usageRecord.findMany({
-    where: { workspaceId, kind: 'ai_message', createdAt: { gte: since } },
-    select: { metadata: true },
+  return prisma.broadcast.count({
+    where: { workspaceId, createdAt: { gte: since } },
   });
-
-  // contagem distinta de contactId nos metadados
-  const contacts = new Set<string>();
-  for (const r of rows) {
-    const meta = r.metadata as Record<string, unknown> | null;
-    const cid = meta && typeof meta['contactId'] === 'string' ? (meta['contactId'] as string) : null;
-    if (cid) contacts.add(cid);
-  }
-  return contacts.size;
 }
 
 /**
- * Conversas IA por dia nos últimos N dias. Pra gráfico de uso na /billing.
- * Conta UsageRecord do tipo 'ai_message' agrupado por dia.
+ * Contatos ativos por dia nos últimos N dias. Pra sparkline da /billing.
+ * Cada bucket conta contatos distintos que tiveram pelo menos 1 mensagem
+ * naquele dia (não acumulado — é dia-a-dia).
  */
-export async function dailyConversationsLastDays(
+export async function dailyActiveContactsLastDays(
   workspaceId: string,
   days: number,
 ): Promise<Array<{ label: string; value: number }>> {
@@ -63,27 +78,28 @@ export async function dailyConversationsLastDays(
   since.setDate(since.getDate() - (days - 1));
   since.setHours(0, 0, 0, 0);
 
-  const rows = await prisma.usageRecord.findMany({
-    where: { workspaceId, kind: 'ai_message', createdAt: { gte: since } },
-    select: { createdAt: true },
+  const rows = await prisma.message.findMany({
+    where: { workspaceId, createdAt: { gte: since } },
+    select: { createdAt: true, conversation: { select: { contactId: true } } },
   });
 
-  const buckets = new Map<string, number>();
+  const buckets = new Map<string, Set<string>>();
   for (let i = 0; i < days; i++) {
     const d = new Date(since);
     d.setDate(d.getDate() + i);
-    buckets.set(d.toISOString().slice(0, 10), 0);
+    buckets.set(d.toISOString().slice(0, 10), new Set());
   }
   for (const r of rows) {
     const key = r.createdAt.toISOString().slice(0, 10);
-    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+    const set = buckets.get(key);
+    if (set) set.add(r.conversation.contactId);
   }
 
-  return Array.from(buckets.entries()).map(([k, v]) => {
+  return Array.from(buckets.entries()).map(([k, set]) => {
     const d = new Date(k + 'T00:00:00');
     return {
       label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      value: v,
+      value: set.size,
     };
   });
 }
@@ -139,10 +155,15 @@ export async function requirePlan(
   };
 }
 
-/** Verifica limites numéricos (numbers, seats, docs). */
+/** Verifica limites numéricos (numbers, seats, docs, activeContacts, broadcasts). */
 export async function assertPlanLimit(
   workspaceId: string,
-  feature: 'whatsappNumbers' | 'teamSeats' | 'knowledgeDocs' | 'aiConversations',
+  feature:
+    | 'whatsappNumbers'
+    | 'teamSeats'
+    | 'knowledgeDocs'
+    | 'activeContacts'
+    | 'broadcasts',
   currentCount: number,
 ): Promise<void> {
   const { features, plan } = await getWorkspacePlan(workspaceId);

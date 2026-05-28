@@ -16,8 +16,9 @@ import { PLANS, type PlanId, type PlanFeature } from '@zapfy/shared';
 import { Button, cn } from '@zapfy/ui';
 
 import {
-  countAiConversationsThisCycle,
-  dailyConversationsLastDays,
+  countActiveContactsThisCycle,
+  countBroadcastsThisCycle,
+  dailyActiveContactsLastDays,
   getWorkspacePlan,
 } from '@/lib/plans';
 import { isStripeConfigured, isStripeMock } from '@/lib/stripe';
@@ -61,12 +62,14 @@ export default async function BillingPage({ searchParams }: PageProps) {
   const { workspace, member } = await requireWorkspace();
   const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
 
-  const [subscription, planInfo, aiUsed, usageSeries] = await Promise.all([
-    prisma.subscription.findUnique({ where: { workspaceId: workspace.id } }),
-    getWorkspacePlan(workspace.id),
-    countAiConversationsThisCycle(workspace.id),
-    dailyConversationsLastDays(workspace.id, 14),
-  ]);
+  const [subscription, planInfo, activeContactsUsed, broadcastsUsed, usageSeries] =
+    await Promise.all([
+      prisma.subscription.findUnique({ where: { workspaceId: workspace.id } }),
+      getWorkspacePlan(workspace.id),
+      countActiveContactsThisCycle(workspace.id),
+      countBroadcastsThisCycle(workspace.id),
+      dailyActiveContactsLastDays(workspace.id, 14),
+    ]);
   const { plan, features, status, trialEndsAt } = planInfo;
   const stripeConfigured = isStripeConfigured();
   const stripeMock = isStripeMock();
@@ -181,9 +184,14 @@ export default async function BillingPage({ searchParams }: PageProps) {
           <div className="px-6 py-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <UsageBar
-                label="Conversas IA neste ciclo"
-                used={aiUsed}
-                limit={features.aiConversations}
+                label="Contatos ativos (últimos 30d)"
+                used={activeContactsUsed}
+                limit={features.activeContacts}
+              />
+              <UsageBar
+                label="Broadcasts neste ciclo"
+                used={broadcastsUsed}
+                limit={features.broadcasts}
               />
               <KeyValue
                 label="Números WhatsApp"
@@ -196,6 +204,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <KeyValue
                 label="Documentos RAG"
                 value={limitLabel(features.knowledgeDocs, 'doc')}
+              />
+              <KeyValue
+                label="Respostas do agente"
+                value="Gratuitas (Meta)"
               />
             </div>
 
@@ -235,9 +247,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <BarChart3 className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold tracking-tight">Uso 14 dias</h3>
+              <h3 className="text-sm font-semibold tracking-tight">Contatos ativos 14d</h3>
               <p className="text-xs text-muted-foreground">
-                {usageTotal.toLocaleString('pt-BR')} conversa{usageTotal === 1 ? '' : 's'} IA
+                {activeContactsUsed.toLocaleString('pt-BR')} contato
+                {activeContactsUsed === 1 ? '' : 's'} no ciclo
               </p>
             </div>
           </div>
@@ -289,7 +302,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
           <Bullet>Cancele em 1 clique pelo portal Stripe.</Bullet>
           <Bullet>Limites avisados em 80%. Sem cobrança escondida.</Bullet>
           <Bullet>Suas conversas nunca treinam modelos de IA.</Bullet>
-          <Bullet>Sem cobrança por contato — só por conversa IA atendida.</Bullet>
+          <Bullet>Respostas do agente são gratuitas (Meta, jul/2025). Cobrança só por contatos ativos no mês + broadcasts.</Bullet>
           <Bullet>Faturas direto no e-mail, sempre.</Bullet>
         </ul>
       </section>
@@ -418,7 +431,8 @@ function PlanCard({
   highlighted?: boolean;
 }) {
   const featureRows: Array<{ has: boolean; text: string }> = [
-    { has: true, text: `${limitLabel(features.aiConversations, 'conversa')} IA/mês` },
+    { has: true, text: `${limitLabel(features.activeContacts, 'contato')} ativo/mês` },
+    { has: true, text: `${limitLabel(features.broadcasts, 'broadcast')}/mês` },
     { has: true, text: `${limitLabel(features.whatsappNumbers, 'numero')} WhatsApp` },
     { has: true, text: `${limitLabel(features.teamSeats, 'seat')} no time` },
     { has: true, text: `${limitLabel(features.knowledgeDocs, 'doc')} de conhecimento` },

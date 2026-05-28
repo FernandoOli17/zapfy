@@ -28,8 +28,9 @@ const PLANS: Plan[] = [
     blurb: 'Pra começar a atender com IA sem dor.',
     features: [
       { has: true, text: '1 número WhatsApp Business' },
-      { has: true, text: '1 usuário (você)' },
-      { has: true, text: '1.000 conversas IA por mês' },
+      { has: true, text: '2 usuários no time' },
+      { has: true, text: 'Até 500 contatos ativos / mês' },
+      { has: true, text: '2 broadcasts (campanhas) / mês' },
       { has: true, text: '10 documentos na base de conhecimento' },
       { has: true, text: 'Forge ilimitado' },
       { has: true, text: 'Templates HSM' },
@@ -49,12 +50,12 @@ const PLANS: Plan[] = [
     highlight: true,
     features: [
       { has: true, text: '3 números WhatsApp Business' },
-      { has: true, text: '5 usuários no time' },
-      { has: true, text: '10.000 conversas IA por mês' },
+      { has: true, text: '10 usuários no time' },
+      { has: true, text: 'Até 3.000 contatos ativos / mês' },
+      { has: true, text: 'Broadcasts ilimitados' },
       { has: true, text: '100 documentos na base' },
       { has: true, text: 'Tools customizadas por workspace' },
       { has: true, text: 'Webhooks de saída' },
-      { has: true, text: 'Broadcasts e campanhas' },
       { has: true, text: 'Integração Google Calendar' },
       { has: true, text: 'Suporte prioritário' },
       { has: false, text: 'API pública' },
@@ -70,7 +71,8 @@ const PLANS: Plan[] = [
     features: [
       { has: true, text: 'Números ilimitados' },
       { has: true, text: 'Usuários ilimitados' },
-      { has: true, text: 'Conversas IA ilimitadas' },
+      { has: true, text: 'Contatos ativos ilimitados' },
+      { has: true, text: 'Broadcasts ilimitados' },
       { has: true, text: 'Documentos ilimitados' },
       { has: true, text: 'API pública (REST + webhooks)' },
       { has: true, text: 'SLA de uptime' },
@@ -89,8 +91,10 @@ const FEATURE_MATRIX: Array<{
   premium: boolean | string;
 }> = [
   { feature: 'Números WhatsApp', starter: '1', pro: '3', premium: 'Ilimitado' },
-  { feature: 'Usuários do time', starter: '1', pro: '5', premium: 'Ilimitado' },
-  { feature: 'Conversas IA / mês', starter: '1.000', pro: '10.000', premium: 'Ilimitado' },
+  { feature: 'Usuários do time', starter: '2', pro: '10', premium: 'Ilimitado' },
+  { feature: 'Contatos ativos / mês', starter: '500', pro: '3.000', premium: 'Ilimitado' },
+  { feature: 'Broadcasts (HSM) / mês', starter: '2', pro: 'Ilimitado', premium: 'Ilimitado' },
+  { feature: 'Respostas do agente (service msgs)', starter: 'Gratuitas', pro: 'Gratuitas', premium: 'Gratuitas' },
   { feature: 'Documentos no RAG', starter: '10', pro: '100', premium: 'Ilimitado' },
   { feature: 'Forge (builder em conversa)', starter: true, pro: true, premium: true },
   { feature: 'Flow Builder visual', starter: true, pro: true, premium: true },
@@ -100,7 +104,6 @@ const FEATURE_MATRIX: Array<{
   { feature: 'Tools por vertical', starter: true, pro: true, premium: true },
   { feature: 'Tools customizadas', starter: false, pro: true, premium: true },
   { feature: 'Webhooks de saída', starter: false, pro: true, premium: true },
-  { feature: 'Broadcasts / campanhas', starter: false, pro: true, premium: true },
   { feature: 'Google Calendar', starter: false, pro: true, premium: true },
   { feature: 'API pública', starter: false, pro: false, premium: true },
   { feature: 'SLA de uptime', starter: false, pro: false, premium: true },
@@ -113,12 +116,16 @@ const FAQ = [
     a: 'Você cria conta sem cartão e tem 7 dias com acesso a tudo do plano Starter (ou superior se escolher). No fim do trial, é só adicionar cartão pra continuar — ou deixar expirar, sem cobrança.',
   },
   {
-    q: 'O que conta como "conversa IA"?',
-    a: 'Uma "conversa" é uma janela de 24h de troca de mensagens com um único contato em que o agente IA respondeu pelo menos uma vez. Se o atendimento for 100% humano, não conta no limite.',
+    q: 'O que conta como "contato ativo"?',
+    a: 'Um contato é "ativo" no mês se enviou OU recebeu pelo menos uma mensagem (do agente ou da equipe) nos últimos 30 dias. Contatos só cadastrados, sem interação, não contam. Quem só leu broadcast também não — o gatilho é troca de mensagens individual.',
   },
   {
-    q: 'O que acontece se eu passar do limite de conversas?',
-    a: 'No Starter, o agente IA pausa e o time recebe alerta pra atender manual até o fim do ciclo, ou você dá upgrade. No Pro, segue funcionando e cobramos add-ons em lotes de 1.000 conversas (R$45/lote) — sem surpresa, avisamos em 80% do limite.',
+    q: 'Por que não cobram por mensagem ou por conversa?',
+    a: 'Em julho/2025 a Meta mudou o modelo de cobrança da WhatsApp Cloud API: respostas do agente IA dentro da janela de 24h ("service messages") ficaram **gratuitas** na Meta. Só broadcasts e templates de marketing têm custo. Como nosso agente atende quase tudo via service message, não faz mais sentido cobrar por conversa — a unidade que importa virou contato ativo + broadcasts proativos.',
+  },
+  {
+    q: 'O que acontece se eu passar do limite de contatos ativos?',
+    a: 'Avisamos em 80% do limite. No Starter, o agente continua respondendo contatos já ativos mas novos contatos vão direto pra fila humana até o próximo ciclo (ou upgrade). No Pro, o limite é 6× maior — quase ninguém estoura. Premium é ilimitado.',
   },
   {
     q: 'Preciso do meu próprio Meta App pro WhatsApp?',
@@ -194,6 +201,21 @@ export default function PricingPage() {
           <p className="mt-8 text-center text-xs text-muted-foreground">
             Preços em BRL · IVA incluso · Cancele quando quiser
           </p>
+
+          {/* Nota explicativa Meta pricing — service messages grátis */}
+          <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-[#00E676]/25 bg-[#00E676]/5 p-5 text-sm leading-relaxed text-zinc-200">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[#00E676]">
+              💡 Como a cobrança funciona
+            </p>
+            <p>
+              <strong className="text-white">Respostas do agente IA são gratuitas.</strong>{' '}
+              Desde julho/2025 a Meta não cobra mais por mensagens dentro da janela de 24h
+              de atendimento (service messages). O Zapfy também não cobra por elas — o
+              limite do plano é{' '}
+              <span className="text-[#00E676]">contatos ativos no mês + broadcasts proativos</span>.
+              Sem surpresa em fatura.
+            </p>
+          </div>
         </div>
       </section>
 

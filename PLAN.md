@@ -195,9 +195,13 @@ ou por usuário — provavelmente por workspace).
 
 ### Fase 8 — Billing
 Stripe Subscriptions. Trial 7 dias sem cartão. Planos STARTER (R$97), PRO (R$297),
-PREMIUM (R$697). Webhook `stripe` sincroniza Subscription. Counter de conversas reseta
-no aniversário. Middleware `requirePlan(feature)`. Customer portal. Pix — depende de
-pergunta #5.
+PREMIUM (R$697). Webhook `stripe` sincroniza Subscription. **Métricas de plano
+atualizadas em 2026-05 pra refletir mudança Meta jul/2025**: contatos ativos no mês
++ broadcasts proativos (era contagem de conversas IA — Meta hoje não cobra mais
+service messages dentro da janela 24h, então cobrar por conversa virou anacronismo).
+Contadores são calculados dinamicamente via queries (Message + Broadcast), não
+campos cache no DB. Middleware `requirePlan(feature)`. Customer portal. Pix —
+depende de pergunta #5.
 
 **Depende de:** Fase 1.
 
@@ -229,6 +233,7 @@ README + deploy guide (Vercel + Railway).
 - Paleta: zinc/neutro escuro + accent verde elétrico (#00E676 ou aproximado)
 - Estado do Forge: state machine (xstate ou discriminated union em TS — escolher na Fase 3)
 - Tools de IA: uma função TS por arquivo, schema Zod exportado, em `packages/ai/src/tools/`
+- **WhatsApp pricing (Meta jul/2025):** modelo passou de "por conversa" pra "por mensagem de template". **Service messages (respostas do agente dentro da janela 24h) são gratuitas.** Métrica de plano Zapfy: contatos ativos no mês (≠ contatos cadastrados) + broadcasts proativos. Contadores calculados dinamicamente via queries (Message/Broadcast) — sem campo cache no Workspace, evita drift.
 
 ## Suposições (validar se virar bloqueio)
 - Stripe Brasil disponível e suficiente; Pix decidido em pergunta #5
