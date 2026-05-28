@@ -1,34 +1,32 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
+import { ZapfyLogo } from '@zapfy/ui';
 
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid md:grid-cols-[5fr_7fr] lg:grid-cols-[2fr_3fr]">
+    <div className="grid min-h-screen bg-[#0a0a0a] md:grid-cols-[5fr_7fr] lg:grid-cols-[2fr_3fr]">
       <BrandPanel />
       <div className="relative flex min-h-screen flex-col">
         <header className="flex items-center justify-between px-6 py-5 md:px-10">
-          <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight md:hidden">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-              <span className="text-[10px] font-bold text-primary-foreground">O</span>
-            </div>
-            Trato
+          <Link href="/" aria-label="Zapfy" className="md:hidden">
+            <ZapfyLogo variant="white" height={24} />
           </Link>
-          <span className="hidden md:block text-sm text-muted-foreground">Falta pouco.</span>
+          <span className="hidden text-sm text-[#888] md:block">Falta pouco.</span>
           <ThemeToggle />
         </header>
         <main className="flex flex-1 items-center justify-center px-6 py-12 md:px-10">
           <div className="w-full max-w-sm">{children}</div>
         </main>
-        <footer className="px-6 py-5 md:px-10 text-xs text-muted-foreground">
-          Trato ©{' '}
+        <footer className="px-6 py-5 text-xs text-[#666] md:px-10">
+          Zapfy ©{' '}
           <span suppressHydrationWarning>{new Date().getFullYear()}</span>
           {' · '}
-          <Link href="/termos" className="hover:text-foreground">
+          <Link href="/termos" className="transition-colors hover:text-[#00E676]">
             Termos
           </Link>
           {' · '}
-          <Link href="/privacidade" className="hover:text-foreground">
+          <Link href="/privacidade" className="transition-colors hover:text-[#00E676]">
             Privacidade
           </Link>
         </footer>
@@ -39,52 +37,59 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
 function BrandPanel() {
   return (
-    <aside className="relative hidden overflow-hidden bg-zinc-950 text-zinc-100 md:flex md:flex-col md:justify-between md:p-10 lg:p-14">
-      <div className="bg-dot-grid absolute inset-0 opacity-20" aria-hidden />
-      {/* radial blue glow */}
+    <aside className="relative hidden overflow-hidden bg-[#080808] text-zinc-100 md:flex md:flex-col md:justify-between md:p-10 lg:p-14">
+      {/* dot grid sutil */}
       <div
-        className="absolute inset-0"
         aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-20"
         style={{
-          background:
-            'radial-gradient(ellipse 70% 50% at 20% 100%, color-mix(in srgb, hsl(213 93% 55%) 30%, transparent), transparent 60%)',
+          backgroundImage:
+            'radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
         }}
       />
-      {/* secondary nebula glow */}
+      {/* glow verde inferior */}
       <div
-        className="absolute inset-0"
         aria-hidden
+        className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse 60% 40% at 100% 0%, color-mix(in srgb, hsl(263 70% 50%) 20%, transparent), transparent 65%)',
+            'radial-gradient(ellipse 70% 50% at 20% 100%, rgba(0,230,118,0.25), transparent 60%)',
         }}
       />
-      {/* top accent line */}
+      {/* glow verde topo direita */}
       <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 40% at 100% 0%, rgba(0,230,118,0.10), transparent 65%)',
+        }}
+      />
+      {/* top accent line verde */}
+      <div
+        aria-hidden
         className="absolute inset-x-0 top-0 h-px"
-        aria-hidden
         style={{
-          background:
-            'linear-gradient(90deg, transparent, hsl(213 93% 68%), transparent)',
+          background: 'linear-gradient(90deg, transparent, #00E676, transparent)',
         }}
       />
 
-      <Link href="/" className="relative flex items-center gap-2.5 font-semibold tracking-tight">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-          <span className="text-xs font-bold text-white">O</span>
-        </div>
-        Trato
+      <Link href="/" aria-label="Zapfy" className="relative inline-flex">
+        <ZapfyLogo variant="white" height={28} />
       </Link>
 
       <div className="relative">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Por que Trato</p>
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
+          Por que Zapfy
+        </p>
         <h2 className="mt-4 text-3xl font-medium leading-[1.1] tracking-tight lg:text-4xl">
           Não é um bot.{' '}
-          <span className="font-serif italic font-normal text-primary">
+          <span className="font-serif italic font-normal text-[#00E676]">
             É um funcionário que nunca dorme.
           </span>
         </h2>
-        <p className="mt-6 max-w-md text-sm leading-relaxed text-zinc-400">
+        <p className="mt-6 max-w-md text-sm leading-relaxed text-[#888]">
           Você conversa com o Forge, ele entrevista seu negócio e monta o agente —
           system prompt, tom, fluxos e handoff pra equipe. Sem formulário. Em minutos.
         </p>
@@ -95,15 +100,18 @@ function BrandPanel() {
             ['Cloud API', 'Meta oficial'],
             ['LGPD', 'Privacidade garantida'],
           ].map(([val, desc]) => (
-            <div key={val} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
-              <p className="text-sm font-semibold text-primary">{val}</p>
-              <p className="mt-0.5 text-xs text-zinc-500">{desc}</p>
+            <div
+              key={val}
+              className="rounded-xl border border-[#1a1a1a] bg-[#111] p-3"
+            >
+              <p className="text-sm font-semibold text-[#00E676]">{val}</p>
+              <p className="mt-0.5 text-xs text-[#666]">{desc}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="relative text-xs text-zinc-600">
+      <div className="relative text-xs text-[#444]">
         Cloud API oficial da Meta · AES-256-GCM · LGPD-friendly
       </div>
     </aside>

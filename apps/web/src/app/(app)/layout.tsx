@@ -173,7 +173,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 {workspace?.name ?? 'Super-admin'}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {workspace ? `Trato.dev/${workspace.slug}` : 'Console global'}
+                {workspace ? `zapfy.com.br/${workspace.slug}` : 'Console global'}
               </p>
             </div>
           </div>
@@ -209,11 +209,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <div className="flex min-h-screen flex-1 flex-col overflow-hidden">
         {/* Mobile topbar */}
         <header className="flex items-center justify-between border-b border-border bg-card px-5 py-3.5 md:hidden">
-          <Link href="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary">
-              <span className="text-[10px] font-bold text-primary-foreground">O</span>
-            </div>
-            Trato
+          <Link href="/dashboard" aria-label="Zapfy" className="inline-flex">
+            <ZapfyLogo variant="white" height={22} />
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />

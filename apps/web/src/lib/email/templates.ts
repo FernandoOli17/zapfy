@@ -51,12 +51,12 @@ function wrap(inner: string): string {
     <div style="${CONTAINER_STYLES}">
       <div style="${HEADER_STYLES}; padding-bottom: 12px;">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#60A5FA;vertical-align:middle;margin-right:8px"></span>
-        Trato
+        Zapfy
       </div>
       ${inner}
       <div style="${FOOTER_STYLES}">
-        Trato · O WhatsApp da sua empresa, com cérebro próprio.<br/>
-        Não esperava esse email? <a href="mailto:oi@Trato.dev" style="color:#60A5FA">avisa pra gente</a>.
+        Zapfy · O WhatsApp da sua empresa, com cérebro próprio.<br/>
+        Não esperava esse email? <a href="mailto:oi@Zapfy.dev" style="color:#60A5FA">avisa pra gente</a>.
       </div>
     </div>
   </div>
@@ -66,14 +66,14 @@ function wrap(inner: string): string {
 export function magicLinkEmail(input: { url: string; email: string }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px;color:#18181b">Seu link de acesso</h1>
-    <p>Oi! Clique no botão abaixo pra entrar no Trato. O link expira em 5 minutos.</p>
-    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no Trato</a>
+    <p>Oi! Clique no botão abaixo pra entrar no Zapfy. O link expira em 5 minutos.</p>
+    <a href="${input.url}" style="${BUTTON_STYLES}">Entrar no Zapfy</a>
     <p style="color:#71717a;font-size:13px">Se o botão não funcionar, copia e cola essa URL no navegador:</p>
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu esse link, pode ignorar este email — ele expira sozinho.</p>
   `);
-  const text = `Entre no Trato: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
-  return { html, text, subject: 'Seu link de acesso ao Trato' };
+  const text = `Entre no Zapfy: ${input.url}\n\nO link expira em 5 minutos. Se não foi você, ignore.`;
+  return { html, text, subject: 'Seu link de acesso ao Zapfy' };
 }
 
 export function welcomeEmail(input: { name: string; workspaceSlug: string; appUrl: string }) {
@@ -91,10 +91,10 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
     <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#60A5FA">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
-    <p style="color:#71717a;font-size:13px">— Time Trato</p>
+    <p style="color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
-  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Trato`;
-  return { html, text, subject: `Bem-vindo ao Trato, ${input.name}` };
+  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Zapfy`;
+  return { html, text, subject: `Bem-vindo ao Zapfy, ${input.name}` };
 }
 
 export function contactNotificationEmail(input: {
@@ -114,7 +114,7 @@ export function contactNotificationEmail(input: {
     <p style="color:#71717a;font-size:13px">Responda direto pelo Reply-To deste email.</p>
   `);
   const text = `Novo contato:\n\nNome: ${input.name}\nE-mail: ${input.email}\nAssunto: ${input.subject}\n\n---\n${input.message}`;
-  return { html, text, subject: `[Trato Contato] ${input.subject}` };
+  return { html, text, subject: `[Zapfy Contato] ${input.subject}` };
 }
 
 export function passwordResetEmail(input: { url: string; email: string }) {
@@ -126,8 +126,8 @@ export function passwordResetEmail(input: { url: string; email: string }) {
     <p style="word-break:break-all;font-family:monospace;font-size:12px;background:#f4f4f5;padding:8px;border-radius:6px">${input.url}</p>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Se você não pediu, pode ignorar — a senha atual continua válida.</p>
   `);
-  const text = `Redefinir senha do Trato: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
-  return { html, text, subject: 'Redefinir sua senha do Trato' };
+  const text = `Redefinir senha do Zapfy: ${input.url}\n\nLink expira em 1 hora. Se não foi você, ignore.`;
+  return { html, text, subject: 'Redefinir sua senha do Zapfy' };
 }
 
 export function teamInviteEmail(input: {
@@ -138,13 +138,13 @@ export function teamInviteEmail(input: {
 }) {
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Você foi convidado</h1>
-    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no Trato.</p>
+    <p><strong>${escapeHtml(input.inviterName)}</strong> convidou você pra entrar no workspace <strong>${escapeHtml(input.workspaceName)}</strong> no Zapfy.</p>
     <a href="${input.inviteUrl}" style="${BUTTON_STYLES}">Aceitar convite</a>
     <p style="color:#71717a;font-size:13px">O convite expira em 7 dias.</p>
     <p style="color:#71717a;font-size:13px">Se você não conhece quem te convidou, pode ignorar este email.</p>
   `);
-  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no Trato.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
-  return { html, text, subject: `${input.inviterName} te convidou pro Trato` };
+  const text = `${input.inviterName} te convidou pro workspace "${input.workspaceName}" no Zapfy.\n\nAceitar: ${input.inviteUrl}\n\nO convite expira em 7 dias.`;
+  return { html, text, subject: `${input.inviterName} te convidou pro Zapfy` };
 }
 
 /**
@@ -154,13 +154,13 @@ export function day3ForgeNudgeEmail(input: { name: string; appUrl: string }) {
   const forgeUrl = `${input.appUrl.replace(/\/$/, '')}/forge`;
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Já criou seu agente, ${escapeHtml(input.name)}?</h1>
-    <p>Você criou sua conta no Trato faz 3 dias e ainda não terminou de configurar o agente IA.</p>
+    <p>Você criou sua conta no Zapfy faz 3 dias e ainda não terminou de configurar o agente IA.</p>
     <p>O <strong>Forge</strong> faz isso em 5 minutos conversando — você só responde 6 perguntas (vertical, tom, horário, etc.) e ele monta o agente.</p>
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Configurar agora</a>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Travou em alguma parte? Responde esse email contando e a gente resolve junto.</p>
-    <p style="color:#71717a;font-size:13px">— Time Trato</p>
+    <p style="color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
-  const text = `Já criou seu agente, ${input.name}?\n\nVocê criou sua conta faz 3 dias e ainda não terminou. O Forge faz isso em 5 minutos conversando.\n\nConfigurar: ${forgeUrl}\n\nTravou em algo? Responde esse email.\n\n— Time Trato`;
+  const text = `Já criou seu agente, ${input.name}?\n\nVocê criou sua conta faz 3 dias e ainda não terminou. O Forge faz isso em 5 minutos conversando.\n\nConfigurar: ${forgeUrl}\n\nTravou em algo? Responde esse email.\n\n— Time Zapfy`;
   return { html, text, subject: `Faltam 5min pro seu agente IA estar no ar 🤖` };
 }
 
@@ -171,7 +171,7 @@ export function day6TrialEndingEmail(input: { name: string; appUrl: string }) {
   const billingUrl = `${input.appUrl.replace(/\/$/, '')}/billing`;
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Seu trial acaba amanhã, ${escapeHtml(input.name)}</h1>
-    <p>Você tá usando o Trato faz 6 dias. <strong>Amanhã o trial expira</strong> e você precisa escolher um plano pra continuar atendendo no WhatsApp.</p>
+    <p>Você tá usando o Zapfy faz 6 dias. <strong>Amanhã o trial expira</strong> e você precisa escolher um plano pra continuar atendendo no WhatsApp.</p>
 
     <table style="width:100%;border-collapse:collapse;margin:20px 0">
       <tr>
@@ -199,8 +199,8 @@ export function day6TrialEndingEmail(input: { name: string; appUrl: string }) {
     <a href="${billingUrl}" style="${BUTTON_STYLES}">Escolher plano</a>
     <p style="color:#71717a;font-size:13px;margin-top:24px">Não quer continuar? Tudo bem — sua conta vira modo limitado (read-only) em 24h. Pode reativar quando quiser.</p>
   `);
-  const text = `Seu trial acaba amanhã, ${input.name}.\n\nEscolha um plano em ${billingUrl}\n\n- Starter R$ 97 — 1k conversas, 1 número\n- Pro R$ 297 — 10k conversas, 3 números, custom tools\n- Premium R$ 697 — ilimitado\n\nSem upgrade, conta vai pra modo read-only.\n\n— Time Trato`;
-  return { html, text, subject: 'Seu trial Trato acaba amanhã ⏰' };
+  const text = `Seu trial acaba amanhã, ${input.name}.\n\nEscolha um plano em ${billingUrl}\n\n- Starter R$ 97 — 1k conversas, 1 número\n- Pro R$ 297 — 10k conversas, 3 números, custom tools\n- Premium R$ 697 — ilimitado\n\nSem upgrade, conta vai pra modo read-only.\n\n— Time Zapfy`;
+  return { html, text, subject: 'Seu trial Zapfy acaba amanhã ⏰' };
 }
 
 /**
@@ -225,10 +225,10 @@ export function activationEmail(input: { name: string; workspaceSlug: string; ap
 
     <a href="${inboxUrl}" style="${BUTTON_STYLES}">Ver Inbox ao vivo</a>
     <p style="color:#71717a;font-size:13px">Ou acompanhe métricas em <a href="${analyticsUrl}" style="color:#60A5FA">analytics</a>.</p>
-    <p style="margin-top:32px;color:#71717a;font-size:13px">— Time Trato</p>
+    <p style="margin-top:32px;color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
-  const text = `Seu agente está no ar! 🎉\n\nParabéns, ${input.name}. O workspace "${input.workspaceSlug}" tá ativo.\n\nVer inbox: ${inboxUrl}\nAnalytics: ${analyticsUrl}\n\nPróximos passos:\n- Subir documentos pra RAG\n- Convidar time pra handoff\n- Configurar templates HSM\n\n— Time Trato`;
-  return { html, text, subject: 'Seu agente Trato está no ar 🎉' };
+  const text = `Seu agente está no ar! 🎉\n\nParabéns, ${input.name}. O workspace "${input.workspaceSlug}" tá ativo.\n\nVer inbox: ${inboxUrl}\nAnalytics: ${analyticsUrl}\n\nPróximos passos:\n- Subir documentos pra RAG\n- Convidar time pra handoff\n- Configurar templates HSM\n\n— Time Zapfy`;
+  return { html, text, subject: 'Seu agente Zapfy está no ar 🎉' };
 }
 
 function escapeHtml(s: string): string {

@@ -232,7 +232,7 @@ function Instructions({ appUrl }: { appUrl: string }) {
           title="Configure o webhook na Meta"
           body={
             <>
-              Depois de conectar aqui no Trato, copia os campos <em>Webhook URL</em> e{' '}
+              Depois de conectar aqui no Zapfy, copia os campos <em>Webhook URL</em> e{' '}
               <em>Verify Token</em> que aparecem no card acima e cola em{' '}
               <em>WhatsApp → Configuration → Webhook</em> no Meta App. Inscreva-se no campo{' '}
               <strong>messages</strong>. URL base: <code>{appUrl}</code>.

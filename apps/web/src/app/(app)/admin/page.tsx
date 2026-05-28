@@ -11,7 +11,7 @@ import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
 
 import { ImpersonateButton, ForcePlanButton } from './client-buttons';
 
-export const metadata = { title: 'Super-admin · Trato' };
+export const metadata = { title: 'Super-admin · Zapfy' };
 export const dynamic = 'force-dynamic';
 
 const PLAN_COLOR: Record<PlanId, string> = {

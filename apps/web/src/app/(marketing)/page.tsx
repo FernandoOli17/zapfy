@@ -74,9 +74,11 @@ function Hero() {
         </Link>
       </div>
 
-      {/* Hero film — gerado via Veo 3, autoplay loop muted (iOS-safe) */}
+      {/* Hero film — gerado via Veo 3, autoplay loop muted (iOS-safe).
+          max-w-md (448px) intencional: tamanho menor disfarça artefatos
+          de IA no vídeo. */}
       <div
-        className="animate-fade-up relative mx-auto mt-12 aspect-video w-full max-w-2xl overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a]"
+        className="animate-fade-up relative mx-auto mt-12 aspect-video w-full max-w-md overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a]"
         style={{ animationDelay: '700ms' }}
       >
         <video

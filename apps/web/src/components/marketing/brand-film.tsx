@@ -18,7 +18,8 @@ export function BrandFilmSection() {
           </span>
         </h2>
 
-        <div className="relative mx-auto mt-12 max-w-4xl overflow-hidden rounded-2xl border border-[#1a1a1a]">
+        {/* max-w-2xl intencional: tamanho menor disfarça artefatos IA do vídeo */}
+        <div className="relative mx-auto mt-12 max-w-2xl overflow-hidden rounded-2xl border border-[#1a1a1a]">
           <video
             autoPlay
             muted

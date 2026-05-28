@@ -39,7 +39,7 @@ export default async function WebhooksPage() {
         </h1>
         <p className="mt-4 max-w-2xl text-muted-foreground md:text-lg">
           Inscreva URLs do seu backend pra receber eventos em tempo real. Cada disparo vem com
-          assinatura HMAC-SHA256 no header <code>x-Trato-signature</code> pra você validar.
+          assinatura HMAC-SHA256 no header <code>x-Zapfy-signature</code> pra você validar.
         </p>
 
         <section className="mt-10 rounded-2xl border border-border/60 bg-card/40 p-6 md:p-8">
@@ -94,7 +94,7 @@ export default async function WebhooksPage() {
 const expected = 'sha256=' + crypto.createHmac('sha256', SECRET)
   .update(rawBody)
   .digest('hex');
-const provided = req.headers['x-Trato-signature'];
+const provided = req.headers['x-Zapfy-signature'];
 // timingSafeEqual ou comparison constant-time
 if (expected !== provided) return res.status(401).end();`}</pre>
         </section>
