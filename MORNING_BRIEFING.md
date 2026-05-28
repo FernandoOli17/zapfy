@@ -1,100 +1,102 @@
-# Morning Briefing — Sessão 10 (Paleta global + vídeos menores · 2026-05-28)
+# Morning Briefing — Sessão 11 (Deploy Vercel + Pricing Meta jul/2025 · 2026-05-28)
 
-Bom dia, Fernando. Sessão focada nos 3 pedidos:
-1. **Vídeos menores** ✓
-2. **Paleta brand no auth + dashboard** ✓ (via tokens — propagou em todas as 20+ rotas)
-3. **Deploy Vercel** ⚠️ — você prefere setar Root Directory no dashboard
-   (60s), aí eu redeployo
-
-Tudo verde: typecheck ✓, lint ✓. Push: `599d89c..466e0a8`.
+Bom dia, Fernando. **Deploy Vercel no ar ✅** + **modelo de pricing
+atualizado pra refletir mudança Meta jul/2025**. 6 commits pushed nesta sessão.
 
 ---
 
-## 🎬 Vídeos menores
-Reduzi pra mascarar artefatos visuais da IA Veo3:
+## 🚀 Vercel staging NO AR
 
-| Vídeo | Antes | Depois |
-|-------|-------|--------|
-| Hero film (prompt1) | `max-w-2xl` (672px) | `max-w-md` (448px) |
-| ForgeDemo (prompt2) | `max-w-4xl` (896px) | `max-w-2xl` (672px) |
-| BrandFilm (prompt3) | `max-w-4xl` (896px) | `max-w-2xl` (672px) |
+URL: **https://zapfy-bv54kub6t-fernandodeoliveirarena0-2349s-projects.vercel.app**
 
-Comentários inline explicando o porquê do tamanho intencional.
+Build verde após 3 ajustes:
+1. `vercel.json` movido de root pra `apps/web/` (root directory agora é apps/web)
+2. `buildCommand` ajustado pra `pnpm --filter @zapfy/db db:generate && next build`
+3. `outputDirectory: .next` (relativo a apps/web, não absoluto)
 
----
+41 páginas geradas, Compile 83s, deploy success.
 
-## 🎨 Paleta brand em **TODO** o app (auth + dashboard)
+### ⚠️ Smoke tests bloqueados por Deployment Protection
+Todas rotas retornam **401 Authentication Required** porque a Vercel
+ativou Deployment Protection no projeto. Pra acessar publicamente:
 
-Em vez de editar 20+ arquivos do dashboard um por um, troquei os
-**design tokens** em `packages/ui/src/styles.css`. Como o dashboard
-inteiro usa `bg-primary`, `text-primary`, `border-primary`, etc.,
-a mudança propagou automaticamente:
+**Settings → Deployment Protection → Off** (ou Bypass via header)
 
-| Token | Antes | Depois |
-|-------|-------|--------|
-| `--color-primary` | hsl(213 93% 68%) sky blue | **hsl(151 100% 45%)** = `#00E676` verde Zapfy |
-| `--color-background` | hsl(225 50% 4%) cosmic | hsl(0 0% 4%) = `#0a0a0a` |
-| `--color-card` | hsl(225 30% 7%) | hsl(0 0% 7%) = `#111` |
-| `--color-popover` | hsl(225 35% 6%) | hsl(0 0% 5%) = `#0d0d0d` |
-| `--color-muted-foreground` | hsl(220 8% 65%) | hsl(0 0% 53%) = `#888` |
-| `--color-accent` | tinted blue | tinted verde |
-| `--color-destructive` | hsl(0 72% 55%) | hsl(0 84% 60%) = `#ef4444` |
-| `--color-ring` | sky blue | verde |
+Link direto:
+**https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings/deployment-protection**
 
-Modo light: primary verde mais escuro (35% L) pra contraste em fundo branco.
-
-### (auth) layout reescrito
-- `BrandPanel` agora usa `ZapfyLogo` (era "O Trato" violet)
-- Glow radial verde (era azul), top accent line verde
-- Heading "Por que Zapfy" label, italic "É um funcionário..." em #00E676
-- 4 métricas (24/7, <2s, Cloud API, LGPD) em cards `bg-[#111] border-[#1a1a1a]` com valor em verde
-- Footer "Zapfy © 2026 · Termos · Privacidade"
-
-### (app) dashboard layout
-- Workspace card: `zapfy.com.br/<slug>` (era `Trato.dev/...`)
-- Mobile topbar: `ZapfyLogo` (era "O Trato")
-- Todo o resto: `bg-card`/`border-border`/`text-primary` pegou paleta nova
-  sem precisar de edit individual
-
-### Refs textuais "Trato" → "Zapfy"
-Sed em 10 arquivos restantes: admin, automations, integrations, settings,
-whatsapp + lib/email (client + templates).
+### Domínio `zapfy.store`
+Você comprou o domínio (apareceu em `vercel domains ls`). Não está apontado
+pro projeto ainda — quando apontar, atualizar `BETTER_AUTH_URL` e
+`NEXT_PUBLIC_APP_URL` nas env vars (atualmente `https://zapfy.vercel.app`).
 
 ---
 
-## ⚠️ Vercel staging — pendente do dashboard
-Você escolheu setar Root Directory pelo dashboard (mais limpo).
-**Passos exatos:**
-1. https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings
-2. **General → Root Directory → Edit → `apps/web`**
-3. Marca **"Include source files outside of the Root Directory in the Build Step"**
-   (Vercel precisa subir pra resolver packages/* do workspace)
-4. **Save**
-5. Me avisa que rolou — eu rodo `pnpm dlx vercel --prod --yes`
-   e faço smoke tests
+## 💸 Refactor de pricing — Meta jul/2025
 
-URL prevista: `https://zapfy.vercel.app` (já setei `BETTER_AUTH_URL` e
-`NEXT_PUBLIC_APP_URL` no project Vercel apontando pra esse domínio).
+**Contexto:** Meta mudou cobrança WhatsApp Cloud API em julho/2025:
+- Service messages (resposta do agente IA dentro da janela 24h) ficaram **GRATUITAS**
+- Custo só em broadcasts/templates de marketing proativos
+
+**Métrica de plano antiga → nova:**
+
+| Plano | activeContacts/mês | broadcasts/mês | numbers | seats |
+|-------|-------------------:|---------------:|--------:|------:|
+| Starter | **500** | **2** | 1 | 2 |
+| Pro     | **3.000** | **ilimitado** | 3 | 10 |
+| Premium | **ilimitado** | ilimitado | ilim | ilim |
+
+### O que mudou no código
+
+| Arquivo | Mudança |
+|---------|---------|
+| `packages/shared/src/constants.ts` | `PlanFeature.aiConversations` → `activeContacts` + novo `broadcasts`. PLANS atualizado. Const `ACTIVE_CONTACT_WINDOW_DAYS=30` |
+| `apps/web/src/lib/plans.ts` | `countAiConversationsThisCycle` → `countActiveContactsThisCycle` (distinct contactId em Message últimos 30d) + `countBroadcastsThisCycle` (Broadcast count desde currentPeriodStart). `dailyActiveContactsLastDays` pra sparkline. `assertPlanLimit` aceita novos campos |
+| `apps/web/src/app/(marketing)/precos/page.tsx` | PLANS_DATA + matriz comparativa + FAQ atualizados. Box verde explicativo: **"💡 Como a cobrança funciona — Respostas do agente IA são gratuitas..."** |
+| `apps/web/src/app/(app)/billing/page.tsx` | 2 UsageBars (contatos ativos + broadcasts) em vez de 1 só. KeyValue extra "Respostas do agente: Gratuitas (Meta)". Sparkline mostra contatos ativos por dia. Bullet de transparência atualizado |
+| `PLAN.md` | Fase 8 menciona mudança Meta. Decisão tomada explícita |
+
+### Decisão arquitetural
+Contadores são **calculados dinamicamente via queries** (Message/Broadcast),
+não campos cache no Workspace. Razão: evita drift, sempre acurado, sem
+worker de reset. `currentPeriodStart` vem do Stripe webhook como sempre.
 
 ---
 
-## 📊 Métricas
+## 📊 Commits desta sessão
 
 ```
-1 commit pushed:    466e0a8 feat(brand): paleta verde + vídeos menores
-17 arquivos modificados
-+127 / -116 linhas líquidas
-
-typecheck:  ✅ exit 0
-lint:       ✅ exit 0
+9725d36 refactor(billing): pricing por contato ativo + broadcasts (Meta jul/2025)
+c984f66 fix(deploy): outputDirectory relativo a apps/web (era .next absoluto)
+abf4e8d fix(deploy): mover vercel.json pra apps/web (Root Directory setado)
+3196d85 docs(briefing): sessão 10 — paleta global + vídeos menores
+466e0a8 feat(brand): paleta verde elétrico no auth + dashboard, vídeos menores
 ```
+
+typecheck ✅ · lint ✅ · build ✅ · push ✅
 
 ---
 
-## 🎯 Próximos passos
+## 🎯 Próximos 2 passos seus
 
-1. **Setar Root Directory no dashboard** (60s) → me avisa → eu deployo
-2. Smoke tests no staging assim que subir
-3. Pusher keys (opcional, real-time inbox)
+### 1. Desabilitar Deployment Protection (60s)
+**https://vercel.com/fernandodeoliveirarena0-2349s-projects/zapfy/settings/deployment-protection**
+
+→ **Deployment Protection: Off** (ou "Standard Protection" se quiser
+manter previews privados mas Production público). Me avisa, eu rodo
+smoke tests automaticamente.
+
+### 2. Apontar zapfy.store pro projeto (opcional)
+Você comprou. Pra usar como domínio principal:
+- Settings → Domains → Add `zapfy.store`
+- Vercel te dá DNS records pra configurar no registrar
+- Quando ativar, me avisa pra eu atualizar env vars
+
+---
+
+## ⚠️ Pusher ainda sem keys
+Mesma situação das sessões anteriores. Inbox roda em polling 5s
+(implementado), funciona mas não real-time sub-segundo. Instruções
+em `BLOCKED.md`.
 
 Bom dia! ☕
