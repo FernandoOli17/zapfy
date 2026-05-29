@@ -5,7 +5,7 @@ import { getAiModels } from '../provider';
 import { systemMessage } from '../caching';
 
 import { getPhaseSystemPrompt } from './prompts/phases';
-import { buildMetaPromptUserMessage, META_PROMPT_SYSTEM } from './prompts/meta-prompt';
+import { generateSystemPrompt } from './generate';
 import { createForgeTools, pickToolsForPhase, type ForgeToolDeps } from './tools';
 import type {
   ForgeAnswers,
@@ -75,27 +75,11 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
       pendingNextPhase = phase;
     },
     scrapeUrl: io.scrapeUrl,
-    generateSystemPrompt: async () => {
-      const result = await generateText({
-        model: models.chat,
-        messages: [
-          systemMessage(META_PROMPT_SYSTEM),
-          { role: 'user', content: buildMetaPromptUserMessage(answers) },
-        ],
-      });
-      return result.text.trim();
-    },
+    generateSystemPrompt: async () => generateSystemPrompt(answers),
     refineSystemPrompt: async (instruction) => {
       const current = answers.systemPromptDraft ?? '';
       if (!current) {
-        const result = await generateText({
-          model: models.chat,
-          messages: [
-            systemMessage(META_PROMPT_SYSTEM),
-            { role: 'user', content: buildMetaPromptUserMessage(answers) },
-          ],
-        });
-        return result.text.trim();
+        return generateSystemPrompt(answers);
       }
       const REFINE_SYSTEM =
         `Você recebe um system prompt atual de um agente de IA pro WhatsApp e uma instrução do dono pra ajustar. Aplique a mudança de forma cirúrgica — mude SÓ o que a instrução pede, preserve o resto literal. Devolva APENAS o system prompt revisado, sem preâmbulo, sem markdown wrapper.`;
@@ -113,14 +97,7 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
     },
     publishAgentVersion: async ({ agentName }) => {
       if (!answers.systemPromptDraft) {
-        const result = await generateText({
-          model: models.chat,
-          messages: [
-            systemMessage(META_PROMPT_SYSTEM),
-            { role: 'user', content: buildMetaPromptUserMessage({ ...answers, agentName }) },
-          ],
-        });
-        answers = { ...answers, systemPromptDraft: result.text.trim() };
+        answers = { ...answers, systemPromptDraft: await generateSystemPrompt(answers, agentName) };
       }
       return io.publishAgentVersion({
         agentName,
