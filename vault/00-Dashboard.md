@@ -45,8 +45,9 @@ LIMIT 5
 ---
 
 ## Resumo em texto (fallback sem Dataview) — 2026-05-29
-- **Bloqueios (owner: você):** [[BLK-stripe-prices]] (preços novos no Stripe, só trava cobrança real). ✅ Resolvidos: [[BLK-vercel-resend-env]] (login) · [[BLK-db-migration-enum]] (migração prod, sem perda de dados).
+- **Bloqueios:** nenhum aberto. ✅ Resolvidos: [[BLK-vercel-resend-env]] (login) · [[BLK-db-migration-enum]] (migração prod) · [[BLK-stripe-prices]] (Stripe live).
 - **Erros:** [[ERR-0001-resend-from-dominio]] — **fixed** (código + produção).
-- **Fase atual:** [[Fase-5-Verde-e-Plan]]. Fases 1–4 ✅, migração prod ✅. **Falta:** commit + deploy do refactor ([[TASK-0008-deploy-prod-billing]]) e testes de billing ([[TASK-0007-testes-billing]]).
-- **Atenção:** prod roda **código antigo sobre schema novo** (seguro: 0 linhas BUSINESS). Ao deployar o refactor, 9 workspaces TRIALING param de servir até assinar.
-- **Verdes:** lint ✅ · typecheck ✅ (7/7) · test ✅ (7/7).
+- **Estado:** refactor de billing **DEPLOYADO em produção** (www.zapfy.store), Stripe live, copy nova no ar. Fases 1–5 ✅.
+- **Atenção:** gate ativo → 9 workspaces TRIALING não atendem até assinarem (cobrança real). 1 PRO ACTIVE segue.
+- **Débitos abertos:** [[TASK-0009-resend-erro-visivel]] (P2) · [[Fase-6-Motor-IA]] (backlog: eval, anti-alucinação, tool loop, etc.).
+- **Verdes:** lint ✅ · typecheck ✅ (7/7) · test ✅ (19).

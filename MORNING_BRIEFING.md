@@ -1,20 +1,24 @@
-# ☀️ Morning Briefing — 2026-05-28 (refactor de billing + protocolo)
+# ☀️ Morning Briefing — 2026-05-29 (refactor de billing NO AR 🚀)
 
-**Avançou:** refactor de billing inteiro no código (modelo de planos novo
-STARTER/PRO/BUSINESS, R$97/247/597, cobrança por conversas de IA, sem trial, gate
-de assinatura no worker, créditos de broadcast). Landing + preços + FAQ reescritos
-com a copy nova. Bug do login (Resend) corrigido no código. `OPERATING_PROTOCOL.md`
-adotado + vault Obsidian montado (`vault/`).
+**Avançou (deploy concluído):**
+- Refactor de billing **deployado em produção** (www.zapfy.store): planos
+  STARTER/PRO/BUSINESS (R$97/247/597) + Enterprise, conversas de IA, sem trial,
+  gate de assinatura, créditos de broadcast. Copy nova (landing/preços/FAQ) no ar.
+- **Stripe live** ativo: Price IDs + `STRIPE_SECRET_KEY` (sk_live) +
+  `STRIPE_WEBHOOK_SECRET` na Vercel, `STRIPE_MOCK` removido. Checkout real.
+- **Migração de produção** aplicada (enum, marketingCredits, default INCOMPLETE).
+- **Login** resolvido (Resend). Smoke test pós-deploy: 200 em home/preços/login/signup/health.
+- Verde: lint ✅ · typecheck 7/7 ✅ · test 19 ✅.
 
-**Travou (aguarda você):**
-1. **Migração de produção** do enum/colunas billing — banco é prod, precisa do seu
-   OK (`vault/Blockers/BLK-db-migration-enum.md`).
-2. **Login de produção** — autorizar Vercel pra eu setar `RESEND_FROM_EMAIL` e
-   redeployar (`BLK-vercel-resend-env`).
-3. **Stripe** — criar Price objects R$247/R$597 (ação sua, `BLK-stripe-prices`).
+**Atenção operacional:**
+- Gate ativo → **9 workspaces TRIALING não atendem** até assinarem (cobrança real
+  agora). 1 PRO ACTIVE segue normal. (Suas contas de teste: assine via /billing
+  ou ative o plano pra reativar o agente delas.)
 
-**Próximos 3 passos:** OK migração → fix login Vercel → testes de billing
-(`TASK-0007`) e depois deploy (`TASK-0008`).
+**Débitos / próximos:**
+1. `TASK-0009` — falha de envio de e-mail não pode ser engolida (P2).
+2. `Fase-6-Motor-IA` (backlog) — eval harness, anti-alucinação, tool loop, etc.
+   Ver `AI_ENGINE_PROMPT.md`.
+3. Rotina diária de revisão às 9h (SP) já criada — agora com o vault no GitHub.
 
-**Estado dos verdes:** lint ✅ · typecheck ✅ (7/7) · test ✅ (7/7) · build ⏳ (não
-re-rodado nesta sessão).
+**Bloqueios abertos que dependem de você:** nenhum. 🎉

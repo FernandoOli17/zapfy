@@ -2,11 +2,11 @@
 id: BLK-stripe-prices
 type: blocker
 severity: medium
-status: open
+status: resolved
 owner: user
 requires: manual-action
 created: 2026-05-28
-resolved:
+resolved: 2026-05-29
 tags: [blocker, area/billing]
 ---
 # Stripe — criar Price objects dos planos novos (prod)
@@ -26,3 +26,9 @@ pra R$247 (Pro) e R$597 (Business), + produto "Business". Em dev rodamos com
 3. Configurar webhook `/api/webhooks/stripe` com `STRIPE_WEBHOOK_SECRET`.
 
 > Eu não crio cobrança real. Sem valores de chave aqui.
+
+## Resolução (2026-05-29)
+Usuário criou os produtos + preços no Stripe (live) e setou na Vercel: 3
+`STRIPE_PRICE_*` (Price IDs), `STRIPE_SECRET_KEY` (sk_live), `STRIPE_WEBHOOK_SECRET`
+(endpoint www.zapfy.store/api/webhooks/stripe). `STRIPE_MOCK` removido de produção.
+Cobrança real ativa. Ver [[TASK-0008-deploy-prod-billing]].
