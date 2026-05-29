@@ -1,9 +1,13 @@
-﻿import { ImageResponse } from 'next/og';
+import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
 const size = 512;
 
+/**
+ * PWA icon 512×512 — splash screen + store.
+ * Brand Zapfy: balão verde grande com raio preto + wordmark abaixo.
+ */
 export function GET() {
   return new ImageResponse(
     (
@@ -15,19 +19,25 @@ export function GET() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 40,
-          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 60%, #0d2547 100%)',
+          gap: 36,
+          background: '#0a0a0a',
         }}
       >
         <div
           style={{
-            width: 180,
-            height: 180,
-            borderRadius: 999,
-            background: '#60A5FA',
-            boxShadow: '0 0 90px rgba(96, 165, 250, 0.7)',
+            width: 240,
+            height: 240,
+            borderRadius: 60,
+            background: '#00E676',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <svg width={170} height={170} viewBox="0 0 32 32">
+            <path d="M22 7 L14 18 L18 18 L11 28 L23 17 L19 17 Z" fill="#0a0a0a" />
+          </svg>
+        </div>
         <div
           style={{
             fontSize: 88,
@@ -36,7 +46,7 @@ export function GET() {
             letterSpacing: '-0.03em',
           }}
         >
-          Trato
+          Zapfy
         </div>
       </div>
     ),

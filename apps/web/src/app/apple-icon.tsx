@@ -1,9 +1,13 @@
-﻿import { ImageResponse } from 'next/og';
+import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
+/**
+ * Apple touch icon 180×180 — homescreen iOS.
+ * Balão verde brand grande com raio preto + wordmark "Zapfy" abaixo.
+ */
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -15,28 +19,34 @@ export default function AppleIcon() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 12,
-          background: 'linear-gradient(160deg, #05070f 0%, #0b1024 60%, #0d2547 100%)',
+          gap: 14,
+          background: '#0a0a0a',
         }}
       >
         <div
           style={{
-            width: 64,
-            height: 64,
-            borderRadius: 999,
-            background: '#60A5FA',
-            boxShadow: '0 0 32px rgba(96, 165, 250, 0.6)',
+            width: 84,
+            height: 84,
+            borderRadius: 20,
+            background: '#00E676',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
-        />
+        >
+          <svg width={58} height={58} viewBox="0 0 32 32">
+            <path d="M22 7 L14 18 L18 18 L11 28 L23 17 L19 17 Z" fill="#0a0a0a" />
+          </svg>
+        </div>
         <div
           style={{
-            fontSize: 30,
+            fontSize: 28,
             fontWeight: 700,
             color: '#fafafa',
             letterSpacing: '-0.03em',
           }}
         >
-          Trato
+          Zapfy
         </div>
       </div>
     ),
