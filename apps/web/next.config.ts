@@ -71,6 +71,18 @@ const nextConfig: NextConfig = {
     '@neondatabase/serverless',
     '.prisma/client',
   ],
+  /**
+   * Garante que o Prisma query engine binário (rhel-openssl-3.0.x) seja
+   * copiado pra dentro de cada Lambda do Vercel. Mesmo usando o adapter
+   * Neon (driverAdapters preview), Prisma 6.19 ainda tenta carregar o
+   * binário em alguns code paths. Sem isso → "Query Engine not found".
+   */
+  outputFileTracingIncludes: {
+    '/**/*': [
+      '../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/*.so.node',
+      '../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/schema.prisma',
+    ],
+  },
   typedRoutes: true,
   images: {
     remotePatterns: [
