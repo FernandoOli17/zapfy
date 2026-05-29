@@ -12,8 +12,20 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** 5.5 ✅ — Hardening pós-auditoria (prompt caching, guardrails, RAG real, fila de webhooks, atalhos inbox)
-- **Próxima ação:** adicionar `MOCK_AI=true` + `VOYAGE_API_KEY` no `.env` e testar pipeline inteiro. Com `ANTHROPIC_API_KEY` real: agente de produção ativo. Fases 7-9 pendentes (ver abaixo).
+- **Fase atual:** Refactor de billing (sessão 2026-05-28) — código verde, **2 checkpoints aguardando OK do usuário**.
+- **Próxima ação:** (1) OK pra migração de produção do enum/colunas billing; (2) autorizar Vercel pro fix do login (Resend); (3) criar Price objects no Stripe. Ver `OPERATING_PROTOCOL.md` + `vault/00-Dashboard.md`.
+- **Anterior:** 5.5 ✅ — Hardening pós-auditoria (prompt caching, guardrails, RAG real, fila de webhooks, atalhos inbox).
+
+### Refactor de billing — 2026-05-28 (modelo de planos novo)
+Decisão do usuário: **alinhamento total** com a copy de marketing nova como fonte da verdade.
+ADRs no vault: `ADR-0001` (modelo), `ADR-0002` (conversa de IA), `ADR-0003` (rename enum).
+- **Planos:** STARTER / PRO / **BUSINESS** (enum). Enterprise = só marketing (→ /contato).
+- **Preços:** R$97 / R$247 / R$597 (`priceBRLCents` 9700/24700/59700).
+- **Unidade de cobrança:** **conversas de IA** (1.500 / 6.000 / ∞). 1 conversa = `Conversation` distinta com ≥1 msg `fromAi=true` no ciclo. Substituiu `activeContacts`.
+- **Sem trial:** workspace nasce `INCOMPLETE`; agente só atende com assinatura `ACTIVE`/`PAST_DUE`. Garantia 7d = reembolso. Gate em `worker/jobs/process-message.ts`.
+- **Broadcasts:** créditos de marketing (`Subscription.marketingCredits`), bloqueio por saldo no launch; fluxo de compra é fase futura.
+- **Código verde** (lint/typecheck 7/7/test 7/7). **Pendente:** migração de prod (zona vermelha, OK necessário), Price objects Stripe, deploy. Em dev: `STRIPE_MOCK=true`.
+- **Débitos:** testes unitários de billing (`TASK-0007`), falha de e-mail não engolida (`TASK-0009`).
 
 ### Auditoria de 2026-05-26 (fixes aplicados)
 - ✅ **RAG real:** chunker com overlap + embedding batch via Voyage AI + RRF híbrido. Job `process-knowledge` em BullMQ, fallback inline se Redis down. UI de reprocessar erros.

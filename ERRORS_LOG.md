@@ -13,6 +13,18 @@ Formato:
 
 ---
 
+## [2026-05-28] device-verification.ts — código de verify-device não chega no e-mail — CORRIGIDO (código), prod pendente
+
+**Sintoma:** usuário tenta logar; o código de confirmação de dispositivo nunca chega no Gmail. App age como se tivesse enviado.
+
+**Causa raiz:** dois bugs somados — (1) `RESEND_FROM_EMAIL` apontava pra domínio **não verificado** no Resend (verificado = `zapfy.store`), e o Resend rejeitava o envio com o erro **engolido** num `log.warn`; (2) `env.ts` validava `RESEND_FROM_EMAIL` como `.email()` puro, que rejeitaria o formato `Nome <email>`.
+
+**Solução:** `.env` `RESEND_FROM_EMAIL=Zapfy <noreply@zapfy.store>`; fallback do `email/client.ts` pro domínio certo; schema do `env.ts` aceita `email` ou `Nome <email>`. Teste de envio real via API Resend: OK.
+
+**Prevenção:** débito aberto pra não engolir a falha de envio (TASK-0009). **Produção ainda pendente** — Vercel usa env do painel, não o `.env` (BLK-vercel-resend-env). Detalhe granular: vault/Errors/ERR-0001.
+
+---
+
 ## [2026-05-26 noite → 2026-05-27 manhã] Prisma EPERM Windows DLL lock — RESOLVIDO
 
 **Sintoma:** `pnpm db:generate` falha com `EPERM: operation not permitted, rename ... query_engine-windows.dll.node.tmp...`
