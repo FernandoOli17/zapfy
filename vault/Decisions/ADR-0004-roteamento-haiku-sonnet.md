@@ -24,20 +24,31 @@ para o resto. Conservador: na dúvida, Sonnet. Atrás da flag `AI_ROUTING`
 (desligada por default). Classifier (Haiku) já roda em toda msg e dá os sinais
 (intent/sentiment) pro roteador.
 
-## Pendente pra aceitar (ou rejeitar)
-Rodar `pnpm tsx scripts/eval-routing.ts` com token real e preencher abaixo:
+## Resultado do eval real (2026-05-29, 6 casos / 7 turns)
 
 | métrica           | OFF (Sonnet) | ON (roteado) |
 |-------------------|--------------|--------------|
-| tool accuracy     | _a medir_    | _a medir_    |
-| handoff accuracy  | _a medir_    | _a medir_    |
-| ALUCINAÇÃO        | _a medir_    | _a medir_    |
-| aderência ao tom  | _a medir_    | _a medir_    |
-| custo/caso (USD)  | _a medir_    | _a medir_    |
+| tool accuracy     | 80%          | 80%          |
+| handoff accuracy  | 100%         | 100%         |
+| ALUCINAÇÃO        | 0%           | 0%           |
+| aderência ao tom  | 0%*          | 100%*        |
+| custo/caso (USD)  | $0.0243      | $0.0194      |
+| custo total (USD) | $0.14584     | $0.11627     |
 
-**Critério de aceite:** ligar SÓ se qualidade (tool/handoff/alucinação/tom) NÃO
-piora e o custo cai de forma material. Caso contrário, rejeitar ou refinar a
-heurística. Decisão final é do usuário.
+\* tom medido em **1 turn só** (único com marcadores) → diferença é RUÍDO, não
+efeito do roteamento. Métrica de tom precisa de mais casos pra ter sinal.
+
+**Economia: −20,3% de custo, sem regressão nas métricas duras** (tool/handoff/
+alucinação idênticas).
+
+## Recomendação
+**Candidato a ligar, mas validar antes em escala maior.** A economia é real e a
+qualidade dura não caiu. PORÉM o dataset é pequeno (6 casos) e os casos triviais
+foram poucos. Sugiro: (1) expandir o golden set (esp. saudações/perguntas curtas
+onde o Haiku entra); (2) ligar primeiro em **staging** com `AI_ROUTING=true` e
+observar; (3) só então produção. **Decisão é do usuário** — não ligar sozinho.
+
+**Critério mantido:** ligar SÓ se qualidade não piora e custo cai materialmente.
 
 ## Consequências (se aceito)
 - Setar `AI_ROUTING=true` (Vercel + Railway) liga sem deploy de código.
