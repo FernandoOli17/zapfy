@@ -11,6 +11,7 @@ const NAV = [
   { href: '/casos/ecommerce', label: 'Casos' },
   { href: '/blog', label: 'Blog' },
   { href: '/sobre', label: 'Sobre' },
+  { href: '/suporte', label: 'Suporte' },
 ] as const;
 
 export function MarketingHeader() {

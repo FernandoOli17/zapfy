@@ -68,6 +68,12 @@ function buildNavSections(opts: {
         { href: '/settings', label: 'Configurações', iconName: 'settings' },
       ],
     },
+    {
+      label: 'Ajuda',
+      items: [
+        { href: '/support', label: 'Suporte', iconName: 'message-square-text' },
+      ],
+    },
   ];
 
   // Modo desenvolvedor — só pra OWNER/ADMIN com flag ON.
@@ -86,6 +92,7 @@ function buildNavSections(opts: {
       label: 'Plataforma',
       items: [
         { href: '/admin', label: 'Super-admin', iconName: 'shield', badge: 'SUDO' },
+        { href: '/admin/support', label: 'Tickets · staff', iconName: 'headset' },
       ],
     });
   }

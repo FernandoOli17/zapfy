@@ -339,6 +339,76 @@ novo a gente confere com você. Se está viajando ou em outro PC,
   };
 }
 
+/**
+ * Notificação pro staff (Fernando) quando user abre um ticket OU
+ * responde um ticket existente. Inclui link direto pra /admin/support/[id].
+ */
+export function supportTicketStaffNotification(input: {
+  ticketNumber: number;
+  subject: string;
+  category: string;
+  body: string;
+  from: string;
+  adminUrl: string;
+}) {
+  const html = wrap(`
+    <h1 style="font-size:22px;margin:24px 0 8px">
+      Ticket #${input.ticketNumber} — ${escapeHtml(input.subject)}
+    </h1>
+    <p style="margin:0 0 4px;color:#71717a;font-size:12px;text-transform:uppercase;letter-spacing:0.08em">
+      ${escapeHtml(input.category)} · de ${escapeHtml(input.from)}
+    </p>
+    <div style="border-left:3px solid #00E676;padding:14px 16px;background:#f4f4f5;margin:20px 0;white-space:pre-wrap;font-size:14px;line-height:1.55">${escapeHtml(input.body)}</div>
+    <a href="${input.adminUrl}" style="${BUTTON_STYLES}">Abrir no admin</a>
+    <p style="color:#71717a;font-size:12px;margin-top:24px">
+      Responda usando o botão acima — a resposta vai por email pro cliente
+      e fica registrada no ticket.
+    </p>
+  `);
+  const text = `Ticket #${input.ticketNumber} — ${input.subject}\nDe: ${input.from}\nCategoria: ${input.category}\n\n${input.body}\n\nResponder: ${input.adminUrl}`;
+  return {
+    html,
+    text,
+    subject: `[Zapfy #${input.ticketNumber}] ${input.subject}`,
+  };
+}
+
+/**
+ * Email pro user quando staff responde o ticket.
+ */
+export function supportReplyToUserEmail(input: {
+  ticketNumber: number;
+  subject: string;
+  replyBody: string;
+  staffName: string;
+  name: string;
+  ticketUrl: string;
+}) {
+  const html = wrap(`
+    <h1 style="font-size:22px;margin:24px 0 8px">
+      Olá, ${escapeHtml(input.name)} 👋
+    </h1>
+    <p style="font-size:14px">
+      Você tem uma resposta no ticket{' '}
+      <strong>#${input.ticketNumber} — ${escapeHtml(input.subject)}</strong>:
+    </p>
+    <div style="border-left:3px solid #00E676;padding:14px 16px;background:#f4f4f5;margin:20px 0;white-space:pre-wrap;font-size:14px;line-height:1.55">${escapeHtml(input.replyBody)}</div>
+    <p style="color:#71717a;font-size:12px;margin:0">— ${escapeHtml(input.staffName)} · Zapfy</p>
+
+    <a href="${input.ticketUrl}" style="${BUTTON_STYLES}">Ver ticket completo</a>
+
+    <p style="color:#71717a;font-size:13px;margin-top:24px">
+      Pode responder direto a este email — tudo continua no mesmo ticket.
+    </p>
+  `);
+  const text = `${input.name}, você tem uma resposta no ticket #${input.ticketNumber}:\n\n${input.replyBody}\n\n— ${input.staffName} · Zapfy\n\nAbrir: ${input.ticketUrl}`;
+  return {
+    html,
+    text,
+    subject: `[Zapfy #${input.ticketNumber}] Resposta no seu ticket`,
+  };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')

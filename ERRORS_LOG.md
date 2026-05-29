@@ -143,4 +143,53 @@ Não quebra build mas polui logs.
 
 ---
 
+## [2026-05-28 noite] Code review xhigh — 15 findings (3 críticos de segurança)
+
+### 🔴 #1 CRÍTICO — Gate verify-device só em (app)/layout.tsx
+Server Actions e API routes que chamam `auth.api.getSession` sozinhos
+pulam o gate. Atacante com cookie roubado pode chamar /api/auth/sign-out,
+/api/realtime/auth, /api/forge/transcribe, ou qualquer Server Action
+(whatsapp/connect, forge/publish, settings/update) durante a janela
+"pending verification" e mutar estado sem confirmar device.
+
+**Fix necessário:** criar `requireVerifiedSession(headers)` que wrappers
+`auth.api.getSession` + checa `pendingVerificationForSession`. Substituir
+todos os usos diretos de `getSession` pelos críticos. **PENDENTE.**
+
+### 🔴 #11 CRÍTICO — Revoke endpoint GET prefetched por email scanners
+`GET /api/auth/revoke-device?token=...` é executado por Outlook Safe
+Links, Gmail prefetch, antivírus URL scanners assim que email chega.
+Resultado: revogação automática → user real nunca consegue confirmar.
+
+**Fix necessário:** trocar pra POST + tela de confirmação. Email link
+abre `/verify-device/revoke?token=...` que mostra botão "Confirmar
+revogação". **PENDENTE.**
+
+### 🔴 #5 CRÍTICO — Hook fail-open silencioso
+Em `lib/auth.ts:141`, qualquer erro em `createDeviceVerification`
+(Resend down, DB hiccup) é swallowed com `log.error` e o user é
+ADMITIDO sem KnownDevice + sem DeviceVerification. Gate vê null
+e libera. Feature de verificação inteira pode silenciosamente
+falhar-open em prod.
+
+**Fix necessário:** se createDeviceVerification throw, criar um
+`DeviceVerification` placeholder com `expiresAt` longe → força user
+a re-login. **PENDENTE.**
+
+### Outras 12 findings (correctness/perf/UX) — anotadas pra próxima sessão:
+- `lib/plans.ts:39` `distinct: ['conversationId']` deveria ser `contactId`
+- `lib/plans.ts:34` 30-day rolling window vs `currentPeriodStart` inconsistentes (UI mostra ambos como "ciclo")
+- `lib/auth.ts:97` race no `prisma.session.count === 0` permite atacante VPN ser "primeiro device"
+- `lib/plans.ts:81` `dailyActiveContactsLastDays` carrega todas Messages 14d em memória (timeout em workspace grande)
+- `next.config.ts:81` glob `@prisma+client@*` frágil a hash changes do pnpm
+- `lib/email/templates.ts:192` day6TrialEndingEmail ainda fala "10.000 conversas IA" (não atualizado pro novo pricing)
+- `lib/device-verification.ts:143` token clickable de qualquer browser libera sessão (sem session binding)
+- `lib/device-verification.ts:262` code-consume registra IP/UA do banco, não da request atual
+- `lib/device-verification.ts:31` hashPii 64 bits permite correlação cross-user com DB access
+- `schema.prisma:18` driverAdapters preview requer adapter explícito em TODO `new PrismaClient` — não validado em build
+- `lib/auth.ts:105` hook serial 3+ queries adiciona 200-800ms a todo signin
+- `app/verify-device/page.tsx:29` redirect pra /dashboard quando há OUTRA verificação pendente cria loop visual
+
+---
+
 (novos erros são adicionados aqui ↑)

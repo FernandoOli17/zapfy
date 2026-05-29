@@ -51,6 +51,8 @@ model User {
   forgeSessions        ForgeSession[]
   knownDevices         KnownDevice[]
   deviceVerifications  DeviceVerification[]
+  supportTickets       SupportTicket[]
+  supportMessages      SupportMessage[]
 }
 
 // =========================================
@@ -111,6 +113,97 @@ model DeviceVerification {
 
   @@index([userId, expiresAt])
   @@index([sessionToken])
+}
+
+// =========================================
+// SUPPORT
+// =========================================
+
+enum SupportTicketStatus {
+  OPEN
+  AWAITING_USER
+  AWAITING_STAFF
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketCategory {
+  BILLING
+  BUG
+  WHATSAPP_SETUP
+  AGENT_CONFIG
+  FEATURE_REQUEST
+  OTHER
+}
+
+enum SupportSender {
+  USER
+  STAFF
+}
+
+/**
+ * Ticket de suporte do user. Pode ser aberto por user logado
+ * (userId preenchido) OU por visitante anônimo (userId null, só
+ * guestEmail + guestName). publicNumber (#42) é o ID legível que
+ * o user vê e que você cita quando me pede ajuda ("cliente #42
+ * precisa de suporte").
+ */
+model SupportTicket {
+  id            String                @id @default(cuid())
+  /// Número público sequencial — mostrado pro user e usado pra referência.
+  /// Auto-increment via DB. Não exponha o id cuid pro user.
+  publicNumber  Int                   @unique @default(autoincrement())
+  /// Quando user logado abriu. Null = ticket de visitante anônimo.
+  userId        String?
+  /// Quando guest sem conta, capturamos email + nome
+  guestEmail    String?
+  guestName     String?
+  /// Workspace de referência (se user tem). Null = ticket geral pré-signup.
+  workspaceId   String?
+  subject       String
+  category      SupportTicketCategory @default(OTHER)
+  status        SupportTicketStatus   @default(OPEN)
+  /// Última mensagem (caching pra lista) — atualizado em cada SupportMessage.
+  lastMessageAt DateTime              @default(now())
+  /// Quando staff respondeu pela primeira vez — pra métrica de TTR
+  firstStaffReplyAt DateTime?
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  user      User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  messages  SupportMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([userId, status])
+  @@index([workspaceId])
+}
+
+/**
+ * Mensagem dentro de um ticket. Thread em ordem cronológica.
+ * `sender = USER` quando user respondeu; `STAFF` quando você respondeu.
+ * `senderId` aponta pro User que escreveu (mesmo staff é um User com
+ * `isSuperAdmin = true`).
+ */
+model SupportMessage {
+  id            String        @id @default(cuid())
+  ticketId      String
+  sender        SupportSender
+  /// User que enviou. Null se é mensagem do guest (ticket sem userId).
+  senderId      String?
+  /// Nome cacheado pra ler sem JOIN (guest ou snapshot).
+  senderName    String
+  body          String
+  /// Marca quando o destinatário visualizou — pra UI de "lida"
+  readAt        DateTime?
+  createdAt     DateTime      @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sentBy User?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
 }
 
 model Session {
@@ -207,6 +300,7 @@ model Workspace {
   professionals     Professional[]
   appointments      Appointment[]
   quotes            Quote[]
+  supportTickets    SupportTicket[]
 }
 
 model WorkspaceMember {
