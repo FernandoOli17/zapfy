@@ -12,9 +12,9 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** Refactor de billing (sessão 2026-05-28) — código verde, **2 checkpoints aguardando OK do usuário**.
-- **Próxima ação:** (1) OK pra migração de produção do enum/colunas billing; (2) autorizar Vercel pro fix do login (Resend); (3) criar Price objects no Stripe. Ver `OPERATING_PROTOCOL.md` + `vault/00-Dashboard.md`.
-- **Anterior:** 5.5 ✅ — Hardening pós-auditoria (prompt caching, guardrails, RAG real, fila de webhooks, atalhos inbox).
+- **Fase atual:** **Fase 6 — Motor de IA (EM ANDAMENTO, 2026-05-29).** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Gate: lint/typecheck/test (53 testes). **Medição com token real aguarda credenciais no .env** + rodar scripts de eval/custo/roteamento. ADR-0004 (roteamento) proposto, decisão do usuário pendente. **Fase B (produção) aguarda OK.**
+- **Próxima ação:** usuário seta ANTHROPIC_API_KEY + VOYAGE_API_KEY + MOCK_AI=false no .env → rodar `scripts/eval-ai.ts`, `eval-routing.ts`, `cost-report.ts` e a conversa E2E via /whatsapp.
+- **Anterior:** Refactor de billing DEPLOYADO em produção (www.zapfy.store), Stripe live, migração de prod aplicada, login resolvido. Fases 1–5 ✅.
 
 ### Refactor de billing — 2026-05-28 (modelo de planos novo)
 Decisão do usuário: **alinhamento total** com a copy de marketing nova como fonte da verdade.

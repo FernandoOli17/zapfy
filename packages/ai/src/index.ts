@@ -15,3 +15,5 @@ export * from './caching';
 export * from './guards';
 export * from './flow';
 export * from './playbooks';
+export * from './cost';
+export * from './eval';

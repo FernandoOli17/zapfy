@@ -1,12 +1,35 @@
 ---
 id: Fase-6-Motor-IA
 type: phase
-status: planned
-started:
+status: doing
+started: 2026-05-29
 completed:
 tags: [phase, phase/6, area/ai]
 ---
-# Fase 6 — Motor de IA (Forge + agente) · BACKLOG
+# Fase 6 — Motor de IA (Forge + agente) · EM ANDAMENTO
+
+> **Liberada pelo usuário em 2026-05-29** ("abrir Fase 6 e construir tudo").
+> Fundação construída sem token (verde); medição com token real aguarda
+> credenciais no `.env` + roda os scripts de eval/custo.
+
+## Progresso 2026-05-29 (sem token, gate verde — 53 testes)
+- [x] [[TASK-0012-medidor-custo-token]] — medidor de custo + cache hit, wirado no worker
+- [x] [[TASK-0011-detector-alucinacao]] — detector de alucinação (P0)
+- [x] [[TASK-0013-tool-loop-seguro]] — tool loop max iter + timeout testados (P0)
+- [x] [[TASK-0010-eval-harness]] — eval harness + 6 casos dourados + scripts reais
+- [~] [[TASK-0017-roteamento-modelo]] — roteamento Haiku→Sonnet (código pronto,
+  `review`; aguarda eval real → [[ADR-0004-roteamento-haiku-sonnet]] + OK)
+- [ ] [[TASK-0014-snapshot-prompt-forge]] · [ ] [[TASK-0015-politica-handoff]] (parcial)
+  · [ ] [[TASK-0016-fallback-rag-off]] (parcial) — follow-ups
+
+## Aguardando token real (credenciais no .env)
+- eval real (#7): `pnpm tsx scripts/eval-ai.ts` → métricas resolução/handoff/ALUCINAÇÃO/tom
+- roteamento (#8): `pnpm tsx scripts/eval-routing.ts` → preenche [[ADR-0004-roteamento-haiku-sonnet]]
+- custo real (#6): `pnpm tsx scripts/cost-report.ts` pós "Mensagem de teste"
+- conversa E2E (#4) + RAG (#5) via /whatsapp + /knowledge
+
+---
+# Referência original (backlog)
 
 ## Escopo
 Fazer o motor de IA funcionar bem: Forge (entrevista → gera agente) e runtime

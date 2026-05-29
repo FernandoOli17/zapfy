@@ -1,4 +1,4 @@
-import { generateText, stepCountIs, type ModelMessage, type Tool } from 'ai';
+import { generateText, stepCountIs, type LanguageModel, type ModelMessage, type Tool } from 'ai';
 import { createLogger } from '@zapfy/shared';
 import { getAiModels, isMockMode } from '../provider';
 import { systemMessage } from '../caching';
@@ -22,6 +22,11 @@ export interface RunAgentInput {
   timeoutMs?: number;
   /** Blacklist de tópicos por workspace — caller pega de WorkspaceSettings. */
   topicBlacklist?: string[];
+  /**
+   * Override do modelo. Default: `getAiModels().chat` (Sonnet). Usado pelo
+   * roteamento (injeta Haiku em casos triviais) e por testes (mock model).
+   */
+  model?: LanguageModel;
 }
 
 export interface RunAgentResult {
@@ -29,6 +34,8 @@ export interface RunAgentResult {
   toolsUsed: string[];
   tokensIn: number;
   tokensOut: number;
+  /** Tokens de input lidos do cache (subconjunto de tokensIn). Pro custo. */
+  cachedTokensIn: number;
   handedOff: boolean;
   /** True quando o input bateu em detector de injection ou blacklist. */
   guardTriggered: boolean;
@@ -53,6 +60,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
     maxSteps = 5,
     timeoutMs = 30_000,
     topicBlacklist = [],
+    model,
   } = input;
 
   if (isMockMode()) {
@@ -62,6 +70,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       toolsUsed: [],
       tokensIn: 0,
       tokensOut: 0,
+      cachedTokensIn: 0,
       handedOff: false,
       guardTriggered: false,
       guardReasons: [],
@@ -86,6 +95,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       toolsUsed: ['transfer_to_human'],
       tokensIn: 0,
       tokensOut: 0,
+      cachedTokensIn: 0,
       handedOff: true,
       guardTriggered: true,
       guardReasons,
@@ -126,7 +136,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
 
   try {
     const { text, totalUsage, steps } = await generateText({
-      model: getAiModels().chat,
+      model: model ?? getAiModels().chat,
       messages,
       tools,
       stopWhen: stepCountIs(maxSteps),
@@ -156,6 +166,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       toolsUsed,
       tokensIn: totalUsage.inputTokens ?? 0,
       tokensOut: totalUsage.outputTokens ?? 0,
+      cachedTokensIn: totalUsage.cachedInputTokens ?? 0,
       handedOff,
       guardTriggered: false,
       guardReasons: [],
@@ -173,6 +184,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
       toolsUsed,
       tokensIn: 0,
       tokensOut: 0,
+      cachedTokensIn: 0,
       handedOff,
       guardTriggered: false,
       guardReasons: [],

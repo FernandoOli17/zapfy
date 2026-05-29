@@ -12,9 +12,17 @@ import {
   executeFlow,
   searchKnowledge,
   runAgent,
+  routeModel,
+  isRoutingEnabled,
+  getAiModels,
+  getModelIds,
+  estimateCostCents,
   type AgentToolDeps,
   type VerticalToolDeps,
 } from '@zapfy/ai';
+
+/** Handle de modelo do SDK — derivado de getAiModels pra não depender de 'ai'. */
+type AgentModel = ReturnType<typeof getAiModels>['chat'];
 import { env } from '../env';
 import { invokeCustomTool } from '../custom-tool-dispatcher';
 
@@ -166,6 +174,28 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     }))
     .filter((m) => m.text !== '[mídia]');
 
+  // ─── 6b. Roteamento de modelo (Haiku→Sonnet) ────────────────────────────
+  // DESLIGADO por default (AI_ROUTING != 'true'). Quando ligado, casos triviais
+  // vão pro Haiku (mais barato); o resto fica no Sonnet. Decisão de produto via
+  // eval comparativo — ver ADR de roteamento.
+  const modelIds = getModelIds();
+  let chosenModelId = modelIds.chat;
+  let chosenModel: AgentModel | undefined;
+  if (isRoutingEnabled()) {
+    const route = routeModel({
+      intent: classification.intent,
+      sentiment: classification.sentiment,
+      needsHandoff: classification.needs_handoff,
+      messageLength: inboundText.length,
+      historyLength: messageHistory.length,
+    });
+    if (route.target === 'fast') {
+      chosenModel = getAiModels().fast;
+      chosenModelId = modelIds.fast;
+    }
+    log.info({ route, model: chosenModelId }, 'roteamento de modelo aplicado');
+  }
+
   // ─── 7. RAG ──────────────────────────────────────────────────────────────
   const ragChunks = await searchKnowledge(workspaceId, inboundText, 4).catch(() => []);
 
@@ -273,6 +303,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
         maxSteps: 5,
         timeoutMs: 30_000,
         topicBlacklist,
+        ...(chosenModel ? { model: chosenModel } : {}),
       });
     }
   } else {
@@ -287,6 +318,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
       maxSteps: 5,
       timeoutMs: 30_000,
       topicBlacklist,
+      ...(chosenModel ? { model: chosenModel } : {}),
     });
   }
 
@@ -317,7 +349,16 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     }
   }
 
-  // ─── 12. Persistir mensagens outbound ────────────────────────────────────
+  // ─── 12. Custo estimado do turn ──────────────────────────────────────────
+  // `cachedTokensIn` só existe no runAgent path; flow executor não expõe → 0.
+  const cachedTokensIn = 'cachedTokensIn' in result ? (result.cachedTokensIn ?? 0) : 0;
+  const costCents = estimateCostCents(chosenModelId, {
+    tokensIn: result.tokensIn,
+    tokensOut: result.tokensOut,
+    cachedTokensIn,
+  });
+
+  // ─── 13. Persistir mensagens outbound ────────────────────────────────────
   for (let i = 0; i < chunks.length; i++) {
     const waId = outboundMsgIds[i] || undefined;
     await prisma.message.create({
@@ -333,12 +374,13 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
         toolsUsed: i === 0 ? result.toolsUsed : [],
         tokensIn: i === 0 ? result.tokensIn : 0,
         tokensOut: i === 0 ? result.tokensOut : 0,
+        ...(i === 0 && costCents > 0 ? { costCents } : {}),
         ...(waId ? { whatsappMessageId: waId } : {}),
       },
     });
   }
 
-  // ─── 13. Registro de uso ─────────────────────────────────────────────────
+  // ─── 14. Registro de uso ─────────────────────────────────────────────────
   if (result.tokensIn > 0 || result.tokensOut > 0) {
     await prisma.usageRecord.create({
       data: {
@@ -347,6 +389,8 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
         quantity: 1,
         tokensIn: result.tokensIn,
         tokensOut: result.tokensOut,
+        ...(costCents > 0 ? { costCents } : {}),
+        metadata: { model: chosenModelId, cachedTokensIn },
       },
     });
   }
@@ -356,8 +400,11 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
       conversationId,
       chunks: chunks.length,
       toolsUsed: result.toolsUsed,
+      model: chosenModelId,
       tokensIn: result.tokensIn,
       tokensOut: result.tokensOut,
+      cachedTokensIn,
+      costCents,
     },
     'agente respondeu com sucesso',
   );

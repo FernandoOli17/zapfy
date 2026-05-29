@@ -65,6 +65,32 @@ export function describeProvider(p: AiModels): string {
   return `${p.provider}`;
 }
 
+export interface ModelIds {
+  chat: string;
+  fast: string;
+  provider: ProviderId;
+}
+
+/**
+ * Ids string dos modelos resolvidos (mesma lógica de `getAiModels`), pra usar
+ * em pricing/logs onde precisamos do nome, não do handle do SDK.
+ */
+export function getModelIds(): ModelIds {
+  const provider = resolveProvider();
+  if (provider === 'openai') {
+    return {
+      provider,
+      chat: process.env['OPENAI_MODEL_CHAT'] ?? OPENAI_MODELS.chat,
+      fast: process.env['OPENAI_MODEL_FAST'] ?? OPENAI_MODELS.fast,
+    };
+  }
+  return {
+    provider,
+    chat: process.env['ANTHROPIC_MODEL_CHAT'] ?? ANTHROPIC_MODELS.chat,
+    fast: process.env['ANTHROPIC_MODEL_FAST'] ?? ANTHROPIC_MODELS.fast,
+  };
+}
+
 /**
  * Mock mode — quando MOCK_AI=true nenhuma API de IA é chamada.
  * O agente e o classifier devolvem respostas canned/determinísticas.

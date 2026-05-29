@@ -47,7 +47,8 @@ LIMIT 5
 ## Resumo em texto (fallback sem Dataview) — 2026-05-29
 - **Bloqueios:** nenhum aberto. ✅ Resolvidos: [[BLK-vercel-resend-env]] (login) · [[BLK-db-migration-enum]] (migração prod) · [[BLK-stripe-prices]] (Stripe live).
 - **Erros:** [[ERR-0001-resend-from-dominio]] — **fixed** (código + produção).
-- **Estado:** refactor de billing **DEPLOYADO em produção** (www.zapfy.store), Stripe live, copy nova no ar. Fases 1–5 ✅.
+- **Estado:** refactor de billing **DEPLOYADO em produção** (www.zapfy.store), Stripe live. Fases 1–5 ✅. **[[Fase-6-Motor-IA]] EM ANDAMENTO** — fundação construída (custo, anti-alucinação, tool loop, eval harness, roteamento) verde sem token; medição real aguarda credenciais.
 - **Atenção:** gate ativo → 9 workspaces TRIALING não atendem até assinarem (cobrança real). 1 PRO ACTIVE segue.
-- **Débitos abertos:** [[TASK-0009-resend-erro-visivel]] (P2) · [[Fase-6-Motor-IA]] (backlog: eval, anti-alucinação, tool loop, etc.).
-- **Verdes:** lint ✅ · typecheck ✅ (7/7) · test ✅ (19).
+- **Em review/decisão:** [[TASK-0017-roteamento-modelo]] + [[ADR-0004-roteamento-haiku-sonnet]] (proposto — ligar AI_ROUTING é decisão do usuário após eval real).
+- **Débitos abertos:** [[TASK-0009-resend-erro-visivel]] (P2) · follow-ups Fase 6: [[TASK-0014-snapshot-prompt-forge]] · [[TASK-0015-politica-handoff]] · [[TASK-0016-fallback-rag-off]].
+- **Verdes:** lint ✅ · typecheck ✅ (7/7) · test ✅ (53: 19 shared + 34 ai).
