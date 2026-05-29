@@ -50,6 +50,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       include: {
+        subscription: true,
         whatsappAccounts: { where: { status: 'CONNECTED' }, take: 1 },
         agents: {
           where: {},
@@ -72,6 +73,18 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   }
   if (conversation.status === ConversationStatus.CLOSED) {
     log.info({ conversationId }, 'conversa fechada — ignorando');
+    return;
+  }
+
+  // Gate de assinatura: o agente só atende com assinatura paga viva. Sem trial —
+  // o Forge monta/demonstra de graça no app, mas no WhatsApp só com ACTIVE.
+  // PAST_DUE tem graça (Stripe ainda re-tenta cobrar); o resto não atende.
+  const subStatus = workspaceRaw.subscription?.status;
+  if (subStatus !== 'ACTIVE' && subStatus !== 'PAST_DUE') {
+    log.info(
+      { workspaceId, subStatus: subStatus ?? 'none' },
+      'workspace sem assinatura ativa — agente não atende',
+    );
     return;
   }
 

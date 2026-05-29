@@ -3,7 +3,7 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma, PlanId, SubscriptionStatus, WorkspaceRole } from '@zapfy/db';
-import { AppError, createLogger, createWorkspaceSchema, TRIAL_DAYS } from '@zapfy/shared';
+import { AppError, createLogger, createWorkspaceSchema } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
@@ -37,7 +37,8 @@ export async function createWorkspaceAction(
   }
 
   try {
-    const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+    // Sem trial: nasce INCOMPLETE. O Forge monta e demonstra o agente de graça,
+    // mas o agente só atende no WhatsApp quando a assinatura vira ACTIVE.
     await prisma.workspace.create({
       data: {
         ...parsed.data,
@@ -50,8 +51,7 @@ export async function createWorkspaceAction(
         subscription: {
           create: {
             plan: PlanId.STARTER,
-            status: SubscriptionStatus.TRIALING,
-            trialEndsAt,
+            status: SubscriptionStatus.INCOMPLETE,
           },
         },
       },

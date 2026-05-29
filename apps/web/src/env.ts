@@ -28,11 +28,22 @@ export const env = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     STRIPE_PRICE_STARTER: z.string().optional(),
     STRIPE_PRICE_PRO: z.string().optional(),
-    STRIPE_PRICE_PREMIUM: z.string().optional(),
+    STRIPE_PRICE_BUSINESS: z.string().optional(),
 
     UPLOADTHING_TOKEN: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
-    RESEND_FROM_EMAIL: z.string().email().optional(),
+    // Aceita "email@dominio" ou "Nome <email@dominio>" (formato do Resend).
+    RESEND_FROM_EMAIL: z
+      .string()
+      .refine(
+        (v) => {
+          const m = v.match(/<([^>]+)>\s*$/);
+          const addr = m ? m[1]!.trim() : v.trim();
+          return z.string().email().safeParse(addr).success;
+        },
+        { message: 'precisa ser um email ou "Nome <email>"' },
+      )
+      .optional(),
 
     PUSHER_APP_ID: z.string().optional(),
     PUSHER_KEY: z.string().optional(),

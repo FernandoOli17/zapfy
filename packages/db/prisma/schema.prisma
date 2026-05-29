@@ -327,7 +327,7 @@ model WorkspaceMember {
 enum PlanId {
   STARTER
   PRO
-  PREMIUM
+  BUSINESS
 }
 
 enum SubscriptionStatus {
@@ -343,13 +343,18 @@ model Subscription {
   id                   String             @id @default(cuid())
   workspaceId          String             @unique
   plan                 PlanId             @default(STARTER)
-  status               SubscriptionStatus @default(TRIALING)
+  // INCOMPLETE = workspace criado mas sem assinatura paga: o Forge monta e
+  // demonstra o agente, mas o agente NÃO atende no WhatsApp até virar ACTIVE.
+  status               SubscriptionStatus @default(INCOMPLETE)
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   trialEndsAt          DateTime?
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean            @default(false)
+  /// Saldo de créditos de marketing (disparos proativos / broadcasts). Vendidos
+  /// em pacotes à parte — fluxo de compra é fase futura; por ora só decrementa.
+  marketingCredits     Int                @default(0)
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt
 

@@ -1,14 +1,22 @@
 import Link from 'next/link';
 import {
   ArrowRight,
-  BarChart3,
-  Bot,
+  BellRing,
   Brain,
-  Database,
+  CalendarClock,
+  Clock,
+  Eye,
+  FileText,
+  Headset,
   Inbox,
-  Star,
-  Users,
-  Workflow,
+  MessageSquareText,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Stethoscope,
+  Tag,
+  UtensilsCrossed,
+  Wrench,
 } from 'lucide-react';
 
 import { MarketingFaq } from '@/components/marketing/faq';
@@ -19,10 +27,12 @@ export default function HomePage() {
   return (
     <div className="bg-[#0a0a0a] text-white">
       <Hero />
-      <LogosStrip />
+      <ProofStrip />
+      <Problem />
       <HowItWorks />
       <Features />
       <ForgeDemo />
+      <Segments />
       <Testimonials />
       <BrandFilmSection />
       <MarketingFaq />
@@ -32,7 +42,7 @@ export default function HomePage() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   HERO — contraste brutal: headline gigante, body discreto, CTA verde
+   HERO
    ───────────────────────────────────────────────────────────────── */
 
 function Hero() {
@@ -45,17 +55,18 @@ function Hero() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00E676] opacity-60" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00E676]" />
         </span>
-        Agente IA · WhatsApp Cloud API oficial Meta
+        Veja seu agente pronto antes de pagar 🔥
       </div>
 
       <h1 className="animate-fade-up delay-2 relative max-w-4xl text-[clamp(3rem,9vw,5.5rem)] font-bold leading-[0.95] tracking-[-0.04em] text-white">
-        Seu WhatsApp,{' '}
-        <span className="text-[#00E676]">com inteligência real.</span>
+        O WhatsApp da sua empresa,{' '}
+        <span className="text-[#00E676]">com cérebro próprio.</span>
       </h1>
 
       <p className="animate-fade-up delay-3 relative mt-8 max-w-xl text-lg leading-relaxed text-[#888]">
-        Configure conversando com o Forge. Publica em minutos no Cloud API oficial da Meta.
-        Atende 24/7, faz handoff pra equipe, nunca fica em risco de ban.
+        O Forge entrevista o seu negócio e monta um agente de IA na hora — você vê ele
+        funcionando antes de decidir. Quando quiser, é só ligar e ele começa a atender,
+        qualificar e vender 24 horas por dia.
       </p>
 
       <div className="animate-fade-up delay-4 relative mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -63,7 +74,7 @@ function Hero() {
           href="/signup"
           className="group inline-flex items-center gap-2 rounded-full bg-[#00E676] px-7 py-3.5 text-sm font-semibold text-[#0a0a0a] transition-transform hover:scale-[1.02]"
         >
-          Criar meu agente grátis
+          Montar meu agente grátis
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </Link>
         <Link
@@ -74,9 +85,10 @@ function Hero() {
         </Link>
       </div>
 
-      {/* Hero film — gerado via Veo 3, autoplay loop muted (iOS-safe).
-          max-w-md (448px) intencional: tamanho menor disfarça artefatos
-          de IA no vídeo. */}
+      <p className="animate-fade-up delay-5 relative mt-4 text-xs text-[#666]">
+        Sem cartão pra montar. Você só assina quando vir o agente pronto.
+      </p>
+
       <div
         className="animate-fade-up relative mx-auto mt-12 aspect-video w-full max-w-md overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a]"
         style={{ animationDelay: '700ms' }}
@@ -91,7 +103,6 @@ function Hero() {
         >
           <source src="/videos/prompt1.mp4" type="video/mp4" />
         </video>
-        {/* fade pra integrar com fundo dark */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/60 via-transparent to-transparent"
@@ -113,7 +124,6 @@ function BackgroundDecor() {
           backgroundSize: '64px 64px',
         }}
       />
-      {/* glow verde sutil saindo do topo */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -132,28 +142,60 @@ function BackgroundDecor() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   LOGOS STRIP — infraestrutura conhecida (texto em wordmark grayscale)
-   Sem dependência de assets externos. Tipografia faz o trabalho.
+   PROVA RÁPIDA — faixa de 4 garantias logo abaixo do hero
    ───────────────────────────────────────────────────────────────── */
 
-const LOGOS = ['WhatsApp Cloud API', 'Meta', 'Anthropic', 'Stripe', 'Vercel', 'Neon', 'Upstash'];
+const PROOF: Array<{ icon: typeof Clock; title: string; body: string }> = [
+  { icon: Clock, title: 'Pronto em minutos', body: 'O Forge monta tudo entrevistando você.' },
+  { icon: Eye, title: 'Veja antes de pagar', body: 'O agente é demonstrado de graça.' },
+  { icon: Headset, title: 'Atende 24/7', body: 'Nenhum cliente fica sem resposta.' },
+  { icon: ShieldCheck, title: 'Garantia de 7 dias', body: 'Não gostou, devolvemos.' },
+];
 
-function LogosStrip() {
+function ProofStrip() {
   return (
     <section className="border-t border-[#1a1a1a] bg-[#0a0a0a] py-14">
-      <div className="mx-auto max-w-6xl px-6">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#666]">
-          Infraestrutura que você já conhece
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-10 gap-y-5 md:gap-x-14">
-          {LOGOS.map((name) => (
-            <span
-              key={name}
-              className="text-base font-semibold tracking-tight text-white/40 transition-colors hover:text-white/80 md:text-lg"
-            >
-              {name}
-            </span>
-          ))}
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-8 px-6 md:grid-cols-4">
+        {PROOF.map((p) => {
+          const Icon = p.icon;
+          return (
+            <div key={p.title} className="flex flex-col items-start gap-2">
+              <Icon className="h-6 w-6 text-[#00E676]" strokeWidth={1.75} />
+              <p className="text-sm font-semibold text-white">{p.title}</p>
+              <p className="text-[13px] leading-relaxed text-[#888]">{p.body}</p>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PROBLEMA — dor
+   ───────────────────────────────────────────────────────────────── */
+
+function Problem() {
+  return (
+    <section className="border-t border-[#1a1a1a] py-32">
+      <div className="mx-auto max-w-3xl px-6">
+        <h2 className="text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl">
+          Todo lead que demora a ser respondido é{' '}
+          <span className="font-serif italic font-normal text-[#00E676]">
+            dinheiro saindo pela porta.
+          </span>
+        </h2>
+        <div className="mt-8 space-y-5 text-lg leading-relaxed text-[#888]">
+          <p>
+            No WhatsApp, quem responde primeiro vende. Mas você não consegue estar no celular
+            o dia inteiro — e contratar mais gente pra atender custa caro. Resultado: mensagem
+            sem resposta às 22h, cliente que desistiu, orçamento que ficou pela metade.
+          </p>
+          <p>
+            O Zapfy resolve isso colocando um vendedor incansável dentro do seu WhatsApp. Ele
+            conhece o seu negócio, responde na hora, no seu tom, e só te chama quando realmente
+            precisa de você.
+          </p>
         </div>
       </div>
     </section>
@@ -161,34 +203,34 @@ function LogosStrip() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   COMO FUNCIONA — 3 steps com número GIGANTE de marca d'água
+   COMO FUNCIONA — 3 passos do Forge
    ───────────────────────────────────────────────────────────────── */
 
 interface Step {
   n: string;
   title: string;
   body: string;
-  icon: typeof Bot;
+  icon: typeof Inbox;
 }
 
 const STEPS: Step[] = [
   {
     n: '01',
-    title: 'Conecte seu número',
-    body: 'WhatsApp Business + credenciais Meta cifradas no seu workspace. Sem libs não-oficiais.',
-    icon: Workflow,
+    title: 'O Forge te entrevista',
+    body: 'Você conversa com o Forge como conversaria com um funcionário novo. Ele pergunta o que você vende, seus preços, horários, formas de pagamento e o jeito que você fala com o cliente.',
+    icon: MessageSquareText,
   },
   {
     n: '02',
-    title: 'Converse com o Forge',
-    body: 'Descreva seu negócio em português. O Forge entrevista, decide tools e monta o agente.',
-    icon: Bot,
+    title: 'Ele monta e te mostra funcionando',
+    body: 'Com base na entrevista, o Forge constrói o agente completo e te deixa testar ali mesmo. Você vê, na hora e de graça, como ele vai atender seus clientes.',
+    icon: Eye,
   },
   {
     n: '03',
-    title: 'Publique e atenda 24/7',
-    body: 'Agente no ar em minutos. Responde, agenda, transfere pra equipe quando precisa.',
-    icon: Inbox,
+    title: 'Gostou? Ligue e venda',
+    body: 'Quando você assina, o agente vai ao ar no seu número de WhatsApp e começa a atender no mesmo dia. Não gostou em 7 dias? Devolvemos.',
+    icon: ArrowRight,
   },
 ];
 
@@ -201,8 +243,10 @@ function HowItWorks() {
             Como funciona
           </p>
           <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-            Três passos.{' '}
-            <span className="font-serif italic font-normal text-[#888]">Nenhum fluxograma.</span>
+            Veja seu agente pronto em 3 passos.{' '}
+            <span className="font-serif italic font-normal text-[#888]">
+              Sem manual, sem código, sem compromisso.
+            </span>
           </h2>
         </div>
 
@@ -210,6 +254,16 @@ function HowItWorks() {
           {STEPS.map((step, i) => (
             <StepCard key={step.n} step={step} delay={i + 1} />
           ))}
+        </div>
+
+        <div className="mt-12 flex justify-center">
+          <Link
+            href="/signup"
+            className="group inline-flex items-center gap-2 rounded-full bg-[#00E676] px-7 py-3.5 text-sm font-semibold text-[#0a0a0a] transition-transform hover:scale-[1.02]"
+          >
+            Montar meu agente grátis
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
       </div>
     </section>
@@ -222,7 +276,6 @@ function StepCard({ step, delay }: { step: Step; delay: number }) {
     <div
       className={`animate-fade-up delay-${delay} group relative overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#111] p-8 transition-colors hover:border-[#00E676]/30`}
     >
-      {/* Watermark number gigante */}
       <span
         aria-hidden
         className="pointer-events-none absolute -right-3 -top-6 select-none text-[120px] font-bold leading-none tracking-tighter text-[#00E676]/[0.05] transition-colors group-hover:text-[#00E676]/[0.10]"
@@ -242,52 +295,55 @@ function StepCard({ step, delay }: { step: Step; delay: number }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   FEATURES — grid 2×3, ícone verde 32px, hover borda verde
+   FEATURES — o que o agente faz (8)
    ───────────────────────────────────────────────────────────────── */
 
 interface Feature {
   title: string;
   body: string;
-  icon: typeof Bot;
-  pill: string;
+  icon: typeof Brain;
 }
 
 const FEATURES: Feature[] = [
   {
-    pill: 'IA',
-    title: 'Agente IA com contexto',
-    body: 'Claude Sonnet 4.5 com prompt caching. Responde em <3s, lembra do histórico, não inventa quando não sabe.',
+    title: 'Atende na hora, 24/7',
+    body: 'Responde toda mensagem em segundos, inclusive de madrugada e fim de semana.',
+    icon: Clock,
+  },
+  {
+    title: 'Fala como a sua marca',
+    body: 'O tom, as gírias e o jeito do seu negócio, não um robô engessado.',
+    icon: MessageSquareText,
+  },
+  {
+    title: 'Qualifica leads',
+    body: 'Descobre o que o cliente quer e separa quem está pronto pra comprar.',
     icon: Brain,
   },
   {
-    pill: 'BUILDER',
-    title: 'Forge Builder',
-    body: 'State machine declarativa que entrevista o cliente em 10 fases. Gera system prompt, escolhe tools, publica versão.',
-    icon: Workflow,
+    title: 'Agenda e organiza',
+    body: 'Marca horários, envia lembretes e mantém tudo no lugar.',
+    icon: CalendarClock,
   },
   {
-    pill: 'CORE',
-    title: 'RAG nativo',
-    body: 'Base de conhecimento com busca híbrida (semântica via Voyage AI + FTS Postgres). Upload por URL ou arquivo.',
-    icon: Database,
+    title: 'Sabe a hora de te chamar',
+    body: 'Quando o caso pede você, ele transfere com todo o contexto.',
+    icon: BellRing,
   },
   {
-    pill: 'INBOX',
-    title: 'Inbox humano',
-    body: 'Assume conversa numa tecla, devolve pra IA quando quiser. Atalhos J/K/R/A/E. Pusher real-time sub-segundo.',
+    title: 'CRM no WhatsApp',
+    body: 'Todas as conversas, etiquetas e funil num lugar só.',
     icon: Inbox,
   },
   {
-    pill: 'ANALYTICS',
-    title: 'Analytics tempo real',
-    body: 'Tickets resolvidos, % handoff, tempo até primeira resposta, top intents. Sparklines + drill-down por conversa.',
-    icon: BarChart3,
+    title: 'Áudio, imagem e documento',
+    body: 'Entende e responde mídia, não só texto.',
+    icon: FileText,
   },
   {
-    pill: 'INFRA',
-    title: 'Multi-tenant nativo',
-    body: 'Vários números, vários workspaces, uma plataforma. Cada workspace tem agente, equipe, billing e auditoria isolados.',
-    icon: Users,
+    title: 'Aprende com o seu negócio',
+    body: 'Quanto mais ele atende, mais afiado ele fica.',
+    icon: Sparkles,
   },
 ];
 
@@ -297,19 +353,19 @@ function Features() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 max-w-2xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
-            O que tem dentro
+            O que o agente faz
           </p>
           <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-            Tudo que precisa pra um agente{' '}
+            Um funcionário que nunca dorme, nunca esquece e{' '}
             <span className="font-serif italic font-normal text-white/70">
-              que realmente atende.
+              nunca perde a paciência.
             </span>
           </h2>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f, i) => (
-            <FeatureCard key={f.title} feature={f} delay={(i % 3) + 1} />
+            <FeatureCard key={f.title} feature={f} delay={(i % 4) + 1} />
           ))}
         </div>
       </div>
@@ -321,22 +377,72 @@ function FeatureCard({ feature, delay }: { feature: Feature; delay: number }) {
   const Icon = feature.icon;
   return (
     <div
-      className={`animate-fade-up delay-${delay} group rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-8 transition-all duration-200 hover:scale-[1.01] hover:border-[#00E676]/25 hover:bg-[#111]`}
+      className={`animate-fade-up delay-${delay} group rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-6 transition-all duration-200 hover:scale-[1.01] hover:border-[#00E676]/25 hover:bg-[#111]`}
     >
-      <span className="mb-3 inline-block rounded-full bg-[#00E676]/10 px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#00E676]">
-        {feature.pill}
-      </span>
       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#00E676]/10">
         <Icon className="h-5 w-5 text-[#00E676]" strokeWidth={1.75} />
       </div>
-      <h3 className="text-xl font-semibold tracking-tight text-white">{feature.title}</h3>
-      <p className="mt-3 text-sm leading-relaxed text-[#888]">{feature.body}</p>
+      <h3 className="text-base font-semibold tracking-tight text-white">{feature.title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-[#888]">{feature.body}</p>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   TESTIMONIALS — quote Instrument Serif italic, avatar inicial verde
+   PARA QUEM É — segmentos
+   ───────────────────────────────────────────────────────────────── */
+
+const SEGMENTS: Array<{ icon: typeof Store; label: string }> = [
+  { icon: Stethoscope, label: 'Clínicas e consultórios' },
+  { icon: Store, label: 'Lojas e e-commerce' },
+  { icon: UtensilsCrossed, label: 'Restaurantes e delivery' },
+  { icon: Wrench, label: 'Prestadores de serviço' },
+  { icon: Sparkles, label: 'Salões e estética' },
+  { icon: Tag, label: 'Imobiliárias e corretores' },
+  { icon: Brain, label: 'Infoprodutores e agências' },
+];
+
+function Segments() {
+  return (
+    <section className="border-t border-[#1a1a1a] py-32">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="mb-12 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
+            Para quem é
+          </p>
+          <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
+            Feito pra quem vive de{' '}
+            <span className="font-serif italic font-normal text-[#888]">
+              responder no WhatsApp.
+            </span>
+          </h2>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {SEGMENTS.map((s) => {
+            const Icon = s.icon;
+            return (
+              <span
+                key={s.label}
+                className="inline-flex items-center gap-2 rounded-full border border-[#1a1a1a] bg-[#0d0d0d] px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-[#00E676]/30 hover:text-white"
+              >
+                <Icon className="h-4 w-4 text-[#00E676]" strokeWidth={1.75} />
+                {s.label}
+              </span>
+            );
+          })}
+        </div>
+
+        <p className="mt-10 text-center text-base text-[#888]">
+          Se o seu cliente chega pelo WhatsApp, o Zapfy foi feito pra você.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TESTIMONIALS
    ───────────────────────────────────────────────────────────────── */
 
 interface Testimonial {
@@ -384,11 +490,11 @@ function Testimonials() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="mb-16 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
-            Beta privado · pessoas reais
+            Prova social
           </p>
           <h2 className="mt-4 text-4xl font-bold tracking-tight text-white md:text-5xl">
-            O que o pessoal do beta tá{' '}
-            <span className="font-serif italic font-normal text-[#888]">falando.</span>
+            Quem ligou o agente,{' '}
+            <span className="font-serif italic font-normal text-[#888]">não desligou mais.</span>
           </h2>
         </div>
 
@@ -407,7 +513,6 @@ function TestimonialCard({ t, delay }: { t: Testimonial; delay: number }) {
     <figure
       className={`animate-fade-up delay-${delay} relative flex flex-col overflow-hidden rounded-2xl border border-[#1a1a1a] bg-[#0d0d0d] p-8`}
     >
-      {/* Aspas decorativas gigantes — marca d'água */}
       <span
         aria-hidden
         className="pointer-events-none absolute -top-4 right-6 select-none font-serif text-[80px] leading-[0.8] text-[#00E676]/20"
@@ -415,15 +520,8 @@ function TestimonialCard({ t, delay }: { t: Testimonial; delay: number }) {
         &ldquo;
       </span>
 
-      <div className="relative flex gap-1 text-[#00E676]">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Star key={i} className="h-4 w-4 fill-current" />
-        ))}
-      </div>
-      <blockquote className="relative mt-5 flex-1">
-        <p className="font-serif text-[18px] italic leading-relaxed text-zinc-100">
-          {t.quote}
-        </p>
+      <blockquote className="relative flex-1">
+        <p className="font-serif text-[18px] italic leading-relaxed text-zinc-100">{t.quote}</p>
       </blockquote>
       <figcaption className="relative mt-7 border-t border-[#1a1a1a] pt-5">
         <p className="mb-2 text-sm font-medium text-[#00E676]">{t.metric}</p>
@@ -444,7 +542,7 @@ function TestimonialCard({ t, delay }: { t: Testimonial; delay: number }) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   FINAL CTA — única seção com fundo verde sólido
+   FINAL CTA
    ───────────────────────────────────────────────────────────────── */
 
 function FinalCta() {
@@ -452,19 +550,20 @@ function FinalCta() {
     <section className="border-t border-[#1a1a1a] bg-[#00E676] py-32 text-[#0a0a0a]">
       <div className="mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-5xl font-bold leading-[1.05] tracking-[-0.03em] md:text-6xl">
-          Pronto para automatizar
+          Seu próximo cliente já está
           <br />
-          <span className="font-serif italic font-normal">seu atendimento?</span>
+          <span className="font-serif italic font-normal">te chamando no WhatsApp.</span>
         </h2>
         <p className="mt-6 text-base text-[#0a0a0a]/80 md:text-lg">
-          Crie sua conta e converse com o Forge. Cancele quando quiser.
+          Deixe o Forge montar seu agente agora, veja funcionando e decida com calma. Risco zero,
+          garantia de 7 dias.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/signup"
             className="group inline-flex items-center gap-2 rounded-full bg-[#0a0a0a] px-7 py-3.5 text-sm font-semibold text-[#00E676] transition-transform hover:scale-[1.02]"
           >
-            Começar agora
+            Montar meu agente grátis
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
@@ -474,6 +573,9 @@ function FinalCta() {
             Ver planos
           </Link>
         </div>
+        <p className="mt-4 text-xs text-[#0a0a0a]/70">
+          Sem cartão pra montar. Você só assina quando ver o agente pronto.
+        </p>
       </div>
     </section>
   );

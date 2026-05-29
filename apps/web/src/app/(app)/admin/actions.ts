@@ -32,7 +32,7 @@ async function requireSuperAdmin(): Promise<
 const WorkspaceIdInput = z.object({ workspaceId: z.string().min(1).max(40) });
 const ForceUpgradeInput = z.object({
   workspaceId: z.string().min(1).max(40),
-  plan: z.enum(['STARTER', 'PRO', 'PREMIUM']),
+  plan: z.enum(['STARTER', 'PRO', 'BUSINESS']),
 });
 
 const COOKIE_MAX_AGE_S = 60 * 60; // 1h
@@ -113,7 +113,7 @@ export async function stopImpersonating(): Promise<{ status: 'ok' }> {
 
 export async function forceUpgradeWorkspace(
   workspaceId: string,
-  plan: 'STARTER' | 'PRO' | 'PREMIUM',
+  plan: 'STARTER' | 'PRO' | 'BUSINESS',
 ): Promise<{ status: 'ok'; stripeSynced: boolean } | { status: 'error'; error: string }> {
   const parsed = ForceUpgradeInput.safeParse({ workspaceId, plan });
   if (!parsed.success) {

@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 const PLAN_COLOR: Record<PlanId, string> = {
   STARTER: 'bg-zinc-500/10 text-zinc-700 dark:text-zinc-300 border-zinc-500/30',
   PRO: 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30',
-  PREMIUM: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/30',
+  BUSINESS: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/30',
 };
 
 export default async function AdminPage({
@@ -86,7 +86,7 @@ export default async function AdminPage({
   // os 100 da página (que é uma view paginada/filtrada). Antes contávamos só
   // os 100 visíveis — subestimava após cruzar esse limite.
   let mrrCents = 0;
-  const planCounts: Record<PlanId, number> = { STARTER: 0, PRO: 0, PREMIUM: 0 };
+  const planCounts: Record<PlanId, number> = { STARTER: 0, PRO: 0, BUSINESS: 0 };
   for (const row of activeSubsByPlan) {
     const p = row.plan as PlanId;
     planCounts[p] = row._count._all;
@@ -124,7 +124,7 @@ export default async function AdminPage({
       <div className="mt-4 grid grid-cols-3 gap-3">
         <PlanCount label="STARTER" count={planCounts.STARTER} />
         <PlanCount label="PRO" count={planCounts.PRO} />
-        <PlanCount label="PREMIUM" count={planCounts.PREMIUM} />
+        <PlanCount label="BUSINESS" count={planCounts.BUSINESS} />
       </div>
 
       {/* Busca */}

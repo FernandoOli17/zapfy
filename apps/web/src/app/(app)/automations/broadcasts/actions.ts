@@ -8,7 +8,7 @@ import {
   prisma,
   type Prisma,
 } from '@zapfy/db';
-import { createLogger } from '@zapfy/shared';
+import { createLogger, creditsSufficient } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
@@ -160,6 +160,26 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
   ) {
     return { status: 'error', error: `Broadcast em status ${broadcast.status} não pode ser lançado` };
   }
+
+  // Disparos proativos consomem créditos de marketing (1 por destinatário).
+  // Vendidos em pacotes à parte (fluxo de compra é fase futura) — por ora só
+  // bloqueia quando o saldo não cobre o envio.
+  const needed = broadcast.recipients.length;
+  const sub = await prisma.subscription.findUnique({
+    where: { workspaceId: ctx.workspace.id },
+    select: { marketingCredits: true },
+  });
+  const balance = sub?.marketingCredits ?? 0;
+  if (!creditsSufficient(balance, needed)) {
+    return {
+      status: 'error',
+      error: `Saldo de créditos de marketing insuficiente: ${balance} crédito(s) pra ${needed} destinatário(s). Compre mais créditos pra disparar.`,
+    };
+  }
+  await prisma.subscription.update({
+    where: { workspaceId: ctx.workspace.id },
+    data: { marketingCredits: { decrement: needed } },
+  });
 
   await prisma.broadcast.update({
     where: { id: broadcast.id },

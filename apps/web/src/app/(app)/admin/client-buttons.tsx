@@ -93,7 +93,7 @@ export function ForcePlanButton({
           role="menu"
           className="absolute right-0 z-10 mt-1 w-32 overflow-hidden rounded-md border border-border bg-popover shadow-md"
         >
-          {(['STARTER', 'PRO', 'PREMIUM'] as const).map((p) => (
+          {(['STARTER', 'PRO', 'BUSINESS'] as const).map((p) => (
             <button
               key={p}
               type="button"

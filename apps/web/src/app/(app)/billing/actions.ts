@@ -44,7 +44,7 @@ function assertBillingPermission(role: 'OWNER' | 'ADMIN' | 'AGENT'): { ok: true 
 }
 
 const checkoutInput = z.object({
-  plan: z.enum(['STARTER', 'PRO', 'PREMIUM']),
+  plan: z.enum(['STARTER', 'PRO', 'BUSINESS']),
 });
 
 export type CheckoutResult =

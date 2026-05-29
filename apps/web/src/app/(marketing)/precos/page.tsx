@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { ArrowRight, Check, Sparkles, X } from 'lucide-react';
 import { Button, cn } from '@zapfy/ui';
 
@@ -7,17 +7,18 @@ import { CosmicBackground } from '@/components/cosmic-bg';
 export const metadata = {
   title: 'Preços',
   description:
-    'STARTER R$97 · PRO R$297 · PREMIUM R$697. 7 dias grátis sem cartão. Cancele em um clique.',
+    'Monte seu agente de graça. STARTER R$97 · PRO R$247 · BUSINESS R$597 · Enterprise sob consulta. Garantia de 7 dias. Cancele quando quiser.',
 };
 
 type Plan = {
-  id: 'STARTER' | 'PRO' | 'PREMIUM';
+  id: 'STARTER' | 'PRO' | 'BUSINESS' | 'ENTERPRISE';
   name: string;
-  price: number;
+  price: number | null;
   blurb: string;
   highlight?: boolean;
   features: Array<{ has: boolean; text: string }>;
   cta: string;
+  ctaHref: string;
 };
 
 const PLANS: Plan[] = [
@@ -25,62 +26,64 @@ const PLANS: Plan[] = [
     id: 'STARTER',
     name: 'Starter',
     price: 97,
-    blurb: 'Pra começar a atender com IA sem dor.',
+    blurb: 'Pra autônomos e negócios começando.',
     features: [
-      { has: true, text: '1 número WhatsApp Business' },
-      { has: true, text: '2 usuários no time' },
-      { has: true, text: 'Até 500 contatos ativos / mês' },
-      { has: true, text: '2 broadcasts (campanhas) / mês' },
-      { has: true, text: '10 documentos na base de conhecimento' },
-      { has: true, text: 'Forge ilimitado' },
-      { has: true, text: 'Templates HSM' },
-      { has: true, text: 'Handoff humano' },
-      { has: true, text: 'Suporte por e-mail' },
-      { has: false, text: 'Tools customizadas' },
-      { has: false, text: 'Webhooks de saída' },
-      { has: false, text: 'API pública' },
+      { has: true, text: '1 número de WhatsApp' },
+      { has: true, text: 'Até 1.500 conversas de IA por mês' },
+      { has: true, text: 'CRM básico com etiquetas' },
+      { has: true, text: '1 usuário' },
+      { has: true, text: 'Créditos de marketing à parte' },
+      { has: true, text: '🛡️ Garantia de 7 dias' },
     ],
-    cta: 'Começar grátis',
+    cta: 'Assinar Starter',
+    ctaHref: '/signup',
   },
   {
     id: 'PRO',
     name: 'Pro',
-    price: 297,
-    blurb: 'Pra time pequeno escalando atendimento.',
+    price: 247,
+    blurb: 'Pra quem já vende e quer escalar.',
     highlight: true,
     features: [
-      { has: true, text: '3 números WhatsApp Business' },
-      { has: true, text: '10 usuários no time' },
-      { has: true, text: 'Até 3.000 contatos ativos / mês' },
-      { has: true, text: 'Broadcasts ilimitados' },
-      { has: true, text: '100 documentos na base' },
-      { has: true, text: 'Tools customizadas por workspace' },
-      { has: true, text: 'Webhooks de saída' },
-      { has: true, text: 'Integração Google Calendar' },
-      { has: true, text: 'Suporte prioritário' },
-      { has: false, text: 'API pública' },
-      { has: false, text: 'SLA de uptime' },
+      { has: true, text: '2 números de WhatsApp' },
+      { has: true, text: 'Até 6.000 conversas de IA por mês' },
+      { has: true, text: 'CRM com funil em kanban' },
+      { has: true, text: 'Agendamento e lembretes' },
+      { has: true, text: 'Integrações' },
+      { has: true, text: '3 usuários' },
+      { has: true, text: '🛡️ Garantia de 7 dias' },
     ],
-    cta: 'Começar grátis',
+    cta: 'Assinar Pro',
+    ctaHref: '/signup',
   },
   {
-    id: 'PREMIUM',
-    name: 'Premium',
-    price: 697,
-    blurb: 'Pra operação séria, multi-loja, ou com API.',
+    id: 'BUSINESS',
+    name: 'Business',
+    price: 597,
+    blurb: 'Pra operações que precisam de volume.',
     features: [
-      { has: true, text: 'Números ilimitados' },
-      { has: true, text: 'Usuários ilimitados' },
-      { has: true, text: 'Contatos ativos ilimitados' },
-      { has: true, text: 'Broadcasts ilimitados' },
-      { has: true, text: 'Documentos ilimitados' },
-      { has: true, text: 'API pública (REST + webhooks)' },
-      { has: true, text: 'SLA de uptime' },
-      { has: true, text: 'Onboarding assistido' },
-      { has: true, text: 'Slack compartilhado com o time' },
-      { has: true, text: 'Modelo de IA configurável' },
+      { has: true, text: 'Múltiplos números' },
+      { has: true, text: 'Conversas reativas ilimitadas' },
+      { has: true, text: 'Acesso à API' },
+      { has: true, text: 'Multiatendente' },
+      { has: true, text: 'Suporte com SLA' },
+      { has: true, text: '🛡️ Garantia de 7 dias' },
     ],
-    cta: 'Começar grátis',
+    cta: 'Assinar Business',
+    ctaHref: '/signup',
+  },
+  {
+    id: 'ENTERPRISE',
+    name: 'Enterprise',
+    price: null,
+    blurb: 'Pra grandes operações com necessidades específicas.',
+    features: [
+      { has: true, text: 'Volume alto e white-label' },
+      { has: true, text: 'Integrações dedicadas' },
+      { has: true, text: 'Gerente de conta' },
+    ],
+    cta: 'Falar com vendas',
+    ctaHref: '/contato',
   },
 ];
 
@@ -88,64 +91,67 @@ const FEATURE_MATRIX: Array<{
   feature: string;
   starter: boolean | string;
   pro: boolean | string;
-  premium: boolean | string;
+  business: boolean | string;
 }> = [
-  { feature: 'Números WhatsApp', starter: '1', pro: '3', premium: 'Ilimitado' },
-  { feature: 'Usuários do time', starter: '2', pro: '10', premium: 'Ilimitado' },
-  { feature: 'Contatos ativos / mês', starter: '500', pro: '3.000', premium: 'Ilimitado' },
-  { feature: 'Broadcasts (HSM) / mês', starter: '2', pro: 'Ilimitado', premium: 'Ilimitado' },
-  { feature: 'Respostas do agente (service msgs)', starter: 'Gratuitas', pro: 'Gratuitas', premium: 'Gratuitas' },
-  { feature: 'Documentos no RAG', starter: '10', pro: '100', premium: 'Ilimitado' },
-  { feature: 'Forge (builder em conversa)', starter: true, pro: true, premium: true },
-  { feature: 'Flow Builder visual', starter: true, pro: true, premium: true },
-  { feature: 'Inbox real-time', starter: true, pro: true, premium: true },
-  { feature: 'Handoff humano', starter: true, pro: true, premium: true },
-  { feature: 'Templates HSM', starter: true, pro: true, premium: true },
-  { feature: 'Tools por vertical', starter: true, pro: true, premium: true },
-  { feature: 'Tools customizadas', starter: false, pro: true, premium: true },
-  { feature: 'Webhooks de saída', starter: false, pro: true, premium: true },
-  { feature: 'Google Calendar', starter: false, pro: true, premium: true },
-  { feature: 'API pública', starter: false, pro: false, premium: true },
-  { feature: 'SLA de uptime', starter: false, pro: false, premium: true },
-  { feature: 'Suporte', starter: 'E-mail', pro: 'Prioritário', premium: 'Slack' },
+  { feature: 'Números WhatsApp', starter: '1', pro: '2', business: 'Múltiplos' },
+  { feature: 'Conversas de IA / mês', starter: '1.500', pro: '6.000', business: 'Ilimitado' },
+  { feature: 'Usuários do time', starter: '1', pro: '3', business: 'Ilimitado' },
+  { feature: 'CRM com etiquetas', starter: true, pro: true, business: true },
+  { feature: 'Funil em kanban', starter: false, pro: true, business: true },
+  { feature: 'Agendamento e lembretes', starter: false, pro: true, business: true },
+  { feature: 'Forge (builder em conversa)', starter: true, pro: true, business: true },
+  { feature: 'Handoff humano', starter: true, pro: true, business: true },
+  { feature: 'Integrações', starter: false, pro: true, business: true },
+  { feature: 'Multiatendente', starter: false, pro: false, business: true },
+  { feature: 'API pública', starter: false, pro: false, business: true },
+  { feature: 'Suporte', starter: 'E-mail', pro: 'Prioritário', business: 'SLA' },
+  { feature: 'Garantia de 7 dias', starter: true, pro: true, business: true },
 ];
 
 const FAQ = [
   {
-    q: 'Como funciona o trial?',
-    a: 'Você cria conta sem cartão e tem 7 dias com acesso a tudo do plano Starter (ou superior se escolher). No fim do trial, é só adicionar cartão pra continuar — ou deixar expirar, sem cobrança.',
+    q: 'Posso testar antes de pagar?',
+    a: 'Sim. O Forge monta o seu agente e te mostra funcionando de graça, sem cartão. Você só assina quando ver que vale a pena — e ainda tem 7 dias de garantia depois.',
   },
   {
-    q: 'O que conta como "contato ativo"?',
-    a: 'Um contato é "ativo" no mês se enviou OU recebeu pelo menos uma mensagem (do agente ou da equipe) nos últimos 30 dias. Contatos só cadastrados, sem interação, não contam. Quem só leu broadcast também não — o gatilho é troca de mensagens individual.',
+    q: 'Por que não tem uma conta grátis pra sempre?',
+    a: 'Porque agente de IA atendendo de verdade tem custo real. Em vez de um "grátis" limitado e capenga, a gente deixa você ver o agente completo funcionando antes de pagar, e cobre você com garantia. Mais honesto pra todo mundo.',
   },
   {
-    q: 'Por que não cobram por mensagem ou por conversa?',
-    a: 'Em julho/2025 a Meta mudou o modelo de cobrança da WhatsApp Cloud API: respostas do agente IA dentro da janela de 24h ("service messages") ficaram **gratuitas** na Meta. Só broadcasts e templates de marketing têm custo. Como nosso agente atende quase tudo via service message, não faz mais sentido cobrar por conversa — a unidade que importa virou contato ativo + broadcasts proativos.',
+    q: 'O agente vai falar como um robô?',
+    a: 'Não. O Forge aprende o tom do seu negócio na entrevista. O cliente sente que está falando com alguém da sua equipe.',
   },
   {
-    q: 'O que acontece se eu passar do limite de contatos ativos?',
-    a: 'Avisamos em 80% do limite. No Starter, o agente continua respondendo contatos já ativos mas novos contatos vão direto pra fila humana até o próximo ciclo (ou upgrade). No Pro, o limite é 6× maior — quase ninguém estoura. Premium é ilimitado.',
+    q: 'Preciso saber programar ou configurar fluxo?',
+    a: 'Não. O Forge entrevista você e monta tudo. Você só conecta o WhatsApp quando assinar.',
   },
   {
-    q: 'Preciso do meu próprio Meta App pro WhatsApp?',
-    a: 'No MVP, sim — você cria um Meta App de graça na Meta Business Suite, ativa o WhatsApp Cloud API, e cola as credenciais (cifradas no nosso DB com AES-256-GCM). Quando o Zapfy virar Meta Tech Provider oficial, esse passo some.',
+    q: 'Como conecto o meu número?',
+    a: 'De forma simples e guiada, direto no painel. Em poucos minutos seu agente está no ar.',
   },
   {
-    q: 'A IA aprende com as conversas dos meus clientes?',
-    a: 'Não. Suas conversas NUNCA são usadas pra treinar modelos da Anthropic, OpenAI ou qualquer terceiro. Os modelos são consumidos via API com flag de no-training. Suas mensagens viram contexto pra responder seu cliente, e ponto.',
+    q: 'O agente passa pra mim quando precisa?',
+    a: 'Sim. Você define quando ele deve te chamar, e ele transfere a conversa com todo o histórico.',
   },
   {
-    q: 'Posso usar meu próprio modelo de IA?',
-    a: 'No Premium, sim — vamos abrir suporte a Anthropic, OpenAI, ou modelo on-prem (Llama, etc.) por workspace. No Starter e Pro usamos os modelos otimizados pelo Zapfy (Claude Sonnet 4.5 + Haiku 4.5).',
+    q: 'O que conta como "conversa"?',
+    a: 'Uma conversa é a interação contínua com um cliente. Mensagens trocadas dentro da mesma conversa não contam separado.',
   },
   {
-    q: 'Como funciona o handoff humano?',
-    a: 'O agente detecta sinais de "preciso de gente" (palavras-chave, frustração, pedido fora do padrão) e pausa, manda mensagem-ponte e notifica seu time via inbox em tempo real, e-mail e push. Você pode também puxar a conversa manualmente a qualquer momento.',
+    q: 'E os disparos de marketing?',
+    a: 'Mensagens que você inicia (campanhas, promoções) usam um pacote de créditos transparente, cobrado à parte — assim você só paga pelo que dispara, sem surpresa na fatura.',
   },
   {
-    q: 'E LGPD?',
-    a: 'Levamos a sério. Tokens da Meta cifrados, RLS na app layer, endpoints públicos de export/delete/opt-out, audit log de todas as ações sensíveis, DPA disponível no plano Premium. Veja a página /lgpd pra detalhes.',
+    q: 'E a garantia, como funciona?',
+    a: 'Se em até 7 dias depois de assinar você achar que não é pra você, devolvemos. Sem letrinha miúda.',
+  },
+  {
+    q: 'Tem fidelidade?',
+    a: 'Não. Cancele quando quiser.',
+  },
+  {
+    q: 'Meus dados e dos meus clientes estão seguros?',
+    a: 'Sim. Seguimos as boas práticas de segurança e a LGPD.',
   },
 ];
 
@@ -161,16 +167,16 @@ export default function PricingPage() {
             style={{ animationDelay: '0ms' }}
           >
             <Sparkles className="h-3 w-3" />
-            7 dias grátis · sem cartão
+            Monte de graça · assine quando ver funcionando
           </div>
           <h1
             className="animate-fade-up mt-6 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl"
             style={{ animationDelay: '120ms' }}
           >
-            Preço simples e{' '}
+            Monte seu agente de graça.{' '}
             <span className="font-serif italic font-normal">
               <span className="bg-gradient-to-r from-primary via-[#00E676] to-primary bg-clip-text text-transparent">
-                previsível
+                Assine só quando ver funcionando.
               </span>
             </span>
           </h1>
@@ -178,8 +184,7 @@ export default function PricingPage() {
             className="animate-fade-up mx-auto mt-5 max-w-2xl text-base text-muted-foreground md:text-lg"
             style={{ animationDelay: '240ms' }}
           >
-            Cancele em um clique no portal Stripe. Trocou de plano? Cobra/devolve proporcional,
-            sem dor.
+            Sem fidelidade. Garantia de 7 dias em todos os planos — não gostou, devolvemos.
           </p>
         </div>
       </section>
@@ -187,7 +192,7 @@ export default function PricingPage() {
       {/* Pricing cards */}
       <section className="pb-16">
         <div className="mx-auto max-w-6xl px-6">
-          <div className="grid gap-6 lg:grid-cols-3 lg:gap-5">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 lg:gap-5">
             {PLANS.map((plan, i) => (
               <div
                 key={plan.id}
@@ -199,21 +204,20 @@ export default function PricingPage() {
             ))}
           </div>
           <p className="mt-8 text-center text-xs text-muted-foreground">
-            Preços em BRL · IVA incluso · Cancele quando quiser
+            Preços em BRL · Cancele quando quiser · Garantia de 7 dias
           </p>
 
-          {/* Nota explicativa Meta pricing — service messages grátis */}
+          {/* Nota explicativa — conversas reativas vs disparos de marketing */}
           <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-[#00E676]/25 bg-[#00E676]/5 p-5 text-sm leading-relaxed text-zinc-200">
             <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[#00E676]">
               💡 Como a cobrança funciona
             </p>
             <p>
-              <strong className="text-white">Respostas do agente IA são gratuitas.</strong>{' '}
-              Desde julho/2025 a Meta não cobra mais por mensagens dentro da janela de 24h
-              de atendimento (service messages). O Zapfy também não cobra por elas — o
-              limite do plano é{' '}
-              <span className="text-[#00E676]">contatos ativos no mês + broadcasts proativos</span>.
-              Sem surpresa em fatura.
+              <strong className="text-white">Conversas iniciadas pelo cliente não consomem crédito de envio.</strong>{' '}
+              O plano cobre suas{' '}
+              <span className="text-[#00E676]">conversas de IA no mês</span>. Disparos de
+              marketing (mensagens que você inicia) são cobrados em pacotes de créditos
+              transparentes, à parte. Sem surpresa em fatura.
             </p>
           </div>
         </div>
@@ -245,7 +249,7 @@ export default function PricingPage() {
                       Pro
                     </th>
                     <th className="px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Premium
+                      Business
                     </th>
                   </tr>
                 </thead>
@@ -263,7 +267,7 @@ export default function PricingPage() {
                         <Cell value={row.pro} />
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <Cell value={row.premium} />
+                        <Cell value={row.business} />
                       </td>
                     </tr>
                   ))}
@@ -315,15 +319,15 @@ export default function PricingPage() {
         />
         <div className="mx-auto max-w-4xl px-6 text-center">
           <h2 className="text-3xl font-semibold tracking-tight md:text-5xl">
-            Sem cartão. Sem ligação.{' '}
+            Monte agora.{' '}
             <span className="font-serif italic font-normal">
               <span className="bg-gradient-to-r from-primary via-[#00E676] to-primary bg-clip-text text-transparent">
-                Só conversar.
+                Pague só quando gostar.
               </span>
             </span>
           </h2>
           <p className="mt-4 text-base text-muted-foreground md:text-lg">
-            Em 5 minutos você conversa com o Forge e seu agente tá pronto.
+            O Forge monta seu agente em minutos. Sem cartão pra montar.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button
@@ -332,7 +336,7 @@ export default function PricingPage() {
               className="h-12 px-6 shadow-lg shadow-primary/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/40"
             >
               <Link href="/signup">
-                Criar conta grátis <ArrowRight className="ml-2 h-4 w-4" />
+                Montar meu agente grátis <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button
@@ -355,45 +359,49 @@ function PlanCard({ plan }: { plan: Plan }) {
   return (
     <div
       className={cn(
-        'group relative flex flex-col rounded-2xl border bg-white/[0.02] p-6 backdrop-blur-sm transition-all duration-300 md:p-7',
+        'group relative flex h-full flex-col rounded-2xl border bg-white/[0.02] p-6 backdrop-blur-sm transition-all duration-300',
         isHighlight
-          ? 'border-primary/40 shadow-2xl shadow-primary/20 lg:scale-[1.03]'
+          ? 'border-primary/40 shadow-2xl shadow-primary/20'
           : 'border-white/[0.08] hover:-translate-y-1 hover:border-primary/30 hover:bg-white/[0.04]',
       )}
     >
       {isHighlight && (
         <>
-          {/* Glow ring no destaque */}
           <div
             aria-hidden
             className="pointer-events-none absolute -inset-px rounded-2xl"
             style={{
               background:
                 'linear-gradient(135deg, hsl(213 93% 68% / 0.4), transparent 50%, hsl(213 93% 68% / 0.2))',
-              maskImage:
-                'linear-gradient(135deg, black, transparent 50%, black)',
+              maskImage: 'linear-gradient(135deg, black, transparent 50%, black)',
               padding: '1px',
             }}
           />
           <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-primary to-[#00E676] px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground shadow-md shadow-primary/40">
             <Sparkles className="h-3 w-3" />
-            Mais escolhido
+            Mais popular
           </span>
         </>
       )}
-      <div className="relative">
+      <div className="relative flex h-full flex-col">
         <h3 className="text-xl font-semibold tracking-tight">{plan.name}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{plan.blurb}</p>
 
         <div className="mt-5 flex items-baseline gap-1">
-          <span className="text-base font-medium text-muted-foreground">R$</span>
-          <span className="text-4xl font-semibold tracking-tight tabular-nums md:text-5xl">
-            {plan.price.toLocaleString('pt-BR')}
-          </span>
-          <span className="text-sm text-muted-foreground">/mês</span>
+          {plan.price === null ? (
+            <span className="text-2xl font-semibold tracking-tight">Sob consulta</span>
+          ) : (
+            <>
+              <span className="text-base font-medium text-muted-foreground">R$</span>
+              <span className="text-4xl font-semibold tracking-tight tabular-nums md:text-5xl">
+                {plan.price.toLocaleString('pt-BR')}
+              </span>
+              <span className="text-sm text-muted-foreground">/mês</span>
+            </>
+          )}
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          7 dias grátis · Cobrança após o trial
+          {plan.price === null ? 'Necessidades específicas' : 'Garantia de 7 dias'}
         </p>
 
         <Button
@@ -406,7 +414,7 @@ function PlanCard({ plan }: { plan: Plan }) {
           )}
           variant={isHighlight ? 'default' : 'outline'}
         >
-          <Link href="/signup">
+          <Link href={plan.ctaHref}>
             {plan.cta} <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -423,11 +431,7 @@ function PlanCard({ plan }: { plan: Plan }) {
                 ) : (
                   <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/30" />
                 )}
-                <span
-                  className={
-                    f.has ? 'text-foreground' : 'text-muted-foreground/40 line-through'
-                  }
-                >
+                <span className={f.has ? 'text-foreground' : 'text-muted-foreground/40 line-through'}>
                   {f.text}
                 </span>
               </li>

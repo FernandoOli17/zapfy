@@ -1,51 +1,70 @@
 ﻿import 'server-only';
 
 import { prisma, PlanId as DbPlanId } from '@zapfy/db';
-import { PLANS, PlanLimitError, type PlanFeature, type PlanId } from '@zapfy/shared';
+import {
+  PLANS,
+  PlanLimitError,
+  isAgentServingStatus,
+  planLimitState,
+  requiredPlanForFeature,
+  type PlanFeature,
+  type PlanId,
+} from '@zapfy/shared';
+
+type SubStatus = 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
 
 /**
  * Resolve features ativas no workspace baseado no plano da Subscription.
- * Se workspace estiver em trial, considera as features do plano contratado
- * (no MVP trial sempre dá Starter level).
+ * Sem trial: workspace recém-criado fica `INCOMPLETE` (Forge monta/demonstra,
+ * mas o agente só atende quando a assinatura vira `ACTIVE`).
  */
 export async function getWorkspacePlan(workspaceId: string): Promise<{
   plan: PlanId;
   features: PlanFeature;
-  status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE';
-  trialEndsAt: Date | null;
+  status: SubStatus;
 }> {
   const sub = await prisma.subscription.findUnique({ where: { workspaceId } });
   const plan: PlanId = (sub?.plan as PlanId | undefined) ?? 'STARTER';
   return {
     plan,
     features: PLANS[plan],
-    status: (sub?.status as 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'UNPAID' | 'INCOMPLETE' | undefined) ?? 'TRIALING',
-    trialEndsAt: sub?.trialEndsAt ?? null,
+    status: (sub?.status as SubStatus | undefined) ?? 'INCOMPLETE',
   };
 }
 
-/**
- * Contatos únicos ativos nos últimos 30 dias.
- *
- * "Contato ativo" = enviou OU recebeu pelo menos uma mensagem nos últimos
- * `ACTIVE_CONTACT_WINDOW_DAYS` dias. Este é o novo limite de plano desde
- * 2026-05 — substituiu `aiConversations` por causa da mudança Meta jul/2025.
- */
-export async function countActiveContactsThisCycle(workspaceId: string): Promise<number> {
-  const { ACTIVE_CONTACT_WINDOW_DAYS } = await import('@zapfy/shared');
-  const since = new Date(Date.now() - ACTIVE_CONTACT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+/** True se o agente do workspace pode atender no WhatsApp (assinatura paga viva). */
+export async function isAgentServingEnabled(workspaceId: string): Promise<boolean> {
+  const { status } = await getWorkspacePlan(workspaceId);
+  return isAgentServingStatus(status);
+}
 
-  // Conta contatos distintos que aparecem em Message dentro da janela.
-  const rows = await prisma.message.findMany({
-    where: {
-      workspaceId,
-      createdAt: { gte: since },
-      conversation: { contactId: { not: '' } },
-    },
-    distinct: ['conversationId'],
-    select: { conversation: { select: { contactId: true } } },
+/** Início do ciclo de cobrança corrente (período Stripe ou janela fallback). */
+async function cycleStart(workspaceId: string): Promise<Date> {
+  const { AI_CONVERSATION_WINDOW_DAYS } = await import('@zapfy/shared');
+  const sub = await prisma.subscription.findUnique({
+    where: { workspaceId },
+    select: { currentPeriodStart: true },
   });
-  return new Set(rows.map((r) => r.conversation.contactId)).size;
+  return (
+    sub?.currentPeriodStart ??
+    new Date(Date.now() - AI_CONVERSATION_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  );
+}
+
+/**
+ * Conversas de IA no ciclo corrente.
+ *
+ * 1 conversa = uma `Conversation` distinta que teve ≥1 mensagem `fromAi` no
+ * ciclo. É a unidade de cobrança dos planos (1.500 Starter / 6.000 Pro / ∞).
+ */
+export async function countAiConversationsThisCycle(workspaceId: string): Promise<number> {
+  const since = await cycleStart(workspaceId);
+  const rows = await prisma.message.findMany({
+    where: { workspaceId, fromAi: true, createdAt: { gte: since } },
+    distinct: ['conversationId'],
+    select: { conversationId: true },
+  });
+  return rows.length;
 }
 
 /**
@@ -53,24 +72,18 @@ export async function countActiveContactsThisCycle(workspaceId: string): Promise
  * Cada `Broadcast` conta 1 vez, independente do número de destinatários.
  */
 export async function countBroadcastsThisCycle(workspaceId: string): Promise<number> {
-  const sub = await prisma.subscription.findUnique({ where: { workspaceId } });
-  const since =
-    sub?.currentPeriodStart ??
-    (sub?.trialEndsAt
-      ? new Date(sub.trialEndsAt.getTime() - 7 * 24 * 60 * 60 * 1000)
-      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-
+  const since = await cycleStart(workspaceId);
   return prisma.broadcast.count({
     where: { workspaceId, createdAt: { gte: since } },
   });
 }
 
 /**
- * Contatos ativos por dia nos últimos N dias. Pra sparkline da /billing.
- * Cada bucket conta contatos distintos que tiveram pelo menos 1 mensagem
+ * Conversas de IA por dia nos últimos N dias. Pra sparkline da /billing.
+ * Cada bucket conta conversas distintas que tiveram ≥1 mensagem `fromAi`
  * naquele dia (não acumulado — é dia-a-dia).
  */
-export async function dailyActiveContactsLastDays(
+export async function dailyAiConversationsLastDays(
   workspaceId: string,
   days: number,
 ): Promise<Array<{ label: string; value: number }>> {
@@ -79,8 +92,8 @@ export async function dailyActiveContactsLastDays(
   since.setHours(0, 0, 0, 0);
 
   const rows = await prisma.message.findMany({
-    where: { workspaceId, createdAt: { gte: since } },
-    select: { createdAt: true, conversation: { select: { contactId: true } } },
+    where: { workspaceId, fromAi: true, createdAt: { gte: since } },
+    select: { createdAt: true, conversationId: true },
   });
 
   const buckets = new Map<string, Set<string>>();
@@ -92,7 +105,7 @@ export async function dailyActiveContactsLastDays(
   for (const r of rows) {
     const key = r.createdAt.toISOString().slice(0, 10);
     const set = buckets.get(key);
-    if (set) set.add(r.conversation.contactId);
+    if (set) set.add(r.conversationId);
   }
 
   return Array.from(buckets.entries()).map(([k, set]) => {
@@ -145,8 +158,8 @@ export async function requirePlan(
     }
     return { ok: true, plan };
   }
-  // Encontrar o menor plano que tem essa feature
-  const requiredPlan: PlanId = PLANS.PRO[feature] ? 'PRO' : 'PREMIUM';
+  // Menor plano que habilita a feature (fallback BUSINESS).
+  const requiredPlan: PlanId = requiredPlanForFeature(feature) ?? 'BUSINESS';
   return {
     ok: false,
     plan,
@@ -155,21 +168,19 @@ export async function requirePlan(
   };
 }
 
-/** Verifica limites numéricos (numbers, seats, docs, activeContacts, broadcasts). */
+/** Verifica limites numéricos (numbers, seats, docs, aiConversations). */
 export async function assertPlanLimit(
   workspaceId: string,
   feature:
     | 'whatsappNumbers'
     | 'teamSeats'
     | 'knowledgeDocs'
-    | 'activeContacts'
-    | 'broadcasts',
+    | 'aiConversations',
   currentCount: number,
 ): Promise<void> {
   const { features, plan } = await getWorkspacePlan(workspaceId);
   const max = features[feature];
-  if (max === 'unlimited') return;
-  if (currentCount >= max) {
+  if (planLimitState(max, currentCount).over) {
     throw new PlanLimitError(`${feature} limite ${max} (plano ${plan})`);
   }
 }

@@ -16,9 +16,9 @@ import { PLANS, type PlanId, type PlanFeature } from '@zapfy/shared';
 import { Button, cn } from '@zapfy/ui';
 
 import {
-  countActiveContactsThisCycle,
+  countAiConversationsThisCycle,
   countBroadcastsThisCycle,
-  dailyActiveContactsLastDays,
+  dailyAiConversationsLastDays,
   getWorkspacePlan,
 } from '@/lib/plans';
 import { isStripeConfigured, isStripeMock } from '@/lib/stripe';
@@ -33,19 +33,19 @@ export const dynamic = 'force-dynamic';
 const PLAN_NAMES: Record<PlanId, string> = {
   STARTER: 'Starter',
   PRO: 'Pro',
-  PREMIUM: 'Premium',
+  BUSINESS: 'Business',
 };
 
 const PLAN_BLURBS: Record<PlanId, string> = {
-  STARTER: 'Pra começar a atender com IA sem dor.',
-  PRO: 'Pra time pequeno escalando atendimento.',
-  PREMIUM: 'Pra operação séria com API e onboarding.',
+  STARTER: 'Pra autônomos e negócios começando.',
+  PRO: 'Pra quem já vende e quer escalar.',
+  BUSINESS: 'Pra operações que precisam de volume.',
 };
 
 /** Mapeia features bloqueadas pro plano necessário (usado pelo `?upgrade=feature`). */
 const FEATURE_REQUIRES_PLAN: Record<string, { plan: PlanId; label: string; icon: typeof Code2 }> = {
-  customTools: { plan: 'PREMIUM', label: 'Tools customizadas', icon: Code2 },
-  apiAccess: { plan: 'PREMIUM', label: 'API pública', icon: KeyRound },
+  customTools: { plan: 'PRO', label: 'Tools customizadas', icon: Code2 },
+  apiAccess: { plan: 'BUSINESS', label: 'API pública', icon: KeyRound },
 };
 
 interface PageProps {
@@ -62,22 +62,18 @@ export default async function BillingPage({ searchParams }: PageProps) {
   const { workspace, member } = await requireWorkspace();
   const isAdmin = member.role === 'OWNER' || member.role === 'ADMIN';
 
-  const [subscription, planInfo, activeContactsUsed, broadcastsUsed, usageSeries] =
+  const [subscription, planInfo, aiConversationsUsed, broadcastsUsed, usageSeries] =
     await Promise.all([
       prisma.subscription.findUnique({ where: { workspaceId: workspace.id } }),
       getWorkspacePlan(workspace.id),
-      countActiveContactsThisCycle(workspace.id),
+      countAiConversationsThisCycle(workspace.id),
       countBroadcastsThisCycle(workspace.id),
-      dailyActiveContactsLastDays(workspace.id, 14),
+      dailyAiConversationsLastDays(workspace.id, 14),
     ]);
-  const { plan, features, status, trialEndsAt } = planInfo;
+  const { plan, features, status } = planInfo;
   const stripeConfigured = isStripeConfigured();
   const stripeMock = isStripeMock();
   const params = await searchParams;
-
-  const trialDaysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
-    : null;
 
   const usageTotal = usageSeries.reduce((acc, p) => acc + p.value, 0);
   const upgradeFeature = params.upgrade ? FEATURE_REQUIRES_PLAN[params.upgrade] : null;
@@ -155,9 +151,9 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <p className="mt-0.5 text-sm text-muted-foreground">{PLAN_BLURBS[plan]}</p>
               </div>
               <div className="text-right">
-                {status === 'TRIALING' && trialDaysLeft !== null ? (
-                  <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground">
-                    Trial · {trialDaysLeft} dia{trialDaysLeft === 1 ? '' : 's'}
+                {status === 'INCOMPLETE' || status === 'TRIALING' ? (
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium uppercase text-amber-700 dark:text-amber-400">
+                    sem assinatura
                   </span>
                 ) : status === 'PAST_DUE' || status === 'UNPAID' ? (
                   <span className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium uppercase text-destructive">
@@ -184,14 +180,13 @@ export default async function BillingPage({ searchParams }: PageProps) {
           <div className="px-6 py-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <UsageBar
-                label="Contatos ativos (últimos 30d)"
-                used={activeContactsUsed}
-                limit={features.activeContacts}
+                label="Conversas de IA (ciclo)"
+                used={aiConversationsUsed}
+                limit={features.aiConversations}
               />
-              <UsageBar
-                label="Broadcasts neste ciclo"
-                used={broadcastsUsed}
-                limit={features.broadcasts}
+              <KeyValue
+                label="Disparos / créditos mkt"
+                value={`${broadcastsUsed} no ciclo · ${(subscription?.marketingCredits ?? 0).toLocaleString('pt-BR')} créditos`}
               />
               <KeyValue
                 label="Números WhatsApp"
@@ -226,9 +221,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
 
             <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
               {subscription?.stripeCustomerId && isAdmin && <ManageSubscriptionButton />}
-              {status === 'TRIALING' && (
+              {(status === 'INCOMPLETE' || status === 'TRIALING') && (
                 <p className="text-xs text-muted-foreground">
-                  Cobramos no fim do trial. Cancele em um clique até lá.
+                  O Forge monta e demonstra o agente de graça. Assine pra ele atender no
+                  WhatsApp — garantia de 7 dias, cancele quando quiser.
                 </p>
               )}
               {!isAdmin && (
@@ -247,10 +243,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
               <BarChart3 className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold tracking-tight">Contatos ativos 14d</h3>
+              <h3 className="text-sm font-semibold tracking-tight">Conversas de IA 14d</h3>
               <p className="text-xs text-muted-foreground">
-                {activeContactsUsed.toLocaleString('pt-BR')} contato
-                {activeContactsUsed === 1 ? '' : 's'} no ciclo
+                {aiConversationsUsed.toLocaleString('pt-BR')} conversa
+                {aiConversationsUsed === 1 ? '' : 's'} no ciclo
               </p>
             </div>
           </div>
@@ -267,10 +263,10 @@ export default async function BillingPage({ searchParams }: PageProps) {
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold tracking-tight">
-          {plan === 'PREMIUM' ? 'Outros planos' : 'Mudar de plano'}
+          {plan === 'BUSINESS' ? 'Outros planos' : 'Mudar de plano'}
         </h2>
         <div className="mt-3 grid gap-4 md:grid-cols-3">
-          {(['STARTER', 'PRO', 'PREMIUM'] as const).map((p) => (
+          {(['STARTER', 'PRO', 'BUSINESS'] as const).map((p) => (
             <PlanCard
               key={p}
               planId={p}
@@ -298,12 +294,12 @@ export default async function BillingPage({ searchParams }: PageProps) {
           Sem dark pattern, sem letrinha miúda.
         </h3>
         <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-          <Bullet>Trial sem cartão. Sem renovação automática surpresa.</Bullet>
-          <Bullet>Cancele em 1 clique pelo portal Stripe.</Bullet>
+          <Bullet>Monte e veja o agente funcionando antes de pagar.</Bullet>
+          <Bullet>Garantia de 7 dias. Não gostou, devolvemos.</Bullet>
+          <Bullet>Cancele em 1 clique pelo portal Stripe. Sem fidelidade.</Bullet>
           <Bullet>Limites avisados em 80%. Sem cobrança escondida.</Bullet>
           <Bullet>Suas conversas nunca treinam modelos de IA.</Bullet>
-          <Bullet>Respostas do agente são gratuitas (Meta, jul/2025). Cobrança só por contatos ativos no mês + broadcasts.</Bullet>
-          <Bullet>Faturas direto no e-mail, sempre.</Bullet>
+          <Bullet>Cobrança por conversas de IA no mês. Disparos de marketing em créditos à parte.</Bullet>
         </ul>
       </section>
     </div>
@@ -431,12 +427,11 @@ function PlanCard({
   highlighted?: boolean;
 }) {
   const featureRows: Array<{ has: boolean; text: string }> = [
-    { has: true, text: `${limitLabel(features.activeContacts, 'contato')} ativo/mês` },
-    { has: true, text: `${limitLabel(features.broadcasts, 'broadcast')}/mês` },
+    { has: true, text: `${limitLabel(features.aiConversations, 'conversa')} de IA/mês` },
     { has: true, text: `${limitLabel(features.whatsappNumbers, 'numero')} WhatsApp` },
-    { has: true, text: `${limitLabel(features.teamSeats, 'seat')} no time` },
+    { has: true, text: `${limitLabel(features.teamSeats, 'usuario')} no time` },
     { has: true, text: `${limitLabel(features.knowledgeDocs, 'doc')} de conhecimento` },
-    { has: features.customTools, text: 'Modo desenvolvedor + tools customizadas' },
+    { has: features.customTools, text: 'Integrações + tools customizadas' },
     { has: features.apiAccess, text: 'API pública' },
   ];
 

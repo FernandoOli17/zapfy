@@ -55,7 +55,7 @@ export function isStripeConfigured(): boolean {
 export function getPriceIdForPlan(plan: PlanId): string | null {
   if (plan === 'STARTER') return env.STRIPE_PRICE_STARTER ?? null;
   if (plan === 'PRO') return env.STRIPE_PRICE_PRO ?? null;
-  if (plan === 'PREMIUM') return env.STRIPE_PRICE_PREMIUM ?? null;
+  if (plan === 'BUSINESS') return env.STRIPE_PRICE_BUSINESS ?? null;
   return null;
 }
 
@@ -63,6 +63,6 @@ export function getPriceIdForPlan(plan: PlanId): string | null {
 export function planIdFromStripePrice(priceId: string): PlanId | null {
   if (priceId === env.STRIPE_PRICE_STARTER) return 'STARTER';
   if (priceId === env.STRIPE_PRICE_PRO) return 'PRO';
-  if (priceId === env.STRIPE_PRICE_PREMIUM) return 'PREMIUM';
+  if (priceId === env.STRIPE_PRICE_BUSINESS) return 'BUSINESS';
   return null;
 }

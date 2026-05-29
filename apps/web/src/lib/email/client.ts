@@ -24,7 +24,7 @@ export function getResend(): Resend | null {
 }
 
 export function defaultFrom(): string {
-  return env.RESEND_FROM_EMAIL ?? 'Zapfy <noreply@Zapfy.dev>';
+  return env.RESEND_FROM_EMAIL ?? 'Zapfy <noreply@zapfy.store>';
 }
 
 export function isEmailConfigured(): boolean {

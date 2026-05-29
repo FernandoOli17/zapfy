@@ -17,21 +17,22 @@ export const VERTICAL_LABELS_PT: Record<Vertical, string> = {
   other: 'Outro',
 };
 
-export const PLAN_IDS = ['STARTER', 'PRO', 'PREMIUM'] as const;
+/**
+ * Planos cobráveis (self-service via Stripe). `Enterprise` é só marketing
+ * ("Falar com vendas" → /contato), não entra aqui nem no enum do DB.
+ */
+export const PLAN_IDS = ['STARTER', 'PRO', 'BUSINESS'] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 export type PlanFeature = {
   priceBRLCents: number;
   /**
-   * Limite de contatos únicos que enviaram/receberam mensagem no ciclo do mês.
-   * Substituiu `aiConversations` em 2026-05 — Meta mudou pricing WhatsApp
-   * Cloud API em jul/2025: service messages (resposta do agente dentro da
-   * janela 24h) ficaram **gratuitas**. Não faz mais sentido cobrar por
-   * conversa do agente — só por contatos ativos e broadcasts proativos.
+   * Limite de **conversas de IA** por ciclo de cobrança. 1 conversa = uma
+   * `Conversation` que teve ≥1 mensagem atendida pela IA dentro do ciclo.
+   * É a unidade que o cliente percebe (atendimento) e que nos custa (tokens).
+   * Conversas reativas no Business são ilimitadas.
    */
-  activeContacts: number | 'unlimited';
-  /** Limite de broadcasts (mensagens proativas via template HSM) por mês. */
-  broadcasts: number | 'unlimited';
+  aiConversations: number | 'unlimited';
   whatsappNumbers: number | 'unlimited';
   teamSeats: number | 'unlimited';
   knowledgeDocs: number | 'unlimited';
@@ -43,30 +44,27 @@ export type PlanFeature = {
 export const PLANS: Record<PlanId, PlanFeature> = {
   STARTER: {
     priceBRLCents: 9700,
-    activeContacts: 500,
-    broadcasts: 2,
+    aiConversations: 1_500,
     whatsappNumbers: 1,
-    teamSeats: 2,
+    teamSeats: 1,
     knowledgeDocs: 10,
     forgeRefinements: 'unlimited',
     customTools: false,
     apiAccess: false,
   },
   PRO: {
-    priceBRLCents: 29700,
-    activeContacts: 3_000,
-    broadcasts: 'unlimited',
-    whatsappNumbers: 3,
-    teamSeats: 10,
+    priceBRLCents: 24700,
+    aiConversations: 6_000,
+    whatsappNumbers: 2,
+    teamSeats: 3,
     knowledgeDocs: 100,
     forgeRefinements: 'unlimited',
     customTools: true,
     apiAccess: false,
   },
-  PREMIUM: {
-    priceBRLCents: 69700,
-    activeContacts: 'unlimited',
-    broadcasts: 'unlimited',
+  BUSINESS: {
+    priceBRLCents: 59700,
+    aiConversations: 'unlimited',
     whatsappNumbers: 'unlimited',
     teamSeats: 'unlimited',
     knowledgeDocs: 'unlimited',
@@ -76,10 +74,8 @@ export const PLANS: Record<PlanId, PlanFeature> = {
   },
 };
 
-/** Janela considerada pra "contato ativo": mensagem enviada/recebida nos últimos 30 dias. */
-export const ACTIVE_CONTACT_WINDOW_DAYS = 30;
-
-export const TRIAL_DAYS = 7;
+/** Janela do ciclo pra contagem de conversas de IA quando não há período Stripe (fallback). */
+export const AI_CONVERSATION_WINDOW_DAYS = 30;
 
 export const WORKSPACE_ROLES = ['OWNER', 'ADMIN', 'AGENT'] as const;
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];

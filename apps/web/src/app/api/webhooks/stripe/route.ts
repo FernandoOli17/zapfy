@@ -191,6 +191,6 @@ function mapPriceToDbPlan(priceId: string): PlanId {
   const id = planIdFromStripePrice(priceId);
   if (id === 'STARTER') return PlanId.STARTER;
   if (id === 'PRO') return PlanId.PRO;
-  if (id === 'PREMIUM') return PlanId.PREMIUM;
+  if (id === 'BUSINESS') return PlanId.BUSINESS;
   return PlanId.STARTER;
 }
