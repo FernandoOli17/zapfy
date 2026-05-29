@@ -59,6 +59,18 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@zapfy/ui', '@zapfy/shared', '@zapfy/db'],
+  /**
+   * Pacotes que precisam ficar EXTERNAL no bundle serverless do Vercel.
+   * Sem isso, Next.js bundleliza @prisma/client + adapter e o adapter
+   * é perdido em runtime — Prisma cai pro binary engine que NÃO está
+   * disponível no Lambda Vercel. Resultado: "Query Engine not found".
+   */
+  serverExternalPackages: [
+    '@prisma/client',
+    '@prisma/adapter-neon',
+    '@neondatabase/serverless',
+    '.prisma/client',
+  ],
   typedRoutes: true,
   images: {
     remotePatterns: [
