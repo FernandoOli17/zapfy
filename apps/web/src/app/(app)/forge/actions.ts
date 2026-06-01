@@ -1,5 +1,6 @@
 ﻿'use server';
 
+import { randomUUID } from 'node:crypto';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -13,6 +14,8 @@ import {
   forgeAnswersSchema,
   forgeMessageSchema,
   runForgeStep,
+  buildForgeBasics,
+  VERTICAL_IDS,
   type ForgePhaseId,
   type ForgeState,
   type ForgeAnswers,
@@ -195,6 +198,88 @@ export async function resetForgeSession(currentSessionId: string): Promise<{ ses
     data: { status: ForgeStatus.ABANDONED },
   });
   return startForgeSession();
+}
+
+const saveBasicsInput = z.object({
+  sessionId: z.string(),
+  brandName: z.string().trim().min(1).max(80),
+  vertical: z.enum(VERTICAL_IDS),
+  personaStyle: z.enum(['human', 'assistant']),
+  goals: z.array(z.string().trim().min(1)).min(1).max(8),
+});
+
+/**
+ * Grava os 4 passos guiados (wizard) SEM chamar IA: monta o patch de answers,
+ * semeia a 1ª mensagem do assistente e move a sessão pra KNOWLEDGE (onde o chat
+ * conversacional assume).
+ */
+export async function saveForgeBasics(
+  raw: z.infer<typeof saveBasicsInput>,
+): Promise<SendMessageResult> {
+  const parsed = saveBasicsInput.safeParse(raw);
+  if (!parsed.success) {
+    return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Dados inválidos' };
+  }
+  const { workspace } = await requireSessionAndWorkspace();
+
+  const sessionRow = await prisma.forgeSession.findFirst({
+    where: { id: parsed.data.sessionId, workspaceId: workspace.id },
+  });
+  if (!sessionRow) {
+    return { status: 'error', error: 'Sessão não encontrada nesse workspace.' };
+  }
+  if (sessionRow.status !== ForgeStatus.IN_PROGRESS) {
+    return { status: 'error', error: 'Sessão já encerrada.' };
+  }
+
+  const state = hydrateState(sessionRow);
+  const { answers: patch, openingMessage } = buildForgeBasics({
+    brandName: parsed.data.brandName,
+    vertical: parsed.data.vertical,
+    personaStyle: parsed.data.personaStyle,
+    goals: parsed.data.goals,
+  });
+
+  const mergedAnswers: ForgeAnswers = {
+    ...state.answers,
+    ...patch,
+    business: { ...state.answers.business, ...patch.business },
+  };
+
+  const assistantMsg: ForgeMessage = {
+    id: randomUUID(),
+    role: 'assistant',
+    content: openingMessage,
+    createdAt: new Date().toISOString(),
+  };
+  const newTranscript = [...state.transcript, assistantMsg];
+
+  await prisma.forgeSession.update({
+    where: { id: sessionRow.id },
+    data: {
+      collectedAnswers: mergedAnswers as unknown as Prisma.InputJsonValue,
+      transcript: newTranscript as unknown as Prisma.InputJsonValue,
+      currentPhase: DbForgePhase.KNOWLEDGE,
+    },
+  });
+
+  revalidatePath('/dashboard');
+
+  const newState: ForgeState = {
+    sessionId: state.sessionId,
+    workspaceId: state.workspaceId,
+    currentPhase: 'KNOWLEDGE',
+    answers: mergedAnswers,
+    transcript: newTranscript,
+  };
+
+  return {
+    status: 'ok',
+    state: newState,
+    assistantMessage: openingMessage,
+    toolCallsExecuted: [],
+    phaseChanged: true,
+  };
 }
 
 // =========================================
