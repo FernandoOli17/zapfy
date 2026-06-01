@@ -10,14 +10,14 @@ kanban-plugin: board
 
 ## Fazendo
 
-- [ ] [[TASK-0019-forge-guiada-wizard]] — wizard híbrido (4 passos → chat)
-
 ## Bloqueado
 
 - [ ] [[TASK-0005-migration-prod-enum]]
 - [ ] [[TASK-0006-fix-login-prod-resend]]
 
 ## Review
+
+- [ ] [[TASK-0019-forge-guiada-wizard]] — wizard híbrido pronto, gate verde + E2E; aguarda OK de deploy
 
 ## Feito
 

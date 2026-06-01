@@ -13,7 +13,7 @@ contínuo em linguagem natural.
 
 ## Estado atual
 - **Fase atual:** **Fase 6 — Motor de IA (EM ANDAMENTO, 2026-05-29).** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Gate: lint/typecheck/test (53 testes). **Medição com token real aguarda credenciais no .env** + rodar scripts de eval/custo/roteamento. ADR-0004 (roteamento) proposto, decisão do usuário pendente. **Fase B (produção) aguarda OK.**
-- **Próxima ação:** escrever o spec da **Forge guiada** (redesign híbrido aprovado em 2026-06-01) em `docs/superpowers/specs/` → plano → implementação. Credenciais (.env) já setadas; eval real já rodado.
+- **Próxima ação:** **Forge guiada implementada** (wizard híbrido, [[TASK-0019]]) — gate verde incl. build, E2E passou. **Checkpoint:** aguarda OK do usuário pra deploy. Depois: escolher próximo sub-projeto (cardápio+fotos multimodal / tutorial onboarding / paywall).
 - **Anterior:** Refactor de billing DEPLOYADO em produção (www.zapfy.store), Stripe live, migração de prod aplicada, login resolvido. Fases 1–5 ✅.
 
 ### Refactor de billing — 2026-05-28 (modelo de planos novo)
@@ -293,3 +293,10 @@ README + deploy guide (Vercel + Railway).
   7/7, lint, 53 testes). Streaming token-a-token (escolha do usuário) ficou pra depois.
   **Iniciado o redesign "Forge guiada"** (híbrido: passos com botões → chat), design aprovado;
   spec a escrever.
+- **2026-06-01 (cont.)** — **Forge guiada implementada** ([[TASK-0019]], subagent-driven, 8 tasks).
+  Wizard determinístico de 4 passos (nome → tipo → estilo humano/bot → objetivo) que grava sem
+  IA (`saveForgeBasics`, phase→KNOWLEDGE + msg semeada) e cai no chat existente. Campo `persona`
+  (humano honesto vs assistente) no schema + meta-prompt. 8 commits locais (sem push). **Gate
+  verde incl. build**; 2 E2E Playwright passaram. Build pegou bug real: client component puxava
+  `engine.ts` (node:crypto) via barrel → corrigido com entry dedicado `@zapfy/ai/forge/verticals`.
+  Checkpoint: aguarda OK pra deploy.
