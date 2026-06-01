@@ -21,6 +21,7 @@ import {
 
 import { resetForgeSession, sendForgeMessage } from './actions';
 import { AudioRecorder } from './audio-recorder';
+import { ForgeWizard } from './forge-wizard';
 
 const PHASE_LABELS: Record<ForgePhaseId, string> = {
   DISCOVERY: 'Descobrir',
@@ -158,6 +159,14 @@ export function ForgeWorkspace({ initialState, showDevHandoff = false }: Props) 
   }, [state.sessionId, state.workspaceId]);
 
   const isPublished = state.currentPhase === 'PUBLISH' && !!state.answers.agentName;
+
+  // Sessão novinha (nada coletado ainda) → wizard guiado. Assim que ele grava
+  // o básico (phase=KNOWLEDGE + 1ª msg semeada), cai no chat. Sessões já em
+  // andamento (transcript não-vazio) seguem direto no chat — backward compat.
+  const showWizard = state.currentPhase === 'DISCOVERY' && state.transcript.length === 0;
+  if (showWizard) {
+    return <ForgeWizard sessionId={state.sessionId} onComplete={setState} />;
+  }
 
   return (
     <div className="grid h-[calc(100vh-3.75rem)] grid-cols-1 lg:h-[calc(100vh-0px)] lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px]">
