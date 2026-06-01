@@ -1,33 +1,38 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { signupNewUser } from './helpers';
 
 /**
- * Forge é o fluxo de configuração conversacional do agente IA. Em modo
- * MOCK_AI=true, as respostas são canned — então o teste só verifica que
- * a página carrega, aceita input, e o pre-publish funciona.
+ * Forge guiada (2026-06-01): numa sessão nova, /forge abre um WIZARD de 4 passos
+ * (nome → tipo → estilo humano/bot → objetivo) que, ao concluir, cai no chat
+ * conversacional. O wizard NÃO chama IA (`saveForgeBasics` é determinística),
+ * então estes testes não tocam na IA real — são 100% determinísticos.
  */
+async function completeWizard(page: Page): Promise<void> {
+  // Passo 1: nome (placeholder "Ex: Bella Pizza")
+  await page.getByPlaceholder(/Bella Pizza|nome/i).first().fill('Bella Pizza');
+  await page.getByRole('button', { name: /próximo/i }).click();
+  // Passo 2: tipo (auto-avança ao clicar)
+  await page.getByRole('button', { name: /restaurante/i }).click();
+  // Passo 3: estilo (auto-avança ao clicar)
+  await page.getByRole('button', { name: /como uma pessoa real/i }).click();
+  // Passo 4: objetivos + concluir
+  await page.getByRole('button', { name: /mostrar o cardápio/i }).click();
+  await page.getByRole('button', { name: /concluir e montar/i }).click();
+  // Caiu no chat: a mensagem de abertura semeada menciona o nome do negócio.
+  await expect(page.getByText(/Bella Pizza/).first()).toBeVisible({ timeout: 15_000 });
+}
+
 test.describe('forge', () => {
-  test('abre forge, envia mensagem mock, vê preview do agente', async ({ page }) => {
+  test('forge guiada: wizard de 4 passos cai no chat com mensagem semeada', async ({ page }) => {
     await signupNewUser(page);
-
     await page.goto('/forge');
-    // ForgeWorkspace renderiza um <h2> introdutório no empty state.
-    await expect(page.locator('h1, h2').first()).toBeVisible({ timeout: 10_000 });
+    await completeWizard(page);
 
-    // Input do chat — primeiro textarea ou input em /forge
-    const input = page.getByPlaceholder(/conta|fala|descrev|nome do seu/i).first();
-    if (await input.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await input.fill('Vendo bolos personalizados em SP');
-      const send = page.getByRole('button', { name: /enviar|send/i }).first();
-      await send.click();
-
-      // Em MOCK_AI a resposta vem rápida — aguarda algum texto novo
-      await page.waitForTimeout(2000);
-    }
-
-    // Preview do system prompt ou config deve aparecer em algum painel
-    await expect(page.locator('body')).toContainText(/agente|forge|configur/i);
+    // A abertura semeada pede o conhecimento/cardápio — confirma que entrou no chat.
+    await expect(
+      page.getByText(/me manda o que ela precisa saber|cardápio/i).first(),
+    ).toBeVisible();
   });
 
   /**
@@ -35,18 +40,18 @@ test.describe('forge', () => {
    *   (A) eco otimista — a mensagem do usuário aparece NA HORA, não só quando a
    *       IA termina o loop de tools.
    *   (B) não-trava — quando a server action REJEITA (timeout/queda de rede), a
-   *       UI mostra aviso e destrava, em vez de ficar com os pontinhos eternos
-   *       até dar reload.
+   *       UI mostra aviso e destrava, em vez de ficar com os pontinhos eternos.
    *
-   * Intercepta SÓ a chamada da server action (POST com header next-action) e a
-   * aborta após um delay — então é determinístico e não toca na IA real (a
-   * Forge ignora MOCK_AI, por isso não dá pra mockar pelo lado do servidor).
+   * O wizard gateia o chat numa sessão nova, então completa ele primeiro; só
+   * DEPOIS intercepta a action (o envio do chat) e a aborta — assim o save do
+   * wizard não é afetado e o teste segue determinístico (não toca na IA real).
    */
   test('chat: eco otimista aparece na hora e a UI destrava quando a action falha', async ({
     page,
   }) => {
     await signupNewUser(page);
     await page.goto('/forge');
+    await completeWizard(page);
 
     const FAIL_DELAY_MS = 2500;
     await page.route('**/forge', async (route) => {
@@ -60,10 +65,10 @@ test.describe('forge', () => {
       await route.continue();
     });
 
-    const input = page.getByPlaceholder(/conta|fala|descrev|nome do seu|resposta/i).first();
+    const input = page.getByPlaceholder(/resposta|conta|fala|descrev/i).first();
     await expect(input).toBeVisible({ timeout: 10_000 });
 
-    const msg = 'Vendo bolos personalizados em SP';
+    const msg = 'Temos FAQ no site';
     await input.fill(msg);
     await page.getByRole('button', { name: /enviar|send/i }).first().click();
 
