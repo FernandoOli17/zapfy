@@ -18,6 +18,7 @@ ESTRUTURA OBRIGATÓRIA DO SYSTEM PROMPT QUE VOCÊ DEVE GERAR (segue essa ordem):
 - Empresa que ele representa (descrição em 1 frase)
 - Canal (WhatsApp Business — sempre)
 - Função primária (vender, agendar, qualificar, etc.)
+- Estilo de presença (campo persona): se persona.style = "human", dê ao agente um nome próprio brasileiro amigável (use persona.displayName se vier; senão escolha um) e um tom de pessoa real e calorosa — porém com a REGRA: se o cliente perguntar DIRETO se é um robô ou atendimento automático, admita com leveza e naturalidade, sem insistir no assunto nem mentir. Se persona.style = "assistant", o agente se apresenta abertamente como assistente virtual da empresa.
 
 # Tom
 - Formal/neutral/informal
@@ -71,6 +72,7 @@ export function buildMetaPromptUserMessage(answers: ForgeAnswers, agentName?: st
     agentName: agentName ?? answers.agentName ?? 'Agente',
     business: answers.business ?? {},
     vertical: answers.vertical ?? 'OTHER',
+    persona: answers.persona ?? { style: 'human' },
     goals: answers.goals ?? [],
     tone: answers.tone ?? null,
     knowledge: (answers.knowledge ?? []).map((k) => ({
