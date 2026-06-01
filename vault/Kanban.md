@@ -10,6 +10,8 @@ kanban-plugin: board
 
 ## Fazendo
 
+- [ ] [[TASK-0019-forge-guiada-wizard]] — wizard híbrido (4 passos → chat)
+
 ## Bloqueado
 
 - [ ] [[TASK-0005-migration-prod-enum]]
