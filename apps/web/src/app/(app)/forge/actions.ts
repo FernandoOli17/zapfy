@@ -172,7 +172,10 @@ export async function sendForgeMessage(
     },
   });
 
-  revalidatePath('/forge');
+  // NÃO revalidar '/forge': o cliente já aplica result.state direto, e a página
+  // é force-dynamic (rehidrata sozinha no próximo load). Revalidar aqui só
+  // forçava um re-render do servidor no meio da transição = lag à toa.
+  // '/dashboard' fica, pra refletir agente publicado quando o usuário navegar.
   revalidatePath('/dashboard');
 
   return {

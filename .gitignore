@@ -42,6 +42,9 @@ test-results
 .eslintcache
 .sentryclirc
 
+# brainstorming visual companion (mockups locais, não versionar)
+.superpowers/
+
 # uploads locais
 uploads
 

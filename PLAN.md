@@ -13,7 +13,7 @@ contínuo em linguagem natural.
 
 ## Estado atual
 - **Fase atual:** **Fase 6 — Motor de IA (EM ANDAMENTO, 2026-05-29).** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Gate: lint/typecheck/test (53 testes). **Medição com token real aguarda credenciais no .env** + rodar scripts de eval/custo/roteamento. ADR-0004 (roteamento) proposto, decisão do usuário pendente. **Fase B (produção) aguarda OK.**
-- **Próxima ação:** usuário seta ANTHROPIC_API_KEY + VOYAGE_API_KEY + MOCK_AI=false no .env → rodar `scripts/eval-ai.ts`, `eval-routing.ts`, `cost-report.ts` e a conversa E2E via /whatsapp.
+- **Próxima ação:** escrever o spec da **Forge guiada** (redesign híbrido aprovado em 2026-06-01) em `docs/superpowers/specs/` → plano → implementação. Credenciais (.env) já setadas; eval real já rodado.
 - **Anterior:** Refactor de billing DEPLOYADO em produção (www.zapfy.store), Stripe live, migração de prod aplicada, login resolvido. Fases 1–5 ✅.
 
 ### Refactor de billing — 2026-05-28 (modelo de planos novo)
@@ -284,3 +284,12 @@ README + deploy guide (Vercel + Railway).
   webhooks outgoing migrados pra fila BullMQ, atalhos J/K/R/A/E no inbox, mobile menu no
   marketing, JSON-LD pra SEO, fix de bugs (catch swallow, classifier silencioso, 24h null,
   contactId vazio em fallback). Lint/typecheck/test verdes em 7 packages. Fase 6 fechada.
+- **2026-06-01** — **Fix de tempo real do chat da Forge** (debugging sistemático): 3 bugs
+  client-side — mensagem do user sumia até a IA terminar (sem eco otimista); `startTransition`
+  async sem try/catch travava a UI até reload quando a action rejeitava (timeout/rede);
+  `revalidatePath('/forge')` redundante causava lag. Corrigido em `forge-workspace.tsx` +
+  `actions.ts`. **Teste E2E Playwright** de regressão adicionado (intercepta a server action,
+  testa eco otimista + destrava em falha) — passou em navegador real. Gate verde (typecheck
+  7/7, lint, 53 testes). Streaming token-a-token (escolha do usuário) ficou pra depois.
+  **Iniciado o redesign "Forge guiada"** (híbrido: passos com botões → chat), design aprovado;
+  spec a escrever.

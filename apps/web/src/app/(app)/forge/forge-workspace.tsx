@@ -15,6 +15,7 @@ import { Button, cn } from '@zapfy/ui';
 import {
   FORGE_PHASE_IDS,
   type ForgePhaseId,
+  type ForgeMessage,
   type ForgeState,
 } from '@zapfy/ai/forge/types';
 
@@ -86,16 +87,52 @@ export function ForgeWorkspace({ initialState, showDevHandoff = false }: Props) 
     setError(null);
     setDraft('');
     setThinking(true);
+
+    // (A) Eco otimista: a mensagem do usuário aparece NA HORA, sem esperar a IA
+    // terminar o loop de tools (que pode levar 10-30s). Antes ela sumia até a
+    // resposta chegar e parecia que tinha travado.
+    const optimisticId = `pending-${crypto.randomUUID()}`;
+    const optimisticMsg: ForgeMessage = {
+      id: optimisticId,
+      role: 'user',
+      content: text,
+      createdAt: new Date().toISOString(),
+    };
+    setState((prev) => ({ ...prev, transcript: [...prev.transcript, optimisticMsg] }));
+
+    const rollbackOptimistic = () =>
+      setState((prev) => ({
+        ...prev,
+        transcript: prev.transcript.filter((m) => m.id !== optimisticId),
+      }));
+
     startTransition(async () => {
-      const result = await sendForgeMessage({ sessionId: state.sessionId, userMessage: text });
-      setThinking(false);
-      if (result.status === 'error') {
-        setError(result.error);
-        // devolve a mensagem ao input pra não perder
+      try {
+        const result = await sendForgeMessage({ sessionId: state.sessionId, userMessage: text });
+        if (result.status === 'error') {
+          rollbackOptimistic();
+          setError(result.error);
+          setDraft(text); // devolve a mensagem ao input pra não perder
+          return;
+        }
+        // result.state já traz a mensagem do usuário canônica + a resposta da IA,
+        // então substitui o transcript inteiro (o eco otimista some sem duplicar).
+        setState(result.state);
+      } catch (err) {
+        // (B) A PRÓPRIA action rejeitou (timeout da função, queda de rede). Antes
+        // não havia try/catch: thinking/busy ficavam presos e a UI travava até
+        // dar reload. Agora desfaz o eco, avisa e devolve o texto pra reenviar.
+        rollbackOptimistic();
+        setError(
+          err instanceof Error
+            ? `Falha ao enviar: ${err.message}. Tenta de novo.`
+            : 'Falha ao enviar. Tenta de novo.',
+        );
         setDraft(text);
-        return;
+      } finally {
+        // Sempre destrava — independente de sucesso, erro tratado ou rejeição.
+        setThinking(false);
       }
-      setState(result.state);
     });
   }, [draft, state.sessionId]);
 
