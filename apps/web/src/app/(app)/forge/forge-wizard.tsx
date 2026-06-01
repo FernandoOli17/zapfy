@@ -3,7 +3,9 @@
 import { useState, useTransition } from 'react';
 import { ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
 import { Button, cn } from '@zapfy/ui';
-import { VERTICAL_LIST, VERTICAL_META } from '@zapfy/ai/forge';
+// Import direto do módulo de dados puro (NÃO do barrel @zapfy/ai/forge, que
+// re-exporta engine.ts → node:crypto/AI SDK e quebraria o bundle do cliente).
+import { VERTICAL_LIST, VERTICAL_META } from '@zapfy/ai/forge/verticals';
 import type { ForgeState } from '@zapfy/ai/forge/types';
 import type { VerticalId } from '@zapfy/ai/forge/types';
 

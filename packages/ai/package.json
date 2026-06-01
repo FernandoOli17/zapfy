@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./forge": "./src/forge/index.ts",
     "./forge/types": "./src/forge/types.ts",
+    "./forge/verticals": "./src/forge/verticals.ts",
     "./tools": "./src/tools/index.ts",
     "./flow": "./src/flow/index.ts",
     "./flow/types": "./src/flow/types.ts"
