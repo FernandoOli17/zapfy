@@ -36,6 +36,12 @@ export const personalitySchema = z.object({
 });
 export type PersonalityProfile = z.infer<typeof personalitySchema>;
 
+export const personaSchema = z.object({
+  style: z.enum(['human', 'assistant']).default('human'),
+  displayName: z.string().optional(),
+});
+export type Persona = z.infer<typeof personaSchema>;
+
 export const handoffRulesSchema = z.object({
   keywords: z.array(z.string()).default([]),
   conditions: z.array(z.string()).default([]),
@@ -64,6 +70,7 @@ export const forgeAnswersSchema = z.object({
   verticalReason: z.string().optional(),
   goals: z.array(z.string()).default([]),
   tone: personalitySchema.optional(),
+  persona: personaSchema.optional(),
   knowledge: z.array(knowledgeItemSchema).default([]),
   tools: z.array(z.string()).default([]),
   handoff: handoffRulesSchema.optional(),
