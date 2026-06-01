@@ -4,6 +4,7 @@ import { forgeAnswersSchema } from '../src/forge/types';
 import { VERTICAL_LIST, VERTICAL_META } from '../src/forge/verticals';
 import { VERTICAL_IDS } from '../src/forge/types';
 import { buildMetaPromptUserMessage, META_PROMPT_SYSTEM } from '../src/forge/prompts/meta-prompt';
+import { buildForgeBasics } from '../src/forge/basics';
 
 describe('persona no forgeAnswersSchema', () => {
   it('aceita persona com style human + displayName opcional', () => {
@@ -48,5 +49,21 @@ describe('meta-prompt com persona', () => {
   it('META_PROMPT_SYSTEM tem a regra de disclosure honesto', () => {
     expect(META_PROMPT_SYSTEM).toContain('persona');
     expect(META_PROMPT_SYSTEM.toLowerCase()).toContain('admita');
+  });
+});
+
+describe('buildForgeBasics', () => {
+  it('monta o patch de answers e a mensagem de abertura', () => {
+    const r = buildForgeBasics({
+      brandName: 'Bella Pizza',
+      vertical: 'RESTAURANT',
+      personaStyle: 'human',
+      goals: ['Mostrar o cardápio', 'Anotar pedido'],
+    });
+    expect(r.answers.business?.brandName).toBe('Bella Pizza');
+    expect(r.answers.vertical).toBe('RESTAURANT');
+    expect(r.answers.persona?.style).toBe('human');
+    expect(r.answers.goals).toEqual(['Mostrar o cardápio', 'Anotar pedido']);
+    expect(r.openingMessage).toContain('Bella Pizza');
   });
 });
