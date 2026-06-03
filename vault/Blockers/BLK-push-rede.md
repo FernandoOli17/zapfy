@@ -1,7 +1,8 @@
 ---
 id: BLK-push-rede
 type: blocker
-status: open
+status: resolved
+resolved: 2026-06-03
 severity: medium
 owner: user
 requires: rede sem filtro (ex: hotspot 4G) pra push HTTPS no github.com
@@ -33,3 +34,9 @@ Cisco citado no PLAN (que bloqueia 5432; aqui está resetando o 443/git também)
 ## Nada se perde
 Os 18 commits estão seguros no repositório local. Quando a rede permitir, o push sobe tudo
 de uma vez (chat fix + Forge guiada).
+
+## ✅ Resolvido (2026-06-03)
+Rede voltou. `git push origin master` subiu 21 commits (`d5109c7..c267ca9`) — chat fix +
+Forge guiada + `railway.json` + toolkit de validação de chave. HEAD = origin/master.
+Dispara redeploy da Vercel (web). Próximo gargalo do fluxo cliente: deploy do worker
+([[BLK-worker-deploy-prod]]).

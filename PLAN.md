@@ -13,7 +13,7 @@ contínuo em linguagem natural.
 
 ## Estado atual
 - **Fase atual:** **Fase 6 — Motor de IA (EM ANDAMENTO, 2026-05-29).** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Gate: lint/typecheck/test (53 testes). **Medição com token real aguarda credenciais no .env** + rodar scripts de eval/custo/roteamento. ADR-0004 (roteamento) proposto, decisão do usuário pendente. **Fase B (produção) aguarda OK.**
-- **Próxima ação:** **Forge guiada implementada** (wizard híbrido, [[TASK-0019]]) — gate verde incl. build, E2E passou. **Checkpoint:** aguarda OK do usuário pra deploy. Depois: escolher próximo sub-projeto (cardápio+fotos multimodal / tutorial onboarding / paywall).
+- **Próxima ação:** **Forge guiada DEPLOYADA** — push de 21 commits feito em 2026-06-03 (`c267ca9`), Vercel redeploya o web. `railway.json` criado (destrava worker). **Gargalo restante pro fluxo WhatsApp do cliente:** criar o serviço worker no Railway ([[BLK-worker-deploy-prod]]) + chaves (Voyage, Meta number). Depois: sub-projetos (cardápio+fotos multimodal / tutorial onboarding / paywall).
 - **Anterior:** Refactor de billing DEPLOYADO em produção (www.zapfy.store), Stripe live, migração de prod aplicada, login resolvido. Fases 1–5 ✅.
 
 ### Refactor de billing — 2026-05-28 (modelo de planos novo)
