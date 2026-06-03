@@ -24,6 +24,11 @@ import {
 export interface EvalOptions {
   /** Liga o roteamento Haiku→Sonnet (caso contrário, sempre Sonnet). */
   routing: boolean;
+  /**
+   * Força o modelo do AGENTE em todos os turns (ignora roteamento):
+   * 'fast' = Haiku pra tudo · 'chat' = Sonnet pra tudo. Pra comparar capacidade.
+   */
+  forceAgentModel?: 'fast' | 'chat';
 }
 
 const EVAL_IDS = { workspaceId: 'eval', contactId: 'eval', conversationId: 'eval' };
@@ -44,10 +49,16 @@ export function buildResponder(opts: EvalOptions): Responder {
       });
     }
 
-    // 3. Roteamento de modelo (se ligado).
+    // 3. Modelo do agente: forçado > roteamento > Sonnet default.
     let model: ReturnType<typeof getAiModels>['chat'] | undefined;
     let modelId = ids.chat;
-    if (opts.routing) {
+    if (opts.forceAgentModel === 'fast') {
+      model = getAiModels().fast;
+      modelId = ids.fast;
+    } else if (opts.forceAgentModel === 'chat') {
+      model = undefined; // default Sonnet
+      modelId = ids.chat;
+    } else if (opts.routing) {
       const route = routeModel({
         intent: classification.intent,
         sentiment: classification.sentiment,

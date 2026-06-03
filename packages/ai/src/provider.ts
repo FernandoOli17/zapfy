@@ -1,6 +1,6 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
-import type { LanguageModel } from 'ai';
+import { generateText, type LanguageModel } from 'ai';
 
 /**
  * Provider AI configuravel via env.
@@ -98,4 +98,25 @@ export function getModelIds(): ModelIds {
  */
 export function isMockMode(): boolean {
   return process.env['MOCK_AI'] === 'true';
+}
+
+/**
+ * Ping cru do modelo — NÃO captura erro (ao contrário do classifier/runner, que
+ * fazem fallback gracioso). Serve pra validar credencial de verdade: se a chave
+ * for inválida, o 401 propaga em vez de virar resposta vazia silenciosa.
+ */
+export async function pingModel(
+  which: 'fast' | 'chat' = 'fast',
+): Promise<{ ok: true; provider: ProviderId; tokensIn: number; tokensOut: number }> {
+  const models = getAiModels();
+  const { totalUsage } = await generateText({
+    model: which === 'fast' ? models.fast : models.chat,
+    prompt: 'Responda apenas: ok',
+  });
+  return {
+    ok: true,
+    provider: models.provider,
+    tokensIn: totalUsage.inputTokens ?? 0,
+    tokensOut: totalUsage.outputTokens ?? 0,
+  };
 }
