@@ -35,20 +35,12 @@ export interface ProcessMessageJob {
   contactId: string;
 }
 
-/** Rate limit simples em memória — evita spam de IA por contato. */
-const contactCooldown = new Map<string, number>();
-const COOLDOWN_MS = 2_000;
-
 export async function processMessage(data: ProcessMessageJob): Promise<void> {
   const { workspaceId, messageId, conversationId, contactId } = data;
 
-  // Cooldown por contato (evita race se Meta re-entregar)
-  const lastTs = contactCooldown.get(contactId) ?? 0;
-  if (Date.now() - lastTs < COOLDOWN_MS) {
-    log.info({ contactId }, 'cooldown ativo — ignorando duplicata');
-    return;
-  }
-  contactCooldown.set(contactId, Date.now());
+  // Dedup de re-entrega da Meta é por jobId determinístico (`msg-${messageId}`)
+  // no producer. Não usar cooldown por contato aqui: duas mensagens legítimas
+  // em <2s são jobs distintos e a segunda era descartada sem resposta.
 
   // ─── 1. Carregar contexto ─────────────────────────────────────────────────
   const [message, conversation, contact, workspaceRaw] = await Promise.all([
