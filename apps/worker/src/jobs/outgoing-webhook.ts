@@ -1,4 +1,4 @@
-import { createLogger } from '@zapfy/shared';
+import { assertSafeUrl, createLogger, SsrfError } from '@zapfy/shared';
 
 const log = createLogger('worker:outgoing-webhook');
 
@@ -17,6 +17,18 @@ export interface OutgoingWebhookJob {
  * retry com backoff exponencial (até 5 vezes definido no producer).
  */
 export async function processOutgoingWebhook(data: OutgoingWebhookJob): Promise<void> {
+  // Re-check SSRF a cada disparo (DNS pode ter mudado desde a criação) —
+  // mesmo padrão do custom-tool-dispatcher. SsrfError é permanente: sem retry.
+  try {
+    await assertSafeUrl(data.url);
+  } catch (err) {
+    if (err instanceof SsrfError) {
+      log.error({ webhookId: data.webhookId }, 'SSRF re-check bloqueou webhook — não entregue');
+      return;
+    }
+    throw err;
+  }
+
   const res = await fetch(data.url, {
     method: 'POST',
     headers: {

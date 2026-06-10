@@ -34,13 +34,26 @@ export async function sweepTemplateStatuses(): Promise<{ checked: number; change
   let changed = 0;
   for (const tpl of pending) {
     const wa = tpl.workspace.whatsappAccounts[0];
-    if (!wa || !tpl.metaTemplateId) continue;
+    if (!wa || !tpl.metaTemplateId) {
+      // Sem conta conectada ou sem id da Meta, o template fica preso em
+      // SUBMITTED indefinidamente — não pode ser um skip mudo.
+      log.warn(
+        { tplId: tpl.id, workspaceId: tpl.workspaceId, hasWa: Boolean(wa), hasMetaId: Boolean(tpl.metaTemplateId) },
+        'template pendente sem como consultar a Meta — preso em SUBMITTED',
+      );
+      continue;
+    }
 
     let accessToken: string;
     try {
       accessToken = decrypt(wa.accessTokenEncrypted, env.ENCRYPTION_KEY);
     } catch (err) {
-      log.warn({ tplId: tpl.id, err: String(err) }, 'token decrypt falhou — pulo');
+      // Decrypt falho costuma ser permanente (chave trocada/registro corrompido):
+      // sem isto em nível error, o template fica eternamente SUBMITTED em silêncio.
+      log.error(
+        { tplId: tpl.id, workspaceId: tpl.workspaceId, err: String(err) },
+        'token decrypt falhou — template não consultável, preso em SUBMITTED',
+      );
       continue;
     }
 

@@ -99,7 +99,9 @@ workers.push(
         },
         'enviando broadcast',
       );
-      await processSendBroadcast(job.data);
+      await processSendBroadcast(job.data, {
+        isFinalAttempt: job.attemptsMade + 1 >= (job.opts.attempts ?? 1),
+      });
     },
     { connection, concurrency: 3 }, // throttle pra não estourar rate limit da Meta
   ),
