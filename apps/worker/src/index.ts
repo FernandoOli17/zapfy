@@ -80,7 +80,7 @@ workers.push(
         },
         'processando mensagem',
       );
-      await processMessage(job.data);
+      await processMessage(job.data, { isRetry: job.attemptsMade > 0 });
     },
     { connection, concurrency: 5 },
   ),
