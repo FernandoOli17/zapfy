@@ -362,13 +362,23 @@ export async function sendTestInboundMessage(
     data: { lastMessageAt: new Date(), lastIncomingMessageAt: new Date() },
   });
 
-  // Enfileira pro worker processar com IA (idêntico a webhook real da Meta)
-  await enqueue('process-message', {
+  // Enfileira pro worker processar com IA (idêntico a webhook real da Meta).
+  // enqueue não lança — sem checar ok, a conversa aparecia no inbox e o user
+  // esperava pra sempre uma resposta da IA que nunca seria processada.
+  const enq = await enqueue('process-message', {
     workspaceId: workspace.id,
     messageId: message.id,
     conversationId: conversation.id,
     contactId: contact.id,
   });
+  if (!enq.ok) {
+    log.error({ workspaceId: workspace.id, err: enq.error }, 'enqueue do teste inbound falhou');
+    return {
+      status: 'error',
+      error:
+        'Mensagem criada, mas a fila de processamento está indisponível — a IA não vai responder agora. Tenta de novo em instantes.',
+    };
+  }
 
   await prisma.auditLog.create({
     data: {

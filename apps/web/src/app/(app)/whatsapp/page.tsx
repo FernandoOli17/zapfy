@@ -29,6 +29,9 @@ export default async function WhatsAppPage() {
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
+    // Mesmo orderBy das actions deste fluxo: user multi-workspace via convite
+    // via uma lista e as ações operavam noutro workspace sem isto.
+    orderBy: { createdAt: 'asc' },
   });
   if (!member) redirect('/onboarding');
 

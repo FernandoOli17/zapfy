@@ -105,7 +105,16 @@ export function QuoteEditor(props: QuoteEditorProps) {
   }
 
   function onSend() {
-    if (!confirm('Enviar orçamento ao cliente? Após enviar não dá pra editar items.')) return;
+    // Copy honesta: o envio automático por WhatsApp ainda não existe
+    // (TODO(notify) em actions.ts) — não prometer entrega que não acontece.
+    if (
+      !confirm(
+        'Marcar orçamento como enviado? Após isso não dá pra editar itens.\n\n' +
+          'Atenção: o envio automático por WhatsApp ainda não está ativo — ' +
+          'encaminhe o orçamento ao cliente você mesmo.',
+      )
+    )
+      return;
     startTransition(async () => {
       // Salva primeiro pra garantir consistência
       const cleaned = items
@@ -133,7 +142,7 @@ export function QuoteEditor(props: QuoteEditorProps) {
       }
       const r = await changeQuoteStatus({ quoteId: props.quoteId, status: 'SENT' });
       if (r.status === 'ok') {
-        push({ type: 'success', message: 'Orçamento enviado' });
+        push({ type: 'success', message: 'Orçamento marcado como enviado' });
         router.refresh();
       } else {
         push({ type: 'error', message: r.error });
@@ -286,7 +295,7 @@ export function QuoteEditor(props: QuoteEditorProps) {
         </Button>
         <Button type="button" disabled={pending || subtotal === 0} onClick={onSend}>
           <Send className="mr-1.5 h-3.5 w-3.5" />
-          Salvar + Enviar
+          Salvar + Marcar enviado
         </Button>
       </div>
     </form>

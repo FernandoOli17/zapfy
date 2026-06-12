@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { prisma, SupportSender } from '@zapfy/db';
 import { replyTicket } from '@/lib/support';
+import { createLogger } from '@zapfy/shared';
+
+const log = createLogger('support-actions');
 
 const inputSchema = z.object({
   ticketId: z.string().min(1),
@@ -43,7 +46,8 @@ export async function replyAsUserAction(
     });
     revalidatePath(`/support/${parsed.data.ticketId}`);
     return { ok: true };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), ticketId: parsed.data.ticketId }, 'replyTicket (user) falhou');
     return { ok: false, error: 'Falha ao enviar resposta.' };
   }
 }
