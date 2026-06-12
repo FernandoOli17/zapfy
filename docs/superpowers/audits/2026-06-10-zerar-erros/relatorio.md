@@ -63,5 +63,10 @@ Nenhum — todos os achados sobreviveram à verificação adversarial.
   rodapé e "tempo real" no header.
 - **Quotes:** transição manual pra EXPIRED sem guarda de estado.
 
-## Gate final
-<preenchido na Task 7>
+## Gate final (2026-06-12)
+- typecheck: **7/7 ✅** · lint: **7/7 ✅** (0 erros; 1 warning pré-existente de
+  `console` em script CLI de `packages/db`) · test: **3/3 pacotes, 73 testes ✅**
+  (19 shared + 7 wa + 47 ai — eram 41+billing no baseline; +9 testes novos de
+  regressão deste audit) · build: **2/2 ✅** (web + worker).
+- Todos os commits são LOCAIS na master. **Push não foi feito** (dispara deploy
+  na Vercel — aguarda OK do usuário).

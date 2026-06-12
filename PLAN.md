@@ -12,6 +12,20 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
+- **Sub-projeto 1/4 "Zerar erros" CONCLUÍDO (2026-06-12).** Auditoria paralela
+  (5 agentes + verificação adversarial) achou **69 bugs confirmados** nos fluxos
+  críticos. **36 corrigidos** em 7 commits locais (`204f8e0`..`4673322` —
+  idempotência de retry no WhatsApp, cross-tenant no book_service, lock do Forge,
+  toolsEnabled aplicado, SSRF em webhooks, LGPD sem PII, +testes novos em
+  packages/wa e forge-catalog). **33 triados** em TASK-0020..0038 (**aguardam OK**
+  — destaque P1: TASK-0023 dupla cobrança no upgrade, TASK-0024 limite de
+  conversas sem enforcement, TASK-0025 webhook Stripe perde evento, TASK-0029
+  webhook Meta síncrono, TASK-0020 device verification contornável, TASK-0031
+  REFINEMENT do Forge inexistente). Gate final verde. Relatório completo:
+  `docs/superpowers/audits/2026-06-10-zerar-erros/relatorio.md`. **Commits locais,
+  sem push** (push dispara deploy Vercel — precisa de OK). Pedido original do
+  usuário tem 4 frentes; próximas: **sub-projeto 2 (UX do cliente) → 3 (redesign
+  dashboard) → 4 (redesign landing)**, cada uma com spec própria.
 - **🟢 PRODUÇÃO NO AR DE PONTA A PONTA (2026-06-03).** Web na Vercel (www.zapfy.store, `/api/health` 200, Forge guiada deployada), **worker no Railway rodando** (consome a fila BullMQ → IA responde no WhatsApp), Anthropic + Voyage **validadas ao vivo** (`scripts/validate-key.ts` + ping Voyage 1024 dims), DB/Redis/Stripe/Pusher/Resend conectados. Bloqueios resolvidos: BLK-push-rede, BLK-worker-deploy-prod. Gate verde (typecheck 7/7, lint 7/7, test 41/41). **Falta só:** smoke test E2E com número Meta real (signup → Forge → conectar WhatsApp → msg real → IA responde).
 - **Fase atual:** **Fase 6 — Motor de IA.** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Credenciais reais validadas; rodar scripts de eval/custo/roteamento com token real é o próximo passo de medição. ADR-0004 (roteamento) proposto, decisão do usuário pendente.
 - **Próxima ação:** **Forge guiada DEPLOYADA** — push de 21 commits feito em 2026-06-03 (`c267ca9`), Vercel redeploya o web. `railway.json` criado (destrava worker). **Gargalo restante pro fluxo WhatsApp do cliente:** criar o serviço worker no Railway ([[BLK-worker-deploy-prod]]) + chaves (Voyage, Meta number). Depois: sub-projetos (cardápio+fotos multimodal / tutorial onboarding / paywall).
