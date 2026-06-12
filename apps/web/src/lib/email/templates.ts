@@ -389,7 +389,7 @@ export function supportReplyToUserEmail(input: {
       Olá, ${escapeHtml(input.name)} 👋
     </h1>
     <p style="font-size:14px">
-      Você tem uma resposta no ticket{' '}
+      Você tem uma resposta no ticket
       <strong>#${input.ticketNumber} — ${escapeHtml(input.subject)}</strong>:
     </p>
     <div style="border-left:3px solid #00E676;padding:14px 16px;background:#f4f4f5;margin:20px 0;white-space:pre-wrap;font-size:14px;line-height:1.55">${escapeHtml(input.replyBody)}</div>

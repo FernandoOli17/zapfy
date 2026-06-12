@@ -4,9 +4,20 @@ import { ForgotPasswordForm } from './forgot-form';
 
 export const metadata = { title: 'Esqueci minha senha' };
 
-export default function ForgotPasswordPage() {
+export default async function ForgotPasswordPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ revoked?: string }>;
+}) {
+  const { revoked } = await searchParams;
   return (
     <div>
+      {revoked === '1' && (
+        <div className="mb-6 rounded-md border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
+          Acesso bloqueado com sucesso — a sessão daquele dispositivo foi encerrada.
+          Defina uma senha nova abaixo pra proteger sua conta.
+        </div>
+      )}
       <h1 className="text-3xl font-semibold leading-tight tracking-tight md:text-[34px]">
         Esqueceu a{' '}
         <span className="font-serif italic font-normal text-primary">senha?</span>
