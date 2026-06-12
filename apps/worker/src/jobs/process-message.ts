@@ -325,6 +325,7 @@ export async function processMessage(
         maxSteps: 5,
         timeoutMs: 30_000,
         topicBlacklist,
+        toolsEnabled: agentVersion.toolsEnabled,
         ...(chosenModel ? { model: chosenModel } : {}),
       });
     }
@@ -340,6 +341,7 @@ export async function processMessage(
       maxSteps: 5,
       timeoutMs: 30_000,
       topicBlacklist,
+      toolsEnabled: agentVersion.toolsEnabled,
       ...(chosenModel ? { model: chosenModel } : {}),
     });
   }

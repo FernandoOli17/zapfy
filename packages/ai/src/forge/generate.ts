@@ -18,6 +18,8 @@ export async function generateSystemPrompt(
   const { chat } = getAiModels();
   const result = await generateText({
     model: chat,
+    // Timeout obrigatório (CLAUDE.md) — geração de prompt é longa, não infinita.
+    abortSignal: AbortSignal.timeout(60_000),
     messages: [
       systemMessage(META_PROMPT_SYSTEM),
       {

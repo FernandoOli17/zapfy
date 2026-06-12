@@ -77,8 +77,10 @@ export function buildClinicTools(deps: VerticalRuntimeDeps): Record<string, Tool
             specialty: p.specialty,
             slots: free.map((s) => ({
               startsAt: s.toISOString(),
-              dayLabel: s.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }),
-              timeLabel: s.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              // timeZone explícito: servidor de prod roda UTC — sem isto o
+              // label "09:00" virava 06:00/12:00 dependendo do host.
+              dayLabel: s.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }),
+              timeLabel: s.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' }),
             })),
           };
         });
@@ -106,17 +108,25 @@ export function buildClinicTools(deps: VerticalRuntimeDeps): Record<string, Tool
         }
 
         const startsAt = new Date(startsAtIso);
-        // Conflito? Outro agendamento ativo nesse mesmo horário?
-        const overlapping = await prisma.appointment.findFirst({
+        const endsAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
+        // Conflito por INTERSEÇÃO REAL (existing.start < newEnd && existing.end
+        // > newStart). A janela ±duração-do-novo deixava passar consulta longa
+        // começando antes (ex.: 120min iniciada 60min antes de um slot de 30).
+        // Janela de busca: 12h pra trás cobre a maior duração possível (720min).
+        const candidates = await prisma.appointment.findMany({
           where: {
             professionalId,
             status: { in: [AppointmentStatus.SCHEDULED, AppointmentStatus.CONFIRMED] },
             startsAt: {
-              gte: new Date(startsAt.getTime() - durationMinutes * 60_000),
-              lt: new Date(startsAt.getTime() + durationMinutes * 60_000),
+              gte: new Date(startsAt.getTime() - 12 * 3_600_000),
+              lt: endsAt,
             },
           },
-          select: { id: true },
+          select: { startsAt: true, durationMinutes: true },
+        });
+        const overlapping = candidates.some((a) => {
+          const aEnd = new Date(a.startsAt.getTime() + a.durationMinutes * 60_000);
+          return a.startsAt < endsAt && aEnd > startsAt;
         });
         if (overlapping) {
           return { ok: false as const, error: 'horário não está mais livre — peça pra cliente escolher outro' };
@@ -230,26 +240,28 @@ function generateSlots(
   hours: BusinessHours,
   busy: Array<{ startsAt: Date; durationMinutes: number }>,
 ): Date[] {
+  // `start` é meia-noite BRT (offset -03:00 fixo — Brasil não tem DST desde
+  // 2019). Slot = meia-noite BRT + h horas, em aritmética de epoch: o horário
+  // de parede fica correto INDEPENDENTE do fuso do servidor (prod roda UTC;
+  // o setHours antigo gerava "09:00" como 09:00 do fuso do host).
+  const DAY_MS = 86_400_000;
+  const HOUR_MS = 3_600_000;
   const slots: Date[] = [];
-  const cursor = new Date(start);
   const now = new Date();
-  while (cursor < end) {
-    const dow = cursor.getDay();
-    if (hours.weekdays.includes(dow)) {
-      // manhã
-      for (let h = hours.morningStart; h < hours.morningEnd; h += hours.slotMinutes / 60) {
-        const slot = new Date(cursor);
-        slot.setHours(Math.floor(h), (h % 1) * 60, 0, 0);
-        if (slot > now && !slotConflicts(slot, busy, hours.slotMinutes)) slots.push(slot);
-      }
-      // tarde
-      for (let h = hours.afternoonStart; h < hours.afternoonEnd; h += hours.slotMinutes / 60) {
-        const slot = new Date(cursor);
-        slot.setHours(Math.floor(h), (h % 1) * 60, 0, 0);
+  for (let dayTs = start.getTime(); dayTs < end.getTime(); dayTs += DAY_MS) {
+    // meia-noite BRT do dia X = 03:00Z do dia X → getUTCDay dá o dow correto em BRT
+    const dow = new Date(dayTs).getUTCDay();
+    if (!hours.weekdays.includes(dow)) continue;
+    const ranges: Array<[number, number]> = [
+      [hours.morningStart, hours.morningEnd],
+      [hours.afternoonStart, hours.afternoonEnd],
+    ];
+    for (const [from, to] of ranges) {
+      for (let h = from; h < to; h += hours.slotMinutes / 60) {
+        const slot = new Date(dayTs + h * HOUR_MS);
         if (slot > now && !slotConflicts(slot, busy, hours.slotMinutes)) slots.push(slot);
       }
     }
-    cursor.setDate(cursor.getDate() + 1);
   }
   return slots;
 }

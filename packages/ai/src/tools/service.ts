@@ -129,26 +129,15 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
           return { ok: false as const, error: 'orçamento ainda não foi enviado/aceito' };
         }
 
-        // Marca como aceito + cria appointment com profissional "Padrão" (criamos se não existir)
-        const defaultProf = await prisma.professional.upsert({
-          where: {
-            id: '__default_team__', // não existe — força create no first run
-          },
-          update: {},
-          create: {
-            id: '__default_team__',
-            workspaceId: deps.workspaceId,
-            name: 'Equipe',
-            active: true,
-          },
-        }).catch(async () => {
-          // upsert por id falha pq id não é único naquele padrão; usa findFirst+create
-          const existing = await prisma.professional.findFirst({
-            where: { workspaceId: deps.workspaceId, name: 'Equipe' },
-          });
-          return existing ?? prisma.professional.create({
-            data: { workspaceId: deps.workspaceId, name: 'Equipe', active: true },
-          });
+        // Marca como aceito + cria appointment com profissional "Equipe" do
+        // PRÓPRIO workspace. NUNCA upsert por id global ('__default_team__'):
+        // Professional.id é @id global, então o upsert achava o registro de
+        // OUTRO tenant e vinculava appointments cross-workspace.
+        const existing = await prisma.professional.findFirst({
+          where: { workspaceId: deps.workspaceId, name: 'Equipe' },
+        });
+        const defaultProf = existing ?? await prisma.professional.create({
+          data: { workspaceId: deps.workspaceId, name: 'Equipe', active: true },
         });
 
         const appointment = await prisma.appointment.create({
