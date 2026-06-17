@@ -12,6 +12,19 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
+- **Sub-projeto 2/4 "UX do cliente" CONCLUÍDO (2026-06-17).** Card de onboarding com 5
+  passos derivados (valor antes de pagar), simulador multi-turno marca o passo 2,
+  guia embutido da Meta com validação + erros acionáveis, reenvio de código no
+  verify-device, 13 quick wins do audit aplicados. E2E do card
+  (`apps/web/e2e/onboarding-card.spec.ts`) passou contra o DB real (Neon); gate
+  completo do root verde (typecheck 7/7, lint 7/7, test 3 pacotes, build 2/2).
+  Débito: capturar prints reais do painel da Meta pra
+  `apps/web/public/guias/meta/passo-{1..4}.png` (slots já renderizam quando os
+  arquivos existirem). Desvio anotado: o segundo cenário E2E previsto ("após
+  publicar agente, CTA aponta pra /agent") não é determinístico — publicar exige o
+  loop de tool calls da IA (mockada em E2E), então o avanço de passo fica coberto
+  pelo derivador puro (Task 1), não por E2E. Commits locais, sem push. Próximo:
+  sub-projeto 3 (redesign do dashboard).
 - **Sub-projeto 1/4 "Zerar erros" CONCLUÍDO (2026-06-12).** Auditoria paralela
   (5 agentes + verificação adversarial) achou **69 bugs confirmados** nos fluxos
   críticos. **36 corrigidos** em 7 commits locais (`204f8e0`..`4673322` —
