@@ -129,7 +129,7 @@ export async function processMessage(
 
   // ─── 3. Texto da mensagem inbound ────────────────────────────────────────
   const content = message.content as Record<string, unknown>;
-  const inboundText = typeof content['text'] === 'string' ? content['text'] : '';
+  const inboundText = extractInboundText(content);
 
   if (!inboundText) {
     log.info({ messageId, type: message.type }, 'mensagem sem texto — ignorando (áudio/mídia)');
@@ -424,6 +424,15 @@ export async function processMessage(
     }
   }
 
+  if (sentChunks > 0) {
+    // Ordenação/preview do inbox: sem isto a conversa ficava "parada" no
+    // timestamp da mensagem do contato.
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { lastMessageAt: new Date() },
+    });
+  }
+
   // ─── 14. Registro de uso ─────────────────────────────────────────────────
   if (result.tokensIn > 0 || result.tokensOut > 0) {
     await prisma.usageRecord.create({
@@ -474,10 +483,23 @@ async function handleHandoff(
   try {
     const accessToken = decrypt(waAccount.accessTokenEncrypted, env.ENCRYPTION_KEY);
     const waClient = createWaClient({ phoneNumberId: waAccount.phoneNumberId, accessToken });
-    await waClient.sendText(
-      contact.phoneE164,
-      'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌',
-    );
+    const bridgeText =
+      'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌';
+    const sent = await waClient.sendText(contact.phoneE164, bridgeText);
+    const waId = sent.messages[0]?.id;
+    await prisma.message.create({
+      data: {
+        workspaceId,
+        conversationId,
+        contactId: contact.id,
+        direction: MessageDirection.OUTBOUND,
+        type: MessageType.TEXT,
+        content: { text: bridgeText },
+        status: MessageStatus.SENT,
+        fromAi: false,
+        ...(waId ? { whatsappMessageId: waId } : {}),
+      },
+    });
   } catch (err) {
     // Não-crítico: a transferência já ocorreu no DB. Mas loga pra debug.
     log.warn(
@@ -548,4 +570,18 @@ async function sendText(
   } catch (err) {
     log.error({ err: String(err) }, 'sendText falhou');
   }
+}
+
+/**
+ * Texto processável da mensagem inbound. Respostas interativas (botões/listas)
+ * carregam o title/text do item clicado — antes eram ignoradas sem resposta.
+ */
+function extractInboundText(content: Record<string, unknown>): string {
+  const direct = content['text'];
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  const br = content['button_reply'] as { title?: unknown } | undefined;
+  if (typeof br?.title === 'string' && br.title.trim()) return br.title.trim();
+  const lr = content['list_reply'] as { title?: unknown } | undefined;
+  if (typeof lr?.title === 'string' && lr.title.trim()) return lr.title.trim();
+  return '';
 }
