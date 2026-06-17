@@ -77,9 +77,15 @@ export async function rollbackToVersion(input: {
 
 // ─── Test action: simula mensagem inbound contra o agente publicado ─────────
 
+const historyItem = z.object({
+  role: z.enum(['user', 'assistant']),
+  text: z.string().trim().min(1).max(2000),
+});
+
 const testInput = z.object({
   agentId: z.string().cuid(),
   inboundText: z.string().trim().min(1).max(1000),
+  history: z.array(historyItem).max(20).default([]),
 });
 
 export type TestAgentResult =
@@ -183,7 +189,7 @@ export async function testAgent(
       ? await executeFlow({
           systemPrompt: agent.currentVersion.systemPrompt,
           vertical: agent.vertical,
-          messageHistory: [],
+          messageHistory: parsed.data.history,
           inboundText: parsed.data.inboundText,
           ragChunks,
           globalDeps: stubDeps,
@@ -197,7 +203,7 @@ export async function testAgent(
       : await runAgent({
           systemPrompt: agent.currentVersion.systemPrompt,
           vertical: agent.vertical,
-          messageHistory: [],
+          messageHistory: parsed.data.history,
           inboundText: parsed.data.inboundText,
           ragChunks,
           globalDeps: stubDeps,
@@ -217,6 +223,28 @@ export async function testAgent(
       },
       'test agent run',
     );
+
+    // Marca o passo 2 do onboarding (estado derivado — ver lib/onboarding.ts).
+    // Grava só uma vez por workspace; falha aqui não derruba o teste.
+    try {
+      const already = await prisma.auditLog.findFirst({
+        where: { workspaceId: member.workspaceId, action: 'agent.test' },
+        select: { id: true },
+      });
+      if (!already) {
+        await prisma.auditLog.create({
+          data: {
+            workspaceId: member.workspaceId,
+            userId: session.user.id,
+            action: 'agent.test',
+            targetType: 'Agent',
+            targetId: agent.id,
+          },
+        });
+      }
+    } catch (err) {
+      log.warn({ err: String(err) }, 'auditLog agent.test falhou — passo não marcado');
+    }
 
     return {
       status: 'ok',
