@@ -374,7 +374,7 @@ export default async function AnalyticsPage() {
       </section>
 
       <p className="mt-6 text-xs text-muted-foreground">
-        Em breve: filtro por intervalo, exportação CSV, comparação período-anterior.
+        Os números desta página são atualizados a cada visita.
       </p>
     </div>
   );

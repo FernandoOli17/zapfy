@@ -71,6 +71,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
       dailyAiConversationsLastDays(workspace.id, 14),
     ]);
   const { plan, features, status } = planInfo;
+  const noPlan = status === 'INCOMPLETE' || status === 'TRIALING';
   const stripeConfigured = isStripeConfigured();
   const stripeMock = isStripeMock();
   const params = await searchParams;
@@ -147,8 +148,14 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
                   Plano atual
                 </p>
-                <h2 className="mt-1 text-2xl font-semibold tracking-tight">{PLAN_NAMES[plan]}</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">{PLAN_BLURBS[plan]}</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight">
+                  {noPlan ? 'Nenhum plano ativo' : PLAN_NAMES[plan]}
+                </h2>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {noPlan
+                    ? 'Escolha um plano abaixo pro agente atender no WhatsApp.'
+                    : PLAN_BLURBS[plan]}
+                </p>
               </div>
               <div className="text-right">
                 {status === 'INCOMPLETE' || status === 'TRIALING' ? (
