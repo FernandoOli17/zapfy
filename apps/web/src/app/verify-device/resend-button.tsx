@@ -56,7 +56,7 @@ export function ResendButton() {
           className={
             feedback.kind === 'ok'
               ? 'mt-1 text-xs text-primary'
-              : 'mt-1 text-xs text-red-400'
+              : 'mt-1 text-xs text-destructive'
           }
         >
           {feedback.text}

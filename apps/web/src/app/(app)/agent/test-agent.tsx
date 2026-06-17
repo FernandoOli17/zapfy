@@ -45,10 +45,17 @@ export function TestAgent({ agentId, vertical }: Props) {
     setText('');
     setChat((c) => [...c, { role: 'user', text: msg }]);
     startTransition(async () => {
-      const r = await testAgent({ agentId, inboundText: msg, history: chat });
+      // Só as últimas trocas: o schema do servidor limita history a 20 itens —
+      // mandar a conversa inteira travava o simulador depois de ~11 rodadas.
+      const r = await testAgent({ agentId, inboundText: msg, history: chat.slice(-18) });
       setResult(r);
       if (r.status === 'ok') {
         setChat((c) => [...c, { role: 'assistant', text: r.replyText }]);
+      } else {
+        // Turno falhou: desfaz o append otimista (senão fica um 'user' órfão,
+        // gerando dois 'user' seguidos no próximo histórico) e devolve o texto.
+        setChat((c) => c.slice(0, -1));
+        setText(msg);
       }
     });
   }
@@ -68,7 +75,12 @@ export function TestAgent({ agentId, vertical }: Props) {
       </div>
 
       {chat.length > 0 && (
-        <div className="mt-4 max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border bg-background p-3">
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label="Conversa do simulador"
+          className="mt-4 max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border bg-background p-3"
+        >
           {chat.map((m, i) => (
             <div
               key={i}

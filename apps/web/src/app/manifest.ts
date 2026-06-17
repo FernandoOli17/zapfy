@@ -2,8 +2,8 @@
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Trato',
-    short_name: 'Trato',
+    name: 'Zapfy',
+    short_name: 'Zapfy',
     description: 'O WhatsApp da sua empresa, com cérebro próprio.',
     start_url: '/dashboard',
     display: 'standalone',

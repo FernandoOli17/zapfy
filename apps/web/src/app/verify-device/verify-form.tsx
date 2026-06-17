@@ -32,7 +32,7 @@ export function VerifyDeviceForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <label htmlFor="code" className="block text-[11px] font-semibold uppercase tracking-wider text-[#888]">
+      <label htmlFor="code" className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         Código de 6 dígitos
       </label>
       <input
@@ -45,11 +45,11 @@ export function VerifyDeviceForm() {
         value={code}
         onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
         placeholder="000000"
-        className="w-full rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-4 text-center font-mono text-2xl tracking-[0.4em] text-white outline-none transition-colors focus:border-[#00E676]/40"
+        className="w-full rounded-xl border border-border bg-background px-4 py-4 text-center font-mono text-2xl tracking-[0.4em] text-foreground outline-none transition-colors focus:border-primary"
       />
 
       {error && (
-        <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-400">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
       )}
@@ -57,7 +57,7 @@ export function VerifyDeviceForm() {
       <button
         type="submit"
         disabled={pending || code.length !== 6}
-        className="group w-full rounded-full bg-[#00E676] px-6 py-3 text-sm font-semibold text-[#0a0a0a] transition-transform enabled:hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
+        className="group w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform enabled:hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? 'Verificando…' : 'Confirmar acesso'}
       </button>

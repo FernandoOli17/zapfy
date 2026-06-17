@@ -19,8 +19,9 @@ contínuo em linguagem natural.
   (`apps/web/e2e/onboarding-card.spec.ts`) passou contra o DB real (Neon); gate
   completo do root verde (typecheck 7/7, lint 7/7, test 3 pacotes, build 2/2).
   Débito: capturar prints reais do painel da Meta pra
-  `apps/web/public/guias/meta/passo-{1..4}.png` (slots já renderizam quando os
-  arquivos existirem). Desvio anotado: o segundo cenário E2E previsto ("após
+  `apps/web/public/guias/meta/{passo-1-app,passo-2-ids,passo-3-token,passo-4-secret}.png`
+  (nomes exatos que o `StepImage` de `meta-guide.tsx` procura; slots já renderizam
+  quando os arquivos existirem). Desvio anotado: o segundo cenário E2E previsto ("após
   publicar agente, CTA aponta pra /agent") não é determinístico — publicar exige o
   loop de tool calls da IA (mockada em E2E), então o avanço de passo fica coberto
   pelo derivador puro (Task 1), não por E2E. Commits locais, sem push. Próximo:
