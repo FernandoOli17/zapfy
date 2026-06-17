@@ -120,7 +120,7 @@ export async function connectWhatsAppAction(
         status: 'error',
         error: `Meta rejeitou as credenciais: ${err.userMessage}${
           err.metaCode ? ` (code ${err.metaCode})` : ''
-        }`,
+        }${metaErrorHint(err.metaCode)}`,
       };
     }
     log.error({ err: String(err) }, 'meta testConnection erro inesperado');
@@ -407,4 +407,20 @@ export async function sendTestInboundMessage(
 function buildWebhookUrl(phoneNumberId: string): string {
   const base = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
   return `${base}/api/webhooks/whatsapp/${phoneNumberId}`;
+}
+
+/**
+ * Dica acionável por código de erro da Meta — aponta o passo do guia que
+ * resolve. String vazia quando o código não tem dica conhecida.
+ */
+function metaErrorHint(code: number | undefined): string {
+  if (code === 190)
+    return ' Dica: gere um token PERMANENTE via System User (passo 3 do guia) — o da API Setup expira em 24h.';
+  if (code === 100 || code === 33)
+    return ' Dica: confira se o Phone Number ID e o WABA ID são os da página WhatsApp → API Setup (passo 2 do guia).';
+  if (code === 131030)
+    return ' Dica: em modo dev, o número de DESTINO precisa estar na lista de destinatários permitidos do app.';
+  if (code === 10)
+    return ' Dica: o token não tem as permissões whatsapp_business_messaging/management (passo 3 do guia).';
+  return '';
 }

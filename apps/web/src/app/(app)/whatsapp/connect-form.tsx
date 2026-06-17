@@ -7,13 +7,37 @@ import { Button, Input, Label } from '@zapfy/ui';
 import { connectWhatsAppAction, type ConnectWhatsAppResult } from './actions';
 import { CopyButton } from './copy-button';
 
+/**
+ * Valida o FORMATO das credenciais no client (sem ir ao servidor): pega os
+ * erros mais comuns (token temporário sem EAA, IDs com letra) antes de gastar
+ * uma chamada à Meta. Cada mensagem aponta o passo do guia ao lado.
+ */
+function validateFormat(input: {
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId: string;
+}): string | null {
+  if (!/^EAA/.test(input.accessToken.trim())) {
+    return 'O token deve começar com "EAA" — veja o passo 3 do guia (token permanente).';
+  }
+  if (!/^\d{8,20}$/.test(input.phoneNumberId.trim())) {
+    return 'Phone Number ID é só números (passo 2 do guia).';
+  }
+  if (!/^\d{8,20}$/.test(input.businessAccountId.trim())) {
+    return 'WABA ID é só números (passo 2 do guia).';
+  }
+  return null;
+}
+
 export function ConnectForm() {
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<ConnectWhatsAppResult | null>(null);
+  const [formatError, setFormatError] = useState<string | null>(null);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const data = new FormData(form);
     const input = {
       phoneNumberId: String(data.get('phoneNumberId') ?? ''),
       businessAccountId: String(data.get('businessAccountId') ?? ''),
@@ -21,11 +45,17 @@ export function ConnectForm() {
       appSecret: String(data.get('appSecret') ?? ''),
     };
     setResult(null);
+    const formatIssue = validateFormat(input);
+    if (formatIssue) {
+      setFormatError(formatIssue);
+      return;
+    }
+    setFormatError(null);
     startTransition(async () => {
       const r = await connectWhatsAppAction(input);
       setResult(r);
       if (r.status === 'ok') {
-        (e.target as HTMLFormElement).reset();
+        form.reset();
       }
     });
   }
@@ -146,9 +176,9 @@ export function ConnectForm() {
         </p>
       </div>
 
-      {result?.status === 'error' && (
+      {(formatError || result?.status === 'error') && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {result.error}
+          {formatError ?? (result?.status === 'error' ? result.error : null)}
         </div>
       )}
 
