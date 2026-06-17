@@ -3,7 +3,21 @@
 import { headers } from 'next/headers';
 
 import { auth } from '@/lib/auth';
-import { consumeDeviceVerification } from '@/lib/device-verification';
+import { consumeDeviceVerification, resendDeviceVerification } from '@/lib/device-verification';
+import { env } from '@/env';
+import { enforceRateLimit } from '@/lib/rate-limit';
+
+const RL_RESEND = { name: 'verify-device-resend', limit: 3, windowSec: 300 } as const;
+
+export async function resendCodeAction(): Promise<{ ok: boolean; error?: string }> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return { ok: false, error: 'Sessão expirada — faça login de novo.' };
+
+  const rl = await enforceRateLimit(`user:${session.user.id}`, RL_RESEND);
+  if (!rl.success) return { ok: false, error: 'Muitos reenvios. Aguarde alguns minutos.' };
+
+  return resendDeviceVerification(session.session.token, env.BETTER_AUTH_URL);
+}
 
 export async function verifyDeviceCodeAction(
   code: string,
