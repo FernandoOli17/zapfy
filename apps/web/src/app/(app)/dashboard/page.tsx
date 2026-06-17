@@ -15,6 +15,7 @@ import { prisma } from '@zapfy/db';
 import { Button } from '@zapfy/ui';
 
 import { auth } from '@/lib/auth';
+import { getOnboardingProgress } from '@/lib/onboarding';
 
 import { OnboardingChecklist } from './onboarding-checklist';
 
@@ -59,7 +60,7 @@ const ACTIONS: Action[] = [
     description: 'Suba documentos, FAQs ou links. O agente busca no RAG quando precisar.',
     href: '/knowledge',
     icon: BookOpen,
-    ready: false,
+    ready: true,
   },
 ];
 
@@ -76,30 +77,18 @@ export default async function DashboardPage() {
 
   const ws = member.workspace;
   const sub = ws.subscription;
-  const trialEndsAt = sub?.trialEndsAt;
-  const daysLeft = trialEndsAt
-    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
-    : null;
 
   const counts = await prisma.$transaction([
     prisma.contact.count({ where: { workspaceId: ws.id } }),
     prisma.conversation.count({ where: { workspaceId: ws.id } }),
     prisma.agent.count({ where: { workspaceId: ws.id } }),
     prisma.knowledgeDocument.count({ where: { workspaceId: ws.id } }),
-    prisma.agent.count({ where: { workspaceId: ws.id, currentVersionId: { not: null } } }),
     prisma.whatsAppAccount.count({ where: { workspaceId: ws.id, status: 'CONNECTED' } }),
     prisma.workspaceMember.count({ where: { workspaceId: ws.id } }),
-    prisma.message.count({ where: { workspaceId: ws.id } }),
   ]);
-  const [contactsCount, convosCount, agentsCount, docsCount, publishedAgents, waConnected, memberCount, messageCount] = counts;
+  const [contactsCount, convosCount, agentsCount, docsCount, waConnected, memberCount] = counts;
 
-  const onboardingStatus = {
-    forgeComplete: publishedAgents > 0,
-    whatsappConnected: waConnected > 0,
-    knowledgeBaseStarted: docsCount > 0,
-    teamInvited: memberCount > 1,
-    firstMessage: messageCount > 0,
-  };
+  const progress = await getOnboardingProgress(ws.id);
 
   const userName = session.user.name?.split(' ')[0] ?? session.user.email.split('@')[0] ?? 'lá';
 
@@ -115,15 +104,16 @@ export default async function DashboardPage() {
         </div>
         <PlanBadge
           plan={sub?.plan ?? 'STARTER'}
-          status={sub?.status ?? 'TRIALING'}
-          days={daysLeft}
+          status={sub?.status ?? 'INCOMPLETE'}
         />
       </div>
 
       {/* Onboarding checklist — some quando 100% completo */}
-      <div className="mt-6">
-        <OnboardingChecklist workspaceSlug={ws.slug} status={onboardingStatus} />
-      </div>
+      {progress && !progress.complete && (
+        <div className="mt-6">
+          <OnboardingChecklist progress={progress} />
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
@@ -205,14 +195,14 @@ export default async function DashboardPage() {
           <p className="text-xs text-muted-foreground">Resumo da configuração atual</p>
           <ul className="mt-5 space-y-3 text-sm">
             <StatusRow label="Agente IA" done={agentsCount > 0} cta="Configurar" href="/agent" />
-            <StatusRow label="WhatsApp" done={false} cta="Conectar" href="/whatsapp" />
+            <StatusRow label="WhatsApp" done={waConnected > 0} cta="Conectar" href="/whatsapp" />
             <StatusRow
               label="Base de conhecimento"
               done={docsCount > 0}
               cta="Subir docs"
               href="/knowledge"
             />
-            <StatusRow label="Time" done={false} cta="Convidar" href="/team" />
+            <StatusRow label="Time" done={memberCount > 1} cta="Convidar" href="/team" />
           </ul>
         </div>
       </div>
@@ -223,21 +213,17 @@ export default async function DashboardPage() {
 function PlanBadge({
   plan,
   status,
-  days,
 }: {
   plan: string;
   status: string;
-  days: number | null;
 }) {
-  const isTrial = status === 'TRIALING';
+  const noPlan = status === 'INCOMPLETE' || status === 'TRIALING';
   return (
     <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs shadow-sm">
       <span className="font-semibold uppercase tracking-wider">{plan}</span>
       <span className="text-muted-foreground/40">·</span>
-      <span className={isTrial ? 'text-primary font-medium' : 'text-muted-foreground'}>
-        {isTrial && days !== null
-          ? `${days} dia${days === 1 ? '' : 's'} de trial`
-          : status.toLowerCase()}
+      <span className="text-muted-foreground">
+        {noPlan ? 'sem plano ativo' : status.toLowerCase()}
       </span>
     </div>
   );
