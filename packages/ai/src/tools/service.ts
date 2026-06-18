@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma, QuoteStatus, type Prisma } from '@zapfy/db';
 import { createLogger } from '@zapfy/shared';
 import type { VerticalRuntimeDeps } from './runtime/types';
+import { createWithRetry, quoteNumberDelegate } from './public-number';
 
 const log = createLogger('tools:service');
 
@@ -37,21 +38,26 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
         notes: z.string().max(500).optional(),
       }),
       execute: async ({ serviceDescription, serviceAddress, urgency, notes }) => {
-        const publicNumber = await genQuoteNumber(deps.workspaceId);
-        const quote = await prisma.quote.create({
-          data: {
-            workspaceId: deps.workspaceId,
-            contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
-            conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
-            publicNumber,
-            status: QuoteStatus.DRAFT,
-            serviceDescription,
-            ...(serviceAddress ? { serviceAddress: serviceAddress as unknown as Prisma.InputJsonValue } : {}),
-            items: [] as unknown as Prisma.InputJsonValue, // time humano preenche depois
-            notes: notes ? `[urgência: ${urgency}] ${notes}` : `[urgência: ${urgency}]`,
-          },
-          select: { publicNumber: true },
-        });
+        const quote = await createWithRetry(
+          'ORC',
+          deps.workspaceId,
+          (publicNumber) =>
+            prisma.quote.create({
+              data: {
+                workspaceId: deps.workspaceId,
+                contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
+                conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
+                publicNumber,
+                status: QuoteStatus.DRAFT,
+                serviceDescription,
+                ...(serviceAddress ? { serviceAddress: serviceAddress as unknown as Prisma.InputJsonValue } : {}),
+                items: [] as unknown as Prisma.InputJsonValue, // time humano preenche depois
+                notes: notes ? `[urgência: ${urgency}] ${notes}` : `[urgência: ${urgency}]`,
+              },
+              select: { publicNumber: true },
+            }),
+          quoteNumberDelegate,
+        );
         log.info(
           { workspaceId: deps.workspaceId, quoteNumber: quote.publicNumber, urgency },
           'pedido de orçamento criado (DRAFT)',
@@ -174,11 +180,6 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
       },
     }),
   };
-}
-
-async function genQuoteNumber(workspaceId: string): Promise<string> {
-  const count = await prisma.quote.count({ where: { workspaceId } });
-  return `ORC-${(count + 1).toString().padStart(4, '0')}`;
 }
 
 function formatBrl(cents: number): string {
