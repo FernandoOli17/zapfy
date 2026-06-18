@@ -4,6 +4,7 @@ import { prisma, PlanId as DbPlanId } from '@zapfy/db';
 import {
   PLANS,
   PlanLimitError,
+  aiConversationCycleStart,
   isAgentServingStatus,
   planLimitState,
   requiredPlanForFeature,
@@ -40,15 +41,11 @@ export async function isAgentServingEnabled(workspaceId: string): Promise<boolea
 
 /** Início do ciclo de cobrança corrente (período Stripe ou janela fallback). */
 async function cycleStart(workspaceId: string): Promise<Date> {
-  const { AI_CONVERSATION_WINDOW_DAYS } = await import('@zapfy/shared');
   const sub = await prisma.subscription.findUnique({
     where: { workspaceId },
     select: { currentPeriodStart: true },
   });
-  return (
-    sub?.currentPeriodStart ??
-    new Date(Date.now() - AI_CONVERSATION_WINDOW_DAYS * 24 * 60 * 60 * 1000)
-  );
+  return aiConversationCycleStart(sub?.currentPeriodStart);
 }
 
 /**

@@ -25,6 +25,8 @@ import {
 type AgentModel = ReturnType<typeof getAiModels>['chat'];
 import { env } from '../env';
 import { invokeCustomTool } from '../custom-tool-dispatcher';
+import { evaluateAiConversationLimit, notifyOwnerOnLimit } from './ai-conversation-limit';
+import type { PlanId } from '@zapfy/shared';
 
 const log = createLogger('worker:process-message');
 
@@ -156,6 +158,52 @@ export async function processMessage(
     // Sem template configurado: apenas loga. Em produção, envia HSM.
     return;
   }
+
+  // ─── 4b. Limite de conversas de IA (unidade de cobrança — ADR-0002) ──────
+  // Enforcement do pacote do plano (1.500 Starter / 6.000 Pro / ∞ Business):
+  // antes de qualquer chamada paga (classificação/RAG/agente), checa se abrir
+  // ESTA conversa estouraria o limite. Conversa já cobrável no ciclo segue
+  // normal (não re-cobra). Estourou + conversa nova → bloqueio suave: handoff,
+  // NÃO cobra (sem classifier/agente/usageRecord). Falha-fechada na zona
+  // vermelha de dinheiro. BUSINESS (ilimitado) nunca entra aqui.
+  const aiLimit = await evaluateAiConversationLimit({
+    workspaceId,
+    conversationId,
+    plan: (workspaceRaw.subscription?.plan as PlanId | undefined) ?? 'STARTER',
+    currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+  });
+  if (aiLimit.blocked) {
+    log.warn(
+      { workspaceId, conversationId, used: aiLimit.used, limit: aiLimit.limit, plan: aiLimit.plan },
+      'limite de conversas de IA atingido — bloqueio suave (handoff, sem cobrança)',
+    );
+    // Aviso ao owner é best-effort: NÃO aguarda nem propaga (não atrasa o turno).
+    void notifyOwnerOnLimit({
+      workspaceId,
+      plan: aiLimit.plan,
+      used: aiLimit.used,
+      limit: aiLimit.limit,
+      pct: aiLimit.pct,
+      currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+    });
+    await handleHandoff(
+      waAccount,
+      contact,
+      conversationId,
+      workspaceId,
+      'Limite de conversas de IA do plano atingido neste ciclo — atendimento humano.',
+    );
+    return;
+  }
+  // Aviso de 80%/100% também no caminho não-bloqueado (chegou perto do teto).
+  void notifyOwnerOnLimit({
+    workspaceId,
+    plan: aiLimit.plan,
+    used: aiLimit.used,
+    limit: aiLimit.limit,
+    pct: aiLimit.pct,
+    currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+  });
 
   // ─── 5. Classificar intenção ─────────────────────────────────────────────
   const classification = await classifyMessage(inboundText);
