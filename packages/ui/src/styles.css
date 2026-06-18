@@ -97,6 +97,30 @@
     --color-ring: hsl(151 100% 35%);
   }
 
+  /* Força tema escuro num subtree (marketing é dark-first — ignora o toggle do
+     app). Re-declara os valores dark p/ neutralizar um `.light` herdado do <html>. */
+  .theme-dark {
+    --color-background: hsl(0 0% 4%);
+    --color-foreground: hsl(0 0% 98%);
+    --color-card: hsl(0 0% 7%);
+    --color-card-foreground: hsl(0 0% 98%);
+    --color-popover: hsl(0 0% 5%);
+    --color-popover-foreground: hsl(0 0% 98%);
+    --color-primary: hsl(151 100% 45%);
+    --color-primary-foreground: hsl(0 0% 4%);
+    --color-secondary: hsl(0 0% 10%);
+    --color-secondary-foreground: hsl(0 0% 98%);
+    --color-muted: hsl(0 0% 10%);
+    --color-muted-foreground: hsl(0 0% 53%);
+    --color-accent: hsl(151 100% 10%);
+    --color-accent-foreground: hsl(151 100% 75%);
+    --color-destructive: hsl(0 84% 60%);
+    --color-warning: hsl(43 96% 58%);
+    --color-border: hsl(0 0% 10%);
+    --color-input: hsl(0 0% 10%);
+    --color-ring: hsl(151 100% 45%);
+  }
+
   *,
   *::before,
   *::after {

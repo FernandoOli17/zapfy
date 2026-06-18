@@ -38,13 +38,13 @@ const SOFTWARE_APP_LD = {
     {
       '@type': 'Offer',
       name: 'Pro',
-      price: '297',
+      price: '247',
       priceCurrency: 'BRL',
     },
     {
       '@type': 'Offer',
-      name: 'Premium',
-      price: '697',
+      name: 'Business',
+      price: '597',
       priceCurrency: 'BRL',
     },
   ],
@@ -52,7 +52,10 @@ const SOFTWARE_APP_LD = {
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#0a0a0a]" style={{ overflowX: 'clip' }}>
+    <div
+      className="theme-dark flex min-h-screen flex-col bg-background text-foreground"
+      style={{ overflowX: 'clip' }}
+    >
       <Script
         id="ld-organization"
         type="application/ld+json"
