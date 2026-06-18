@@ -25,6 +25,8 @@ import {
 type AgentModel = ReturnType<typeof getAiModels>['chat'];
 import { env } from '../env';
 import { invokeCustomTool } from '../custom-tool-dispatcher';
+import { evaluateAiConversationLimit, notifyOwnerOnLimit } from './ai-conversation-limit';
+import type { PlanId } from '@zapfy/shared';
 
 const log = createLogger('worker:process-message');
 
@@ -35,20 +37,15 @@ export interface ProcessMessageJob {
   contactId: string;
 }
 
-/** Rate limit simples em memória — evita spam de IA por contato. */
-const contactCooldown = new Map<string, number>();
-const COOLDOWN_MS = 2_000;
-
-export async function processMessage(data: ProcessMessageJob): Promise<void> {
+export async function processMessage(
+  data: ProcessMessageJob,
+  opts: { isRetry?: boolean } = {},
+): Promise<void> {
   const { workspaceId, messageId, conversationId, contactId } = data;
 
-  // Cooldown por contato (evita race se Meta re-entregar)
-  const lastTs = contactCooldown.get(contactId) ?? 0;
-  if (Date.now() - lastTs < COOLDOWN_MS) {
-    log.info({ contactId }, 'cooldown ativo — ignorando duplicata');
-    return;
-  }
-  contactCooldown.set(contactId, Date.now());
+  // Dedup de re-entrega da Meta é por jobId determinístico (`msg-${messageId}`)
+  // no producer. Não usar cooldown por contato aqui: duas mensagens legítimas
+  // em <2s são jobs distintos e a segunda era descartada sem resposta.
 
   // ─── 1. Carregar contexto ─────────────────────────────────────────────────
   const [message, conversation, contact, workspaceRaw] = await Promise.all([
@@ -72,6 +69,28 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   if (!message || !conversation || !contact || !workspaceRaw) {
     log.warn({ messageId }, 'contexto incompleto — abortando');
     return;
+  }
+
+  // ─── 1b. Idempotência de retry ───────────────────────────────────────────
+  // O job roda com attempts>1 no BullMQ. Se um retry chegar aqui depois de a
+  // resposta já ter sido ENVIADA (falha pós-envio: persistência, usage record),
+  // re-rodar o agente reenviaria a resposta ao contato. Só em retry (nunca no
+  // primeiro attempt, pra não engolir rajada legítima de mensagens): se já
+  // existe outbound da IA depois desta inbound, o turno já foi atendido.
+  if (opts.isRetry) {
+    const alreadyReplied = await prisma.message.findFirst({
+      where: {
+        conversationId,
+        direction: MessageDirection.OUTBOUND,
+        fromAi: true,
+        createdAt: { gt: message.createdAt },
+      },
+      select: { id: true },
+    });
+    if (alreadyReplied) {
+      log.info({ messageId, conversationId }, 'retry de job já respondido — ignorando');
+      return;
+    }
   }
 
   // ─── 2. Guards ───────────────────────────────────────────────────────────
@@ -112,7 +131,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
 
   // ─── 3. Texto da mensagem inbound ────────────────────────────────────────
   const content = message.content as Record<string, unknown>;
-  const inboundText = typeof content['text'] === 'string' ? content['text'] : '';
+  const inboundText = extractInboundText(content);
 
   if (!inboundText) {
     log.info({ messageId, type: message.type }, 'mensagem sem texto — ignorando (áudio/mídia)');
@@ -139,6 +158,52 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     // Sem template configurado: apenas loga. Em produção, envia HSM.
     return;
   }
+
+  // ─── 4b. Limite de conversas de IA (unidade de cobrança — ADR-0002) ──────
+  // Enforcement do pacote do plano (1.500 Starter / 6.000 Pro / ∞ Business):
+  // antes de qualquer chamada paga (classificação/RAG/agente), checa se abrir
+  // ESTA conversa estouraria o limite. Conversa já cobrável no ciclo segue
+  // normal (não re-cobra). Estourou + conversa nova → bloqueio suave: handoff,
+  // NÃO cobra (sem classifier/agente/usageRecord). Falha-fechada na zona
+  // vermelha de dinheiro. BUSINESS (ilimitado) nunca entra aqui.
+  const aiLimit = await evaluateAiConversationLimit({
+    workspaceId,
+    conversationId,
+    plan: (workspaceRaw.subscription?.plan as PlanId | undefined) ?? 'STARTER',
+    currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+  });
+  if (aiLimit.blocked) {
+    log.warn(
+      { workspaceId, conversationId, used: aiLimit.used, limit: aiLimit.limit, plan: aiLimit.plan },
+      'limite de conversas de IA atingido — bloqueio suave (handoff, sem cobrança)',
+    );
+    // Aviso ao owner é best-effort: NÃO aguarda nem propaga (não atrasa o turno).
+    void notifyOwnerOnLimit({
+      workspaceId,
+      plan: aiLimit.plan,
+      used: aiLimit.used,
+      limit: aiLimit.limit,
+      pct: aiLimit.pct,
+      currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+    });
+    await handleHandoff(
+      waAccount,
+      contact,
+      conversationId,
+      workspaceId,
+      'Limite de conversas de IA do plano atingido neste ciclo — atendimento humano.',
+    );
+    return;
+  }
+  // Aviso de 80%/100% também no caminho não-bloqueado (chegou perto do teto).
+  void notifyOwnerOnLimit({
+    workspaceId,
+    plan: aiLimit.plan,
+    used: aiLimit.used,
+    limit: aiLimit.limit,
+    pct: aiLimit.pct,
+    currentPeriodStart: workspaceRaw.subscription?.currentPeriodStart,
+  });
 
   // ─── 5. Classificar intenção ─────────────────────────────────────────────
   const classification = await classifyMessage(inboundText);
@@ -197,7 +262,12 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   }
 
   // ─── 7. RAG ──────────────────────────────────────────────────────────────
-  const ragChunks = await searchKnowledge(workspaceId, inboundText, 4).catch(() => []);
+  // Falha do RAG não derruba o turno (agente responde sem contexto), mas NUNCA
+  // em silêncio — lei do CLAUDE.md: proibido catch swallow.
+  const ragChunks = await searchKnowledge(workspaceId, inboundText, 4).catch((err: unknown) => {
+    log.warn({ workspaceId, err: String(err) }, 'RAG falhou — respondendo sem contexto');
+    return [];
+  });
 
   // ─── 8. Decifrar token para envio ────────────────────────────────────────
   let accessToken: string;
@@ -303,6 +373,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
         maxSteps: 5,
         timeoutMs: 30_000,
         topicBlacklist,
+        toolsEnabled: agentVersion.toolsEnabled,
         ...(chosenModel ? { model: chosenModel } : {}),
       });
     }
@@ -318,6 +389,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
       maxSteps: 5,
       timeoutMs: 30_000,
       topicBlacklist,
+      toolsEnabled: agentVersion.toolsEnabled,
       ...(chosenModel ? { model: chosenModel } : {}),
     });
   }
@@ -331,25 +403,21 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
   }
 
   if (!result.text.trim()) {
-    log.warn({ conversationId }, 'agente retornou texto vazio');
+    // Contato não pode ficar no vácuo: transfere pra humano (marca a conversa
+    // HUMAN_HANDLING e envia mensagem-ponte), e loga como erro — texto vazio é
+    // falha do agente (só tool calls / timeout), não comportamento esperado.
+    log.error({ conversationId, toolsUsed: result.toolsUsed }, 'agente retornou texto vazio — handoff');
+    await handleHandoff(
+      waAccount,
+      contact,
+      conversationId,
+      workspaceId,
+      'Agente retornou resposta vazia — revisão humana necessária.',
+    );
     return;
   }
 
-  // ─── 11. Enviar resposta (chunks de 1024 chars) ──────────────────────────
-  const chunks = splitText(result.text, { maxLen: 1024 });
-  const outboundMsgIds: string[] = [];
-
-  for (const chunk of chunks) {
-    try {
-      const sent = await waClient.sendText(contact.phoneE164, chunk);
-      outboundMsgIds.push(sent.messages[0]?.id ?? '');
-    } catch (err) {
-      log.error({ err: String(err) }, 'falha ao enviar chunk via WA');
-      break;
-    }
-  }
-
-  // ─── 12. Custo estimado do turn ──────────────────────────────────────────
+  // ─── 11. Custo estimado do turn ──────────────────────────────────────────
   // `cachedTokensIn` só existe no runAgent path; flow executor não expõe → 0.
   const cachedTokensIn = 'cachedTokensIn' in result ? (result.cachedTokensIn ?? 0) : 0;
   const costCents = estimateCostCents(chosenModelId, {
@@ -358,25 +426,58 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     cachedTokensIn,
   });
 
-  // ─── 13. Persistir mensagens outbound ────────────────────────────────────
+  // ─── 12. Enviar resposta (chunks de 1024 chars) e persistir cada chunk ────
+  // Envio e persistência andam JUNTOS por chunk: chunk que falhou vira Message
+  // FAILED (com errorMessage) e os restantes não são enviados nem gravados como
+  // SENT — o inbox reflete exatamente o que o contato recebeu.
+  const chunks = splitText(result.text, { maxLen: 1024 });
+  let sentChunks = 0;
+
   for (let i = 0; i < chunks.length; i++) {
-    const waId = outboundMsgIds[i] || undefined;
-    await prisma.message.create({
-      data: {
-        workspaceId,
-        conversationId,
-        contactId,
-        direction: MessageDirection.OUTBOUND,
-        type: MessageType.TEXT,
-        content: { text: chunks[i] ?? '' },
-        status: MessageStatus.SENT,
-        fromAi: true,
-        toolsUsed: i === 0 ? result.toolsUsed : [],
-        tokensIn: i === 0 ? result.tokensIn : 0,
-        tokensOut: i === 0 ? result.tokensOut : 0,
-        ...(i === 0 && costCents > 0 ? { costCents } : {}),
-        ...(waId ? { whatsappMessageId: waId } : {}),
-      },
+    const chunkText = chunks[i] ?? '';
+    const baseData = {
+      workspaceId,
+      conversationId,
+      contactId,
+      direction: MessageDirection.OUTBOUND,
+      type: MessageType.TEXT,
+      content: { text: chunkText },
+      fromAi: true,
+      toolsUsed: i === 0 ? result.toolsUsed : [],
+      tokensIn: i === 0 ? result.tokensIn : 0,
+      tokensOut: i === 0 ? result.tokensOut : 0,
+      ...(i === 0 && costCents > 0 ? { costCents } : {}),
+    };
+    try {
+      const sent = await waClient.sendText(contact.phoneE164, chunkText);
+      const waId = sent.messages[0]?.id;
+      sentChunks += 1;
+      await prisma.message.create({
+        data: {
+          ...baseData,
+          status: MessageStatus.SENT,
+          ...(waId ? { whatsappMessageId: waId } : {}),
+        },
+      });
+    } catch (err) {
+      log.error({ conversationId, chunk: i, err: String(err) }, 'falha ao enviar chunk via WA');
+      await prisma.message.create({
+        data: {
+          ...baseData,
+          status: MessageStatus.FAILED,
+          errorMessage: String(err).slice(0, 500),
+        },
+      });
+      break;
+    }
+  }
+
+  if (sentChunks > 0) {
+    // Ordenação/preview do inbox: sem isto a conversa ficava "parada" no
+    // timestamp da mensagem do contato.
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: { lastMessageAt: new Date() },
     });
   }
 
@@ -399,6 +500,7 @@ export async function processMessage(data: ProcessMessageJob): Promise<void> {
     {
       conversationId,
       chunks: chunks.length,
+      sentChunks,
       toolsUsed: result.toolsUsed,
       model: chosenModelId,
       tokensIn: result.tokensIn,
@@ -429,10 +531,23 @@ async function handleHandoff(
   try {
     const accessToken = decrypt(waAccount.accessTokenEncrypted, env.ENCRYPTION_KEY);
     const waClient = createWaClient({ phoneNumberId: waAccount.phoneNumberId, accessToken });
-    await waClient.sendText(
-      contact.phoneE164,
-      'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌',
-    );
+    const bridgeText =
+      'Vou transferir você para um de nossos atendentes. Em instantes alguém irá te ajudar! 🙌';
+    const sent = await waClient.sendText(contact.phoneE164, bridgeText);
+    const waId = sent.messages[0]?.id;
+    await prisma.message.create({
+      data: {
+        workspaceId,
+        conversationId,
+        contactId: contact.id,
+        direction: MessageDirection.OUTBOUND,
+        type: MessageType.TEXT,
+        content: { text: bridgeText },
+        status: MessageStatus.SENT,
+        fromAi: false,
+        ...(waId ? { whatsappMessageId: waId } : {}),
+      },
+    });
   } catch (err) {
     // Não-crítico: a transferência já ocorreu no DB. Mas loga pra debug.
     log.warn(
@@ -495,7 +610,9 @@ async function sendText(
           type: MessageType.TEXT,
           content: { text },
           status: MessageStatus.SENT,
-          fromAi: true,
+          // Resposta enlatada (ex.: aviso de áudio): zero IA, não pode contar
+          // como conversa de IA cobrável. Espelha sendFallbackMessage.
+          fromAi: false,
           ...(waId ? { whatsappMessageId: waId } : {}),
         },
       });
@@ -503,4 +620,18 @@ async function sendText(
   } catch (err) {
     log.error({ err: String(err) }, 'sendText falhou');
   }
+}
+
+/**
+ * Texto processável da mensagem inbound. Respostas interativas (botões/listas)
+ * carregam o title/text do item clicado — antes eram ignoradas sem resposta.
+ */
+function extractInboundText(content: Record<string, unknown>): string {
+  const direct = content['text'];
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  const br = content['button_reply'] as { title?: unknown } | undefined;
+  if (typeof br?.title === 'string' && br.title.trim()) return br.title.trim();
+  const lr = content['list_reply'] as { title?: unknown } | undefined;
+  if (typeof lr?.title === 'string' && lr.title.trim()) return lr.title.trim();
+  return '';
 }

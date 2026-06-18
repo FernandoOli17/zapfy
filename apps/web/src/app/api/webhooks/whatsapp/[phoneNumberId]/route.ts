@@ -143,17 +143,21 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
     const phoneHashSalt = env.LOG_PII_SALT;
 
-    // Persiste em paralelo (mas sem await all pra retornar rápido — Meta exige <10s, queremos <1s)
-    // Mantém handler simples e síncrono no DB; Fase 5 enfileirará processo do agente.
+    // Persiste a mensagem (mínimo) e enfileira o processamento pesado no worker.
+    // Se qualquer enqueue OU persistência falhar, marcamos pra responder !=200 e a
+    // Meta re-entrega o lote inteiro (dedup por whatsappMessageId/jobId evita
+    // duplicar). Nunca perdemos a mensagem.
+    let needsRetry = false;
     for (const msg of bucket.messages ?? []) {
       try {
         const contactName = bucket.contacts?.find((c) => c.wa_id === msg.from)?.profile?.name;
-        await persistInboundMessage({
+        const { enqueued } = await persistInboundMessage({
           workspaceId: account.workspaceId,
           phoneNumberId,
           message: msg,
           ...(contactName ? { contactName } : {}),
         });
+        if (!enqueued) needsRetry = true;
       } catch (err) {
         log.error(
           {
@@ -164,6 +168,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           'persistInboundMessage falhou',
         );
         captureException(err, { context: 'wa.persistInboundMessage', phoneNumberId });
+        needsRetry = true;
       }
     }
 
@@ -191,10 +196,16 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         phoneNumberId,
         msgs: bucket.messages?.length ?? 0,
         statuses: bucket.statuses?.length ?? 0,
+        needsRetry,
         tookMs: Date.now() - t0,
       },
       'webhook processado',
     );
+
+    // Falha de enqueue (Redis fora): pede pra Meta re-entregar o lote em vez de
+    // perder a mensagem silenciosamente. Persistência/status já aplicados são
+    // idempotentes na re-entrega.
+    if (needsRetry) return retryAck();
     return ack();
   } catch (err) {
     log.error({ phoneNumberId, err: String(err) }, 'webhook handler explodiu');
@@ -205,6 +216,16 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
 function ack(): NextResponse {
   return new NextResponse('OK', { status: 200 });
+}
+
+/**
+ * 503 — sinaliza pra Meta re-entregar o lote. Usado só quando NÃO conseguimos
+ * enfileirar o processamento (Redis fora): preferimos o retry da Meta a perder a
+ * mensagem. A re-entrega é segura porque persistência (dedup por
+ * whatsappMessageId) e enqueue (dedup por jobId) são idempotentes.
+ */
+function retryAck(): NextResponse {
+  return new NextResponse('Service Unavailable', { status: 503 });
 }
 
 // =========================================
@@ -233,7 +254,7 @@ async function persistInboundMessage(input: {
   phoneNumberId: string;
   message: WaIncomingMessage;
   contactName?: string;
-}) {
+}): Promise<{ enqueued: boolean }> {
   const { workspaceId, message: m, contactName } = input;
   const timestamp = parseMetaTimestamp(m.timestamp);
   const messageType = TYPE_MAP[m.type] ?? MessageType.SYSTEM;
@@ -272,9 +293,20 @@ async function persistInboundMessage(input: {
         },
       }));
 
-    // duplicate guard (se Meta retransmite o mesmo evento)
+    // duplicate guard (se Meta retransmite o mesmo evento): NÃO persiste de novo,
+    // mas devolve os ids pra o caller AINDA ENFILEIRAR. Se a 1ª entrega persistiu
+    // mas o enqueue falhou (Redis piscou) e a Meta re-entregou, é aqui que a
+    // mensagem é recuperada — o jobId determinístico (`msg-<id>`) deduplica, então
+    // re-enfileirar uma já processada é no-op.
     const dup = await tx.message.findUnique({ where: { whatsappMessageId: m.id } });
-    if (dup) return null;
+    if (dup) {
+      return {
+        messageId: dup.id,
+        conversationId: dup.conversationId,
+        contactId: dup.contactId,
+        isDuplicate: true as const,
+      };
+    }
 
     const created = await tx.message.create({
       data: {
@@ -299,27 +331,58 @@ async function persistInboundMessage(input: {
       },
     });
 
-    return { messageId: created.id, conversationId: conversation.id, contactId: contact.id };
+    return {
+      messageId: created.id,
+      conversationId: conversation.id,
+      contactId: contact.id,
+      isDuplicate: false as const,
+    };
   });
 
-  if (result) {
-    const previewText =
-      typeof content === 'object' && content && 'text' in (content as Record<string, unknown>)
-        ? String((content as Record<string, unknown>)['text'] ?? '')
-        : `[${messageType.toLowerCase()}]`;
+  if (!result) return { enqueued: true };
 
-    // Enfileira processamento pelo agente IA no worker
-    void enqueue(QUEUE_NAMES.processMessage, {
+  const previewText =
+    typeof content === 'object' && content && 'text' in (content as Record<string, unknown>)
+      ? String((content as Record<string, unknown>)['text'] ?? '')
+      : `[${messageType.toLowerCase()}]`;
+
+  // Enfileira processamento pelo agente IA no worker. NÃO pode ser fire-and-forget:
+  // se o Redis estiver fora, a mensagem ficaria persistida mas nunca processada.
+  // Aguardamos o resultado e propagamos a falha pro caller, que responde !=200 pra
+  // forçar a Meta a re-entregar o lote (a dedup por whatsappMessageId evita duplicar
+  // a persistência; a dedup por jobId evita reprocessar).
+  const enqueueResult = await enqueue(
+    QUEUE_NAMES.processMessage,
+    {
       workspaceId,
       messageId: result.messageId,
       conversationId: result.conversationId,
       contactId: result.contactId,
-    }, {
+    },
+    {
       jobId: `msg-${result.messageId}`, // dedup
       attempts: 3,
-    });
+    },
+  );
 
-    await publishInboxEvent(workspaceId, {
+  if (!enqueueResult.ok) {
+    log.error(
+      { workspaceId, messageId: result.messageId, err: enqueueResult.error },
+      'enqueue de process-message falhou — mensagem persistida mas não processada',
+    );
+    captureException(new Error(`enqueue process-message falhou: ${enqueueResult.error}`), {
+      context: 'wa.webhook.enqueue',
+      workspaceId,
+      messageId: result.messageId,
+    });
+  }
+
+  // Pusher e outgoing webhook saem do caminho do ack (background, best-effort).
+  // SÓ pra mensagem nova: numa re-entrega da Meta (isDuplicate) o inbox já foi
+  // notificado na 1ª vez — re-publicar duplicaria o evento. O enqueue acima já
+  // rodou (idempotente) pra recuperar processamento eventualmente perdido.
+  if (!result.isDuplicate) {
+    void publishInboxEvent(workspaceId, {
       name: 'message.new',
       data: {
         conversationId: result.conversationId,
@@ -331,7 +394,6 @@ async function persistInboundMessage(input: {
       },
     });
 
-    // Dispatch outgoing webhook pro sistema do cliente (best-effort)
     void dispatchOutgoingEvent(workspaceId, 'message.received', {
       messageId: result.messageId,
       conversationId: result.conversationId,
@@ -342,6 +404,8 @@ async function persistInboundMessage(input: {
       receivedAt: timestamp.toISOString(),
     });
   }
+
+  return { enqueued: enqueueResult.ok };
 }
 
 function buildContentJson(m: WaIncomingMessage): Prisma.InputJsonValue {
@@ -387,6 +451,28 @@ const STATUS_MAP: Record<WaStatusUpdate['status'], MessageStatus> = {
   failed: MessageStatus.FAILED,
 };
 
+/**
+ * Rank de monotonicidade do progresso de entrega: SENT < DELIVERED < READ.
+ * A Meta entrega esses status em POSTs separados que podem chegar fora de ordem
+ * (retries + invocações serverless concorrentes); só avançamos o status, nunca
+ * regredimos. FAILED é terminal e tratado à parte (não usa esse rank).
+ */
+const STATUS_RANK: Record<MessageStatus, number> = {
+  [MessageStatus.PENDING]: 0,
+  [MessageStatus.SENT]: 1,
+  [MessageStatus.DELIVERED]: 2,
+  [MessageStatus.READ]: 3,
+  [MessageStatus.FAILED]: 0,
+};
+
+/** Status com rank estritamente menor que o alvo — os únicos que podem avançar pra ele. */
+function statusesBelow(target: MessageStatus): MessageStatus[] {
+  const targetRank = STATUS_RANK[target];
+  return (Object.values(MessageStatus) as MessageStatus[]).filter(
+    (s) => s !== MessageStatus.FAILED && STATUS_RANK[s] < targetRank,
+  );
+}
+
 async function applyOutboundStatus(input: {
   workspaceId: string;
   status: WaStatusUpdate;
@@ -395,8 +481,17 @@ async function applyOutboundStatus(input: {
   const newStatus = STATUS_MAP[status.status];
   if (!newStatus) return;
 
+  // Guarda de monotonicidade. FAILED é terminal e só pode ser aplicado se o
+  // status atual ainda não for terminal (não sobrescreve um FAILED já gravado).
+  // Os demais só avançam pra um rank estritamente maior — um `delivered`
+  // atrasado nunca regride um `read` já aplicado.
+  const statusGuard =
+    newStatus === MessageStatus.FAILED
+      ? { not: MessageStatus.FAILED }
+      : { in: statusesBelow(newStatus) };
+
   const result = await prisma.message.updateMany({
-    where: { workspaceId, whatsappMessageId: status.id },
+    where: { workspaceId, whatsappMessageId: status.id, status: statusGuard },
     data: {
       status: newStatus,
       ...(status.status === 'failed' && status.errors?.[0]
@@ -409,7 +504,10 @@ async function applyOutboundStatus(input: {
   });
 
   if (result.count === 0) {
-    log.warn({ whatsappMessageId: status.id }, 'status pra message_id desconhecido');
+    log.info(
+      { whatsappMessageId: status.id, newStatus },
+      'status ignorado — message_id desconhecido ou status não regride',
+    );
     return;
   }
 

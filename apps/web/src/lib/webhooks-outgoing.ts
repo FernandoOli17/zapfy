@@ -3,7 +3,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 
 import { prisma } from '@zapfy/db';
-import { createLogger } from '@zapfy/shared';
+import { assertSafeUrl, createLogger, SsrfError } from '@zapfy/shared';
 
 import { enqueue, QUEUE_NAMES, type OutgoingWebhookJob } from '@/lib/queues';
 
@@ -98,6 +98,17 @@ async function deliverInline(
   event: string,
 ): Promise<void> {
   try {
+    // Mesmo guard SSRF do worker — o fallback inline não pode ser a porta
+    // de entrada pra rede interna quando o BullMQ está fora.
+    try {
+      await assertSafeUrl(url);
+    } catch (err) {
+      if (err instanceof SsrfError) {
+        log.error({ webhookId, event }, 'SSRF re-check bloqueou webhook inline — não entregue');
+        return;
+      }
+      throw err;
+    }
     const res = await fetch(url, {
       method: 'POST',
       headers: {

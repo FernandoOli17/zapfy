@@ -10,12 +10,14 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 
 const log = createLogger('agent-actions');
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
@@ -77,9 +79,15 @@ export async function rollbackToVersion(input: {
 
 // ─── Test action: simula mensagem inbound contra o agente publicado ─────────
 
+const historyItem = z.object({
+  role: z.enum(['user', 'assistant']),
+  text: z.string().trim().min(1).max(2000),
+});
+
 const testInput = z.object({
   agentId: z.string().cuid(),
   inboundText: z.string().trim().min(1).max(1000),
+  history: z.array(historyItem).max(20).default([]),
 });
 
 export type TestAgentResult =
@@ -110,6 +118,7 @@ export async function testAgent(
 ): Promise<TestAgentResult> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
 
   const parsed = testInput.safeParse(raw);
   if (!parsed.success) {
@@ -183,7 +192,7 @@ export async function testAgent(
       ? await executeFlow({
           systemPrompt: agent.currentVersion.systemPrompt,
           vertical: agent.vertical,
-          messageHistory: [],
+          messageHistory: parsed.data.history,
           inboundText: parsed.data.inboundText,
           ragChunks,
           globalDeps: stubDeps,
@@ -197,7 +206,7 @@ export async function testAgent(
       : await runAgent({
           systemPrompt: agent.currentVersion.systemPrompt,
           vertical: agent.vertical,
-          messageHistory: [],
+          messageHistory: parsed.data.history,
           inboundText: parsed.data.inboundText,
           ragChunks,
           globalDeps: stubDeps,
@@ -217,6 +226,28 @@ export async function testAgent(
       },
       'test agent run',
     );
+
+    // Marca o passo 2 do onboarding (estado derivado — ver lib/onboarding.ts).
+    // Grava só uma vez por workspace; falha aqui não derruba o teste.
+    try {
+      const already = await prisma.auditLog.findFirst({
+        where: { workspaceId: member.workspaceId, action: 'agent.test' },
+        select: { id: true },
+      });
+      if (!already) {
+        await prisma.auditLog.create({
+          data: {
+            workspaceId: member.workspaceId,
+            userId: session.user.id,
+            action: 'agent.test',
+            targetType: 'Agent',
+            targetId: agent.id,
+          },
+        });
+      }
+    } catch (err) {
+      log.warn({ err: String(err) }, 'auditLog agent.test falhou — passo não marcado');
+    }
 
     return {
       status: 'ok',

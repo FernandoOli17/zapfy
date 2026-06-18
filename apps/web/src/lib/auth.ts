@@ -35,10 +35,12 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }) => {
       if (!isEmailConfigured()) {
-        log.info({ email: user.email, url }, '🔑 Reset password (dev) — sem RESEND_API_KEY');
+        // Em produção, lança ANTES de logar: a URL carrega token one-click e
+        // email é PII — não podem ir pro log estruturado (lei: sem PII em log).
         if (env.NODE_ENV === 'production') {
           throw new Error('RESEND_API_KEY não configurada em produção');
         }
+        log.info({ email: user.email, url }, '🔑 Reset password (dev) — sem RESEND_API_KEY');
         return;
       }
       const tmpl = passwordResetEmail({ url, email: user.email });
@@ -59,11 +61,12 @@ export const auth = betterAuth({
     magicLink({
       sendMagicLink: async ({ email, url }) => {
         if (!isEmailConfigured()) {
-          // Em dev, log no console pro user clicar.
-          log.info({ email, url }, '🔗 Magic link (dev) — sem RESEND_API_KEY');
+          // Produção lança ANTES de logar (URL = token de login one-click).
           if (env.NODE_ENV === 'production') {
             throw new Error('RESEND_API_KEY não configurada em produção');
           }
+          // Em dev, log no console pro user clicar.
+          log.info({ email, url }, '🔗 Magic link (dev) — sem RESEND_API_KEY');
           return;
         }
         const tmpl = magicLinkEmail({ url, email });
@@ -101,11 +104,26 @@ export const auth = betterAuth({
             const ip = session.ipAddress ?? '0.0.0.0';
             const ua = session.userAgent ?? 'unknown';
 
-            // Primeira sessão do user → marca como conhecido sem prompt
-            const prevSessions = await prisma.session.count({
-              where: { userId: session.userId, id: { not: session.id } },
+            // Já viu esse device? passa direto.
+            if (await isKnownDevice({ userId: session.userId, ipAddress: ip, userAgent: ua })) {
+              return;
+            }
+
+            const user = await prisma.user.findUnique({
+              where: { id: session.userId },
+              select: { email: true, name: true, createdAt: true },
             });
-            if (prevSessions === 0) {
+            if (!user) return;
+
+            // "Primeiro device" = signup DE VERDADE: zero devices conhecidos E
+            // conta recém-criada. O proxy antigo (zero outras sessões) tratava
+            // qualquer user deslogado de tudo como signup — atacante com senha
+            // vazada era registrado como device confiável sem verificação.
+            const knownDevices = await prisma.knownDevice.count({
+              where: { userId: session.userId },
+            });
+            const accountAgeMs = Date.now() - user.createdAt.getTime();
+            if (knownDevices === 0 && accountAgeMs < 10 * 60_000) {
               await registerKnownDevice({
                 userId: session.userId,
                 ipAddress: ip,
@@ -115,18 +133,11 @@ export const auth = betterAuth({
               return;
             }
 
-            // Já viu esse device? passa direto.
-            if (await isKnownDevice({ userId: session.userId, ipAddress: ip, userAgent: ua })) {
-              return;
-            }
-
-            // Device novo — dispara verificação por email
-            const user = await prisma.user.findUnique({
-              where: { id: session.userId },
-              select: { email: true, name: true },
-            });
-            if (!user) return;
-
+            // Device novo — dispara verificação por email. Se isso falhar, a
+            // sessão fica sem registro de verificação pendente: o gate central
+            // não teria o que bloquear e o atacante entraria (fail-open,
+            // AU-A6). Fail-closed: destrói a sessão recém-criada e força
+            // re-login (que tentará criar a verificação de novo).
             await createDeviceVerification({
               userId: session.userId,
               email: user.email,
@@ -138,11 +149,20 @@ export const auth = betterAuth({
               appUrl: env.BETTER_AUTH_URL,
             });
           } catch (err) {
-            // Não falha login se a verificação não rolar — só loga
             log.error(
               { err: String(err), userId: session.userId },
-              'falha disparar verificação de device',
+              'falha disparar verificação de device — destruindo sessão (fail-closed)',
             );
+            try {
+              await prisma.session.deleteMany({
+                where: { token: session.token, userId: session.userId },
+              });
+            } catch (delErr) {
+              log.error(
+                { err: String(delErr), userId: session.userId },
+                'falha destruir sessão após erro de verificação de device',
+              );
+            }
           }
         },
       },

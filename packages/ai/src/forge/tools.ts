@@ -33,8 +33,13 @@ export interface ForgeToolDeps {
   getAnswersSnapshot: () => ForgeAnswers;
   /** Append em answers.knowledge. */
   appendKnowledge: (item: KnowledgeItem) => void;
-  /** Anota intenção de mudar de fase. Engine confirma no fim do step. */
-  setNextPhase: (phase: ForgePhaseId) => void;
+  /**
+   * Anota intenção de mudar de fase. A engine valida a transição contra a fase
+   * atual + answers vivos e devolve o resultado: `ok:false` quando a transição
+   * é ilegal ou faltam pré-requisitos (ex.: PUBLISH sem systemPromptDraft). A
+   * tool repassa o motivo pro LLM em vez de mentir que avançou.
+   */
+  setNextPhase: (phase: ForgePhaseId) => { ok: true } | { ok: false; reason: string };
   /**
    * IO: faz fetch da URL e retorna título + texto extraído (ok=true), ou
    * razão da falha (ok=false). NUNCA retorna mensagem de erro como excerpt
@@ -226,8 +231,11 @@ export function createForgeTools(deps: ForgeToolDeps): Record<string, Tool> {
         to: z.enum(FORGE_PHASE_IDS),
       }),
       execute: async ({ to }) => {
-        deps.setNextPhase(to);
-        return { ok: true, newPhase: to };
+        const result = deps.setNextPhase(to);
+        if (!result.ok) {
+          return { ok: false as const, error: result.reason };
+        }
+        return { ok: true as const, newPhase: to };
       },
     }),
 

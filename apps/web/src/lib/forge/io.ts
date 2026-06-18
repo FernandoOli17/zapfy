@@ -169,16 +169,18 @@ export async function publishAgentVersionIo(
       data: { currentVersionId: version.id },
     });
 
-    // Dispatch outside the tx callback (best-effort) via setImmediate
+    return { agentId: agent.id, versionNumber };
+  }).then((result) => {
+    // Dispatch SÓ depois do commit: dentro da tx, um rollback posterior já
+    // teria avisado sistemas externos de um agentId/versão que não existem.
     void dispatchOutgoingEvent(workspaceId, 'agent.published', {
-      agentId: agent.id,
+      agentId: result.agentId,
       agentName,
-      versionNumber,
+      versionNumber: result.versionNumber,
       vertical,
       forgeSessionId,
       ...(userId ? { publishedByUserId: userId } : {}),
     });
-
-    return { agentId: agent.id, versionNumber };
+    return result;
   });
 }

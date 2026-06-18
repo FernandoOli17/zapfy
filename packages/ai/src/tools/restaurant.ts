@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma, OrderStatus, type Prisma } from '@zapfy/db';
 import { createLogger } from '@zapfy/shared';
 import type { VerticalRuntimeDeps } from './runtime/types';
+import { createWithRetry, orderNumberDelegate } from './public-number';
 
 const log = createLogger('tools:restaurant');
 
@@ -179,33 +180,38 @@ export function buildRestaurantTools(deps: VerticalRuntimeDeps): Record<string, 
           return { ok: false as const, error: 'carrinho vazio — adicione itens antes de finalizar' };
         }
         const subtotalCents = cart.items.reduce((acc, i) => acc + i.priceCents * i.qty, 0);
-        const publicNumber = await genPublicNumber(deps.workspaceId, 'PED');
 
-        const order = await prisma.order.create({
-          data: {
-            workspaceId: deps.workspaceId,
-            contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
-            conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
-            publicNumber,
-            status: OrderStatus.CONFIRMED,
-            subtotalCents,
-            totalCents: subtotalCents,
-            paymentMethod,
-            shippingAddress: shippingAddress as unknown as Prisma.InputJsonValue,
-            etaMinutes,
-            ...(notes ? { notes } : {}),
-            items: {
-              create: cart.items.map((i) => ({
-                productId: i.productId,
-                nameSnapshot: i.name,
-                unitPriceCents: i.priceCents,
-                quantity: i.qty,
-                ...(i.notes ? { notes: i.notes } : {}),
-              })),
-            },
-          },
-          select: { publicNumber: true, totalCents: true, etaMinutes: true },
-        });
+        const order = await createWithRetry(
+          'PED',
+          deps.workspaceId,
+          (publicNumber) =>
+            prisma.order.create({
+              data: {
+                workspaceId: deps.workspaceId,
+                contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
+                conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
+                publicNumber,
+                status: OrderStatus.CONFIRMED,
+                subtotalCents,
+                totalCents: subtotalCents,
+                paymentMethod,
+                shippingAddress: shippingAddress as unknown as Prisma.InputJsonValue,
+                etaMinutes,
+                ...(notes ? { notes } : {}),
+                items: {
+                  create: cart.items.map((i) => ({
+                    productId: i.productId,
+                    nameSnapshot: i.name,
+                    unitPriceCents: i.priceCents,
+                    quantity: i.qty,
+                    ...(i.notes ? { notes: i.notes } : {}),
+                  })),
+                },
+              },
+              select: { publicNumber: true, totalCents: true, etaMinutes: true },
+            }),
+          orderNumberDelegate,
+        );
 
         // TODO(credentials): notificar PDV/iFood/Rappi via webhook configurado
         await clearCart(deps.conversationId);
@@ -262,14 +268,6 @@ export function buildRestaurantTools(deps: VerticalRuntimeDeps): Record<string, 
       },
     }),
   };
-}
-
-async function genPublicNumber(workspaceId: string, prefix: string): Promise<string> {
-  // Conta orders existentes + 1. Não é monotonic-perfeito sob concorrência;
-  // se houver race, prisma.create vai dar P2002 (unique [workspaceId, publicNumber])
-  // e chamar de novo com +1. Mantém simples — volume baixo no MVP.
-  const count = await prisma.order.count({ where: { workspaceId } });
-  return `${prefix}-${(count + 1).toString().padStart(4, '0')}`;
 }
 
 function formatBrl(cents: number): string {

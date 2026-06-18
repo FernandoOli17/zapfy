@@ -9,12 +9,14 @@ import { createLogger, phoneE164Schema } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 
 const log = createLogger('contacts-import');
 
 async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },

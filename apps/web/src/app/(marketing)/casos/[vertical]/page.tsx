@@ -229,11 +229,12 @@ function Cta() {
     <section className="border-t border-border/60 py-20 md:py-28">
       <div className="mx-auto max-w-4xl px-6 text-center">
         <h2 className="text-4xl font-medium tracking-tight md:text-6xl">
-          7 dias grátis pra ver{' '}
+          Monte de graça pra ver{' '}
           <span className="font-serif italic font-normal text-primary">se funciona pra você.</span>
         </h2>
         <p className="mt-5 text-lg text-muted-foreground md:text-xl">
-          Sem cartão. Sem ligação. Conversa com o Forge, publica o agente, conecta o WhatsApp.
+          Sem cartão pra montar, sem ligação. Conversa com o Forge, vê funcionando e assina pra
+          publicar — com garantia de 7 dias.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Button asChild size="lg" className="h-12 px-6 text-base">

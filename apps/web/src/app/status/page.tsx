@@ -6,8 +6,8 @@ import type { StatusComponent } from '@zapfy/db';
 import { runStatusChecks, type ComponentStatus } from '@/lib/status-checks';
 
 export const metadata = {
-  title: 'Status — Trato',
-  description: 'Status de uptime do Trato em tempo real',
+  title: 'Status — Zapfy',
+  description: 'Status de uptime do Zapfy em tempo real',
 };
 export const dynamic = 'force-dynamic';
 export const revalidate = 30; // cache 30s pra não bater DB a cada hit
@@ -64,9 +64,9 @@ export default async function StatusPage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 md:px-6">
           <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-4 w-4" />
-            <span className="font-semibold tracking-tight">Trato</span>
+            <span className="font-semibold tracking-tight">Zapfy</span>
           </Link>
-          <p className="font-mono text-xs text-muted-foreground">status.trato.dev</p>
+          <p className="font-mono text-xs text-muted-foreground">status.zapfy.store</p>
         </div>
       </header>
 

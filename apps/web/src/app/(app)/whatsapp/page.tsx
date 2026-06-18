@@ -16,6 +16,7 @@ import { auth } from '@/lib/auth';
 import { env } from '@/env';
 
 import { ConnectForm } from './connect-form';
+import { MetaGuide } from './meta-guide';
 import { AccountActions } from './account-actions';
 import { CopyButton } from './copy-button';
 import { TestInboundCard } from './test-inbound';
@@ -29,6 +30,9 @@ export default async function WhatsAppPage() {
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
+    // Mesmo orderBy das actions deste fluxo: user multi-workspace via convite
+    // via uma lista e as ações operavam noutro workspace sem isto.
+    orderBy: { createdAt: 'asc' },
   });
   if (!member) redirect('/onboarding');
 
@@ -74,13 +78,16 @@ export default async function WhatsAppPage() {
         </section>
       )}
 
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold tracking-tight">
-          {accounts.length > 0 ? 'Adicionar outro número' : 'Conectar primeiro número'}
-        </h2>
-        <div className="mt-3 rounded-xl border border-border bg-card p-6 md:p-8">
-          <ConnectForm />
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">
+            {accounts.length > 0 ? 'Adicionar outro número' : 'Conectar primeiro número'}
+          </h2>
+          <div className="mt-3 rounded-xl border border-border bg-card p-6 md:p-8">
+            <ConnectForm />
+          </div>
         </div>
+        <MetaGuide />
       </section>
 
       <Instructions appUrl={env.NEXT_PUBLIC_APP_URL} />

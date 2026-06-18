@@ -1,16 +1,33 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@zapfy/ui';
 
 import { signIn, signUp } from '@/lib/auth-client';
 
+// Mesma sanitização do LoginForm: só caminho relativo interno, sem controle.
+function sanitizeNext(raw: string | null): string {
+  if (!raw) return '/onboarding';
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) {
+    return '/onboarding';
+  }
+  for (let i = 0; i < raw.length; i++) {
+    if (raw.charCodeAt(i) < 32) return '/onboarding';
+  }
+  return raw;
+}
+
 export function SignupForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  // Convite manda /signup?email=<email>&next=/invite/<token> — sem honrar os
+  // dois, o convidado caía no onboarding e criava workspace próprio em vez de
+  // entrar no time.
+  const nextPath = sanitizeNext(params.get('next'));
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(params.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,38 +42,21 @@ export function SignupForm() {
         email,
         password,
         name,
-        callbackURL: '/onboarding',
+        callbackURL: nextPath,
       });
       if (res.error) {
-        const errAny = res.error as Record<string, unknown>;
-        console.error('[signup] error from better-auth', {
-          raw: errAny,
-          stringified: JSON.stringify(errAny),
-          status: errAny['status'],
-          statusText: errAny['statusText'],
-          message: errAny['message'],
-          code: errAny['code'],
-        });
-
-        // Se nao veio mensagem, da probe pra ler o body bruto da rota
-        if (!errAny['message']) {
-          const diag = await probeAuthSignup({ email, password, name });
-          setError(diag);
-          setBusy(false);
-          return;
-        }
-
-        setError(String(errAny['message']));
+        console.error('[signup] error from better-auth', res.error);
+        // Sem probe de diagnóstico: re-POSTar o signup tinha efeito real
+        // (podia criar a conta enquanto a UI mostrava erro).
+        const msg = res.error.message;
+        setError(msg ? String(msg) : 'Não consegui criar sua conta. Tenta de novo em instantes.');
         setBusy(false);
         return;
       }
-      router.push('/onboarding');
+      router.push(nextPath);
     } catch (err) {
       console.error('[signup] unexpected exception', err);
-      const msg = err instanceof Error ? err.message : 'Erro inesperado';
-      setError(
-        `${msg}. Verifique se o banco está rodando ('docker compose up -d') e migrado ('pnpm db:push').`,
-      );
+      setError('Não consegui criar sua conta. Tenta de novo em instantes.');
       setBusy(false);
     }
   }
@@ -64,7 +64,7 @@ export function SignupForm() {
   async function handleGoogle() {
     setError(null);
     try {
-      await signIn.social({ provider: 'google', callbackURL: '/onboarding' });
+      await signIn.social({ provider: 'google', callbackURL: nextPath });
     } catch (err) {
       console.error('[signup] google error', err);
       setError('Falha ao iniciar login com Google');
@@ -161,71 +161,6 @@ export function SignupForm() {
       </p>
     </div>
   );
-}
-
-async function probeAuthSignup(payload: {
-  email: string;
-  password: string;
-  name: string;
-}): Promise<string> {
-  try {
-    const res = await fetch('/api/auth/sign-up/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      cache: 'no-store',
-    });
-    const ct = res.headers.get('content-type') ?? '';
-    const text = await res.text();
-    console.error('[signup] probe /api/auth/sign-up/email', {
-      status: res.status,
-      statusText: res.statusText,
-      contentType: ct,
-      bodyPreview: text.slice(0, 2000),
-    });
-
-    // Tenta parsear JSON e pescar mensagem
-    let bodyJson: Record<string, unknown> | null = null;
-    try {
-      bodyJson = JSON.parse(text);
-    } catch {
-      // nao era JSON
-    }
-    const jsonMsg =
-      (bodyJson?.['message'] as string | undefined) ??
-      (typeof bodyJson?.['error'] === 'string' ? (bodyJson['error'] as string) : undefined) ??
-      ((bodyJson?.['error'] as { message?: string } | undefined)?.message);
-
-    // Padroes conhecidos no body
-    const lowered = text.toLowerCase();
-    if (lowered.includes('does not exist') || lowered.includes('p2021')) {
-      return 'Tabelas do banco ainda não existem. Rode `pnpm db:push` no terminal (Postgres precisa estar rodando: `docker compose up -d`).';
-    }
-    if (lowered.includes('econnrefused') || lowered.includes("can't reach database")) {
-      return 'Postgres não está respondendo. Rode `docker compose up -d` e confirma com `docker ps`.';
-    }
-    if (lowered.includes('already exists') || lowered.includes('user_exists') || lowered.includes('email_taken')) {
-      return 'E-mail já cadastrado. Tente entrar em vez de criar conta.';
-    }
-    if (lowered.includes('encryption_key') || lowered.includes('better_auth_secret')) {
-      return 'Falta variável de ambiente no .env. Confira BETTER_AUTH_SECRET e ENCRYPTION_KEY.';
-    }
-
-    if (jsonMsg) {
-      return jsonMsg;
-    }
-
-    if (res.status >= 500) {
-      return `Erro ${res.status} no servidor. Veja o terminal do \`pnpm dev\` pro stack trace. Body: ${text.slice(0, 200) || 'vazio'}`;
-    }
-    if (res.status === 422 || res.status === 400) {
-      return `Dados inválidos (${res.status}). Body: ${text.slice(0, 200) || 'vazio'}`;
-    }
-    return `Resposta ${res.status} sem mensagem. Body: ${text.slice(0, 200) || 'vazio'}`;
-  } catch (err) {
-    console.error('[signup] probe failed', err);
-    return `Sem conexão com a rota de auth: ${err instanceof Error ? err.message : 'desconhecido'}. O \`pnpm dev\` está rodando?`;
-  }
 }
 
 function GoogleIcon({ className }: { className?: string }) {

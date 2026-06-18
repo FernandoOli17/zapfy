@@ -27,16 +27,31 @@ function sanitizeNext(raw: string | null): string {
   return raw;
 }
 
+// Mensagens pros erros que /api/auth/revoke-device redireciona pra cá —
+// sem isto a vítima clicava "bloquear esse acesso" e caía num login mudo.
+function bannerFromErrorParam(error: string | null): string | null {
+  if (!error) return null;
+  if (error === 'missing-token') return 'Link de bloqueio inválido (sem token). Tenta abrir de novo a partir do e-mail.';
+  if (error === 'revoke-expired') {
+    return 'O link de bloqueio expirou. Se não foi você, troque sua senha agora em "Esqueci minha senha".';
+  }
+  if (error.startsWith('revoke-')) {
+    return 'Não foi possível bloquear o acesso por este link. Se não foi você, troque sua senha agora.';
+  }
+  return null;
+}
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const nextPath = sanitizeNext(params.get('next'));
+  const banner = bannerFromErrorParam(params.get('error'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [magicBusy, setMagicBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(banner);
   const [magicSent, setMagicSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {

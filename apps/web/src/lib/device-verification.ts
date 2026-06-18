@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 
+import { redirect } from 'next/navigation';
 import { prisma } from '@zapfy/db';
 import { createLogger, hashPii } from '@zapfy/shared';
 
@@ -13,6 +14,13 @@ const log = createLogger('device-verification');
 
 /** Janela em que um código permanece válido. */
 const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutos
+/**
+ * Janela em que o link "não fui eu" (revogação) continua válido. TTL próprio,
+ * bem maior que o do código: o usuário legítimo pode demorar pra abrir o email
+ * e clicar — mas a revogação SEMPRE deve poder destruir a sessão do atacante,
+ * mesmo depois do código expirar.
+ */
+const REVOKE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 /** Comprimento do código em dígitos. */
 const CODE_LENGTH = 6;
 
@@ -148,8 +156,57 @@ export async function registerKnownDevice(input: {
 }
 
 /**
+ * Monta e dispara o e-mail de verificação de device. `sendEmail` nunca lança
+ * (captura interna e retorna `{ ok }`), então o caller só checa o booleano.
+ */
+async function sendVerificationEmail(input: {
+  userId: string;
+  email: string;
+  name: string | null;
+  ipAddress: string;
+  userAgent: string;
+  location: string | null;
+  appUrl: string;
+  code: string;
+  verifyToken: string;
+  revokeToken: string;
+}): Promise<{ ok: boolean }> {
+  const appUrl = input.appUrl.replace(/\/$/, '');
+  const tmpl = newDeviceVerificationEmail({
+    name: input.name ?? input.email.split('@')[0] ?? 'usuário',
+    ip: input.ipAddress,
+    ...(input.location ? { location: input.location } : {}),
+    device: describeDevice(input.userAgent, input.location),
+    timestampLabel: new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    }),
+    verifyUrl: `${appUrl}/verify-device?token=${input.verifyToken}`,
+    code: input.code,
+    revokeUrl: `${appUrl}/api/auth/revoke-device?token=${input.revokeToken}`,
+  });
+  const result = await sendEmail({
+    to: input.email,
+    subject: tmpl.subject,
+    html: tmpl.html,
+    text: tmpl.text,
+  });
+  if (!result.ok) {
+    log.error({ userId: input.userId, err: result.error }, 'e-mail verify-device NÃO enviado');
+  }
+  return { ok: result.ok };
+}
+
+/**
  * Cria uma verificação de dispositivo e dispara o email pro user.
- * Retorna { verifyToken, code } pro caller. `revokeToken` fica salvo no DB.
+ * Retorna { verifyToken, code, emailSent } pro caller. `revokeToken` fica salvo
+ * no DB. `emailSent` deixa o caller decidir UX (ex.: avisar pra usar reenvio),
+ * mas o bloqueio NÃO depende do email ter saído — a verificação pendente já
+ * trava a sessão (fail-closed).
  */
 export async function createDeviceVerification(input: {
   userId: string;
@@ -160,7 +217,7 @@ export async function createDeviceVerification(input: {
   userAgent: string;
   location: string | null;
   appUrl: string;
-}): Promise<{ verifyToken: string; code: string }> {
+}): Promise<{ verifyToken: string; code: string; emailSent: boolean }> {
   // Código humano: 6 dígitos com leading zeros preservados.
   const code = randomInt(0, 1_000_000).toString().padStart(CODE_LENGTH, '0');
   const verifyToken = randomBytes(32).toString('hex');
@@ -182,42 +239,67 @@ export async function createDeviceVerification(input: {
     },
   });
 
-  const appUrl = input.appUrl.replace(/\/$/, '');
-  const tmpl = newDeviceVerificationEmail({
-    name: input.name ?? input.email.split('@')[0] ?? 'usuário',
-    ip: input.ipAddress,
-    ...(input.location ? { location: input.location } : {}),
-    device: describeDevice(input.userAgent, input.location),
-    timestampLabel: new Date().toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    }),
-    verifyUrl: `${appUrl}/verify-device?token=${verifyToken}`,
+  const sent = await sendVerificationEmail({
+    userId: input.userId,
+    email: input.email,
+    name: input.name,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    location: input.location,
+    appUrl: input.appUrl,
     code,
-    revokeUrl: `${appUrl}/api/auth/revoke-device?token=${revokeToken}`,
+    verifyToken,
+    revokeToken,
   });
 
-  try {
-    await sendEmail({
-      to: input.email,
-      subject: tmpl.subject,
-      html: tmpl.html,
-      text: tmpl.text,
-    });
-  } catch (err) {
-    log.warn({ err: String(err), userId: input.userId }, 'falha enviar email verify-device');
-  }
-
   log.info(
-    { userId: input.userId, ipHash: hashIp(input.ipAddress) },
+    { userId: input.userId, ipHash: hashIp(input.ipAddress), emailSent: sent.ok },
     'verificação de device criada',
   );
 
-  return { verifyToken, code };
+  return { verifyToken, code, emailSent: sent.ok };
+}
+
+/**
+ * Reenvia o código pra verificação PENDENTE da sessão: regenera código e
+ * estende o TTL (não cria registro novo — verifyToken/revokeToken preservados).
+ */
+export async function resendDeviceVerification(
+  sessionToken: string,
+  appUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const pending = await prisma.deviceVerification.findFirst({
+    where: { sessionToken, verifiedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!pending) return { ok: false, error: 'Nenhuma verificação pendente.' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: pending.userId },
+    select: { email: true, name: true },
+  });
+  if (!user) return { ok: false, error: 'Usuário não encontrado.' };
+
+  const code = randomInt(0, 1_000_000).toString().padStart(CODE_LENGTH, '0');
+  await prisma.deviceVerification.update({
+    where: { id: pending.id },
+    data: { codeHash: hashCode(code), expiresAt: new Date(Date.now() + CODE_TTL_MS) },
+  });
+
+  const sent = await sendVerificationEmail({
+    userId: pending.userId,
+    email: user.email,
+    name: user.name,
+    ipAddress: pending.ipAddress,
+    userAgent: pending.userAgent,
+    location: pending.location,
+    appUrl,
+    code,
+    verifyToken: pending.verifyToken,
+    revokeToken: pending.revokeToken,
+  });
+  if (!sent.ok) return { ok: false, error: 'Falha ao enviar o e-mail. Tenta de novo em instantes.' };
+  return { ok: true };
 }
 
 /**
@@ -314,7 +396,12 @@ export async function revokeDeviceVerificationByToken(token: string): Promise<
   });
   if (!v) return { ok: false, reason: 'not-found' };
   if (v.revokedAt) return { ok: false, reason: 'already-used' };
-  if (v.expiresAt.getTime() < Date.now()) return { ok: false, reason: 'expired' };
+  // NÃO usa `expiresAt` (TTL do código, 10min) — a revogação tem janela
+  // própria de 7 dias. Código expirado mas verificação ainda não confirmada =
+  // sessão do atacante segue viva, então "não fui eu" PRECISA destruí-la.
+  if (Date.now() - v.createdAt.getTime() > REVOKE_TTL_MS) {
+    return { ok: false, reason: 'expired' };
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.deviceVerification.update({
@@ -334,23 +421,44 @@ export async function revokeDeviceVerificationByToken(token: string): Promise<
 
 /**
  * Retorna a verificação pendente mais recente pra essa sessão, se houver.
- * Usado pelo middleware/guard pra detectar "user tem que verificar antes
- * de seguir usando o app".
+ * Usado pelo guard/gate pra detectar "user tem que verificar antes de seguir
+ * usando o app".
+ *
+ * FAIL-CLOSED: NÃO filtra por `expiresAt`. Uma verificação criada, nunca
+ * confirmada e nunca revogada continua BLOQUEANDO mesmo depois do código
+ * expirar — senão o atacante só esperaria 10min pra o gate liberar a sessão
+ * de 30 dias (AU-A1). O flag `expired` deixa a UI oferecer reenvio (TTL do
+ * código acabou) em vez de bloquear de vez.
  */
 export async function pendingVerificationForSession(input: {
   userId: string;
   sessionToken: string;
-}): Promise<{ id: string; expiresAt: Date } | null> {
+}): Promise<{ id: string; expiresAt: Date; expired: boolean } | null> {
   const v = await prisma.deviceVerification.findFirst({
     where: {
       userId: input.userId,
       sessionToken: input.sessionToken,
       verifiedAt: null,
       revokedAt: null,
-      expiresAt: { gt: new Date() },
     },
     select: { id: true, expiresAt: true },
     orderBy: { createdAt: 'desc' },
   });
-  return v;
+  if (!v) return null;
+  return { id: v.id, expiresAt: v.expiresAt, expired: v.expiresAt.getTime() < Date.now() };
+}
+
+/**
+ * Guard fail-closed pra ser chamado por QUALQUER boundary autenticado (server
+ * action, route handler, page) que não passe pelo `requireWorkspace` central.
+ * Se a sessão tem uma verificação de device pendente (mesmo expirada e nunca
+ * confirmada), redireciona pra /verify-device em vez de deixar a mutação rodar
+ * (AU-A3). `redirect` lança `NEXT_REDIRECT` — o caller não continua.
+ */
+export async function enforceDeviceVerified(input: {
+  userId: string;
+  sessionToken: string;
+}): Promise<void> {
+  const pending = await pendingVerificationForSession(input);
+  if (pending) redirect('/verify-device');
 }

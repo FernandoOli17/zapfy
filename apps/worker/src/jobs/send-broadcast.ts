@@ -18,10 +18,13 @@ export interface SendBroadcastJob {
   recipientId: string; // Contact.id
 }
 
-export async function processSendBroadcast(data: SendBroadcastJob): Promise<void> {
+export async function processSendBroadcast(
+  data: SendBroadcastJob,
+  opts: { isFinalAttempt?: boolean } = {},
+): Promise<void> {
   const { workspaceId, broadcastId, recipientId } = data;
 
-  const [broadcast, contact] = await Promise.all([
+  const [broadcast, contact, recipient] = await Promise.all([
     prisma.broadcast.findUnique({
       where: { id: broadcastId },
       include: {
@@ -32,20 +35,34 @@ export async function processSendBroadcast(data: SendBroadcastJob): Promise<void
       },
     }),
     prisma.contact.findUnique({ where: { id: recipientId } }),
+    prisma.broadcastRecipient.findFirst({ where: { broadcastId, contactId: recipientId } }),
   ]);
 
-  if (!broadcast || !contact) {
+  if (!broadcast || !contact || !recipient) {
     log.warn({ broadcastId, recipientId }, 'broadcast ou destinatário não encontrado');
+    return;
+  }
+
+  // Idempotência de retry: SENT/SKIPPED são estados finais — retry depois de
+  // falha pós-envio (persistência de inbox, etc.) NÃO pode reenviar o template.
+  // FAILED segue adiante de propósito: é o caminho de retry de falha de envio.
+  if (
+    recipient.status === BroadcastRecipientStatus.SENT ||
+    recipient.status === BroadcastRecipientStatus.SKIPPED
+  ) {
+    log.info({ broadcastId, recipientId, status: recipient.status }, 'recipient já finalizado — ignorando retry');
     return;
   }
 
   if (broadcast.status === BroadcastStatus.CANCELED) {
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.SKIPPED);
+    await maybeCompleteBroadcast(broadcastId);
     return;
   }
 
   if (contact.optedOut || contact.deletedAt) {
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.SKIPPED);
+    await maybeCompleteBroadcast(broadcastId);
     return;
   }
 
@@ -53,12 +70,14 @@ export async function processSendBroadcast(data: SendBroadcastJob): Promise<void
   if (!waAccount) {
     log.warn({ workspaceId }, 'sem conta WA conectada pra broadcast');
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.FAILED);
+    await maybeCompleteBroadcast(broadcastId);
     return;
   }
 
   if (broadcast.template.status !== 'APPROVED') {
     log.warn({ broadcastId }, 'template não aprovado pela Meta');
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.FAILED);
+    await maybeCompleteBroadcast(broadcastId);
     return;
   }
 
@@ -68,6 +87,7 @@ export async function processSendBroadcast(data: SendBroadcastJob): Promise<void
   } catch (err) {
     log.error({ err: String(err) }, 'falha ao decifrar access token');
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.FAILED);
+    await maybeCompleteBroadcast(broadcastId);
     return;
   }
 
@@ -104,47 +124,120 @@ export async function processSendBroadcast(data: SendBroadcastJob): Promise<void
   } catch (err) {
     log.error({ broadcastId, recipientId, err: String(err) }, 'envio falhou');
     await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.FAILED, String(err));
-    throw err; // BullMQ vai fazer retry
+    // No último attempt ninguém mais vai rodar o completion check deste
+    // recipient — fecha o broadcast aqui pra ele não ficar RUNNING eterno.
+    if (opts.isFinalAttempt) await maybeCompleteBroadcast(broadcastId);
+    throw err; // BullMQ vai fazer retry (attempts restantes)
   }
 
-  // Persistir mensagem no inbox
-  const conversation = await prisma.conversation.findFirst({
-    where: { workspaceId, contactId: recipientId, status: { not: 'CLOSED' } },
-  }) ?? await prisma.conversation.create({
-    data: { workspaceId, contactId: recipientId },
-  });
-
-  const bodyText = bodyComponent?.text ?? `[template: ${broadcast.template.name}]`;
-
-  await prisma.message.create({
-    data: {
-      workspaceId,
-      conversationId: conversation.id,
-      contactId: recipientId,
-      direction: MessageDirection.OUTBOUND,
-      type: MessageType.TEXT,
-      content: { text: bodyText },
-      status: MessageStatus.SENT,
-      fromAi: false,
-      ...(waMessageId ? { whatsappMessageId: waMessageId } : {}),
-    },
-  });
-
+  // Envio confirmado: marca SENT IMEDIATAMENTE (antes do inbox) — se qualquer
+  // passo seguinte falhar, o retry encontra SENT e não reenvia o template.
   await markRecipient(broadcastId, recipientId, BroadcastRecipientStatus.SENT, undefined, waMessageId);
+
+  // Persistir mensagem no inbox. Falha aqui não pode re-lançar: o envio já
+  // aconteceu e o retry seria no-op (SENT) — loga alto e segue pro completion.
+  try {
+    const conversation = await prisma.conversation.findFirst({
+      where: { workspaceId, contactId: recipientId, status: { not: 'CLOSED' } },
+    }) ?? await prisma.conversation.create({
+      data: { workspaceId, contactId: recipientId },
+    });
+
+    const bodyText = bodyComponent?.text ?? `[template: ${broadcast.template.name}]`;
+
+    await prisma.message.create({
+      data: {
+        workspaceId,
+        conversationId: conversation.id,
+        contactId: recipientId,
+        direction: MessageDirection.OUTBOUND,
+        type: MessageType.TEXT,
+        content: { text: bodyText },
+        status: MessageStatus.SENT,
+        fromAi: false,
+        ...(waMessageId ? { whatsappMessageId: waMessageId } : {}),
+      },
+    });
+  } catch (err) {
+    log.error(
+      { broadcastId, recipientId, err: String(err) },
+      'template enviado mas persistência no inbox falhou — mensagem não aparece na conversa',
+    );
+  }
 
   log.info({ broadcastId, recipientId }, 'broadcast enviado');
 
-  // Check completion: se não restam mais PENDING, marca broadcast como COMPLETED
+  await maybeCompleteBroadcast(broadcastId);
+}
+
+/**
+ * Fecha o broadcast quando não resta nenhum recipient PENDING. Roda em TODOS os
+ * caminhos terminais (SENT/SKIPPED/FAILED final) — antes só rodava no sucesso e
+ * um último recipient falho deixava o broadcast RUNNING pra sempre na UI.
+ * `updateMany` condicionado ao status preserva CANCELED/COMPLETED.
+ */
+async function maybeCompleteBroadcast(broadcastId: string): Promise<void> {
   const remaining = await prisma.broadcastRecipient.count({
     where: { broadcastId, status: BroadcastRecipientStatus.PENDING },
   });
-  if (remaining === 0) {
-    await prisma.broadcast.update({
-      where: { id: broadcastId },
-      data: { status: BroadcastStatus.COMPLETED, finishedAt: new Date() },
-    });
-    log.info({ broadcastId }, 'broadcast completed');
-  }
+  if (remaining > 0) return;
+
+  // Settle idempotente reivindicado por `finishedAt` (null→now): cobre tanto o
+  // fechamento normal (RUNNING→COMPLETED) quanto o cancelamento (CANCELED). Só
+  // um caller — o último worker a drenar OU o cancel — vence o claim e estorna,
+  // contando o estado FINAL: um envio que já virou SENT NÃO é estornado; só
+  // SKIPPED/FAILED. Como o settle só dispara com PENDING===0, nenhum envio em
+  // voo (ainda PENDING) é contado — elimina o over-refund de cancel concorrente.
+  const claimed = await prisma.broadcast.updateMany({
+    where: { id: broadcastId, finishedAt: null },
+    data: { finishedAt: new Date() },
+  });
+  if (claimed.count === 0) return;
+
+  // Marca COMPLETED só se ainda estava em andamento; CANCELED permanece CANCELED.
+  await prisma.broadcast.updateMany({
+    where: {
+      id: broadcastId,
+      status: { in: [BroadcastStatus.RUNNING, BroadcastStatus.SCHEDULED] },
+    },
+    data: { status: BroadcastStatus.COMPLETED },
+  });
+  log.info({ broadcastId }, 'broadcast settled');
+  await refundUndelivered(broadcastId);
+}
+
+/**
+ * Estorna 1 crédito de marketing por destinatário que não recebeu o template
+ * (FAILED/SKIPPED) — conta WA desconectada, template reprovado, opt-out,
+ * cancelado. Só recipients SENT/DELIVERED/READ consumiram envio e seguem
+ * debitados. DEVE ser chamado uma única vez por broadcast, no momento da
+ * transição atômica pro estado terminal.
+ */
+async function refundUndelivered(broadcastId: string): Promise<void> {
+  const broadcast = await prisma.broadcast.findUnique({
+    where: { id: broadcastId },
+    select: { workspaceId: true },
+  });
+  if (!broadcast) return;
+
+  const refundCount = await prisma.broadcastRecipient.count({
+    where: {
+      broadcastId,
+      status: {
+        in: [BroadcastRecipientStatus.FAILED, BroadcastRecipientStatus.SKIPPED],
+      },
+    },
+  });
+  if (refundCount === 0) return;
+
+  await prisma.subscription.updateMany({
+    where: { workspaceId: broadcast.workspaceId },
+    data: { marketingCredits: { increment: refundCount } },
+  });
+  log.info(
+    { broadcastId, workspaceId: broadcast.workspaceId, refundCount },
+    'créditos estornados no fechamento do broadcast',
+  );
 }
 
 async function markRecipient(

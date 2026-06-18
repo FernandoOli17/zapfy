@@ -6,6 +6,7 @@ import { prisma, WorkspaceRole } from '@zapfy/db';
 import { AppError, createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import { verifyInviteToken } from '@/lib/invite-token';
 
 const log = createLogger('invite-accept');
@@ -24,6 +25,8 @@ export async function acceptInviteAction(token: string): Promise<AcceptInviteRes
   if (!session) {
     return { status: 'error', error: 'Você precisa estar logado pra aceitar o convite.' };
   }
+  // Fail-closed: sessão de device pendente verifica antes de virar membro.
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
 
   let payload: ReturnType<typeof verifyInviteToken>;
   try {

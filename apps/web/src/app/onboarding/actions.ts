@@ -7,6 +7,7 @@ import { AppError, createLogger, createWorkspaceSchema } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import { sendEmail } from '@/lib/email/client';
 import { welcomeEmail } from '@/lib/email/templates';
 
@@ -22,6 +23,10 @@ export async function createWorkspaceAction(
   if (!session) {
     redirect('/login');
   }
+  // Fail-closed: sessão de device não-verificado não cria workspace nem vira
+  // OWNER antes de confirmar. Signup de primeiro device é confiável (não fica
+  // pendente), então o cadastro legítimo passa direto.
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
 
   const parsed = createWorkspaceSchema.safeParse({
     name: formData.get('name'),

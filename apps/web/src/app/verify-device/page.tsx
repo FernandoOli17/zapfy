@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { consumeDeviceVerification, pendingVerificationForSession } from '@/lib/device-verification';
 import { VerifyDeviceForm } from './verify-form';
+import { ResendButton } from './resend-button';
 
 export const metadata = { title: 'Verificar acesso' };
 export const dynamic = 'force-dynamic';
@@ -43,33 +44,33 @@ export default async function VerifyDevicePage({ searchParams }: PageProps) {
   const expiresInMin = Math.max(0, Math.ceil((pending.expiresAt.getTime() - Date.now()) / 60_000));
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-6 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-[#1a1a1a] bg-[#111] p-8">
+        <div className="rounded-2xl border border-border bg-card p-8">
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00E676]/10 text-2xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-2xl">
               🔐
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#00E676]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
                 Segurança
               </p>
-              <h1 className="text-xl font-semibold tracking-tight text-white">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">
                 Confirme seu acesso
               </h1>
             </div>
           </div>
 
-          <p className="text-sm leading-relaxed text-[#888]">
-            Detectamos que você está entrando de um <strong className="text-white">dispositivo
-            ou rede novo</strong>. Mandamos um email pra{' '}
-            <strong className="text-white">{session.user.email}</strong> com um código de
-            6 dígitos.
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Detectamos que você está entrando de um{' '}
+            <strong className="text-foreground">dispositivo ou rede novo</strong>. Mandamos um
+            email pra <strong className="text-foreground">{session.user.email}</strong> com um
+            código de 6 dígitos.
           </p>
 
-          <p className="mt-3 text-xs text-[#666]">
+          <p className="mt-3 text-xs text-muted-foreground">
             Digite o código abaixo, ou clique no botão{' '}
-            <span className="text-[#00E676]">"Sim, fui eu"</span> que está dentro do email.
+            <span className="text-primary">&quot;Sim, fui eu&quot;</span> que está dentro do email.
           </p>
 
           {params.error && <ErrorBanner reason={params.error} />}
@@ -78,15 +79,19 @@ export default async function VerifyDevicePage({ searchParams }: PageProps) {
             <VerifyDeviceForm />
           </div>
 
-          <p className="mt-6 text-center text-xs text-[#666]">
-            Código expira em ~{expiresInMin} min. Não recebeu?{' '}
-            <span className="text-[#888]">
-              Cheque a caixa de spam ou clique em &quot;reenviar&quot; abaixo.
-            </span>
-          </p>
+          <div className="mt-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              {pending.expired
+                ? 'O código anterior expirou. Clique em reenviar pra receber um novo — seu acesso segue bloqueado até confirmar.'
+                : `Código expira em ~${expiresInMin} min. Não recebeu? Cheque a caixa de spam ou reenvie abaixo.`}
+            </p>
+            <div className="mt-2 flex justify-center">
+              <ResendButton />
+            </div>
+          </div>
 
-          <div className="mt-4 border-t border-[#1a1a1a] pt-4 text-center">
-            <p className="text-[11px] text-[#666]">
+          <div className="mt-4 border-t border-border pt-4 text-center">
+            <p className="text-[11px] text-muted-foreground">
               Não foi você?{' '}
               <span className="text-red-400">
                 Use o link de revogação no email pra bloquear esse acesso.
@@ -95,7 +100,7 @@ export default async function VerifyDevicePage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-[#444]">
+        <p className="mt-6 text-center text-xs text-muted-foreground/70">
           Por que estou vendo isso? Zapfy detecta acessos de IP/dispositivo novo
           e pede confirmação. Acontece quando você troca de rede, viaja ou usa
           outro computador.

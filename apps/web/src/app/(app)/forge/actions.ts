@@ -24,6 +24,7 @@ import {
 import { createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import {
   publishAgentVersionIo,
   scrapeUrlForForge,
@@ -36,6 +37,7 @@ const log = createLogger('forge-actions');
 async function requireSessionAndWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
@@ -144,14 +146,15 @@ export async function sendForgeMessage(
       },
     });
   } catch (err) {
+    // Detalhe fica no log; usuário final de SaaS recebe mensagem genérica
+    // (instruir cliente a "verificar .env" era vazamento de erro interno).
     log.error(
       { sessionId: sessionRow.id, err: String(err) },
       'runForgeStep failed',
     );
-    const msg = err instanceof Error ? err.message : 'Erro inesperado no Forge';
     return {
       status: 'error',
-      error: `${msg}. Verifique sua chave de API (OPENAI_API_KEY ou ANTHROPIC_API_KEY) no .env.`,
+      error: 'Tive um problema ao processar sua mensagem. Tenta de novo em instantes.',
     };
   }
 
@@ -165,8 +168,11 @@ export async function sendForgeMessage(
       ? ForgeStatus.PUBLISHED
       : ForgeStatus.IN_PROGRESS;
 
-  await prisma.forgeSession.update({
-    where: { id: sessionRow.id },
+  // Lock otimista: o update só aplica se a sessão não mudou desde a leitura
+  // (duas abas/double-submit rodavam o LLM em paralelo e o segundo update
+  // sobrescrevia o turno inteiro do primeiro — e podia publicar 2x).
+  const updated = await prisma.forgeSession.updateMany({
+    where: { id: sessionRow.id, updatedAt: sessionRow.updatedAt },
     data: {
       transcript: transcriptJson,
       collectedAnswers: answersJson,
@@ -174,6 +180,13 @@ export async function sendForgeMessage(
       status: finalStatus,
     },
   });
+  if (updated.count === 0) {
+    log.warn({ sessionId: sessionRow.id }, 'update concorrente na sessão — turno descartado');
+    return {
+      status: 'error',
+      error: 'Outra mensagem foi processada ao mesmo tempo. Recarrega a página e tenta de novo.',
+    };
+  }
 
   // NÃO revalidar '/forge': o cliente já aplica result.state direto, e a página
   // é force-dynamic (rehidrata sozinha no próximo load). Revalidar aqui só
@@ -190,11 +203,18 @@ export async function sendForgeMessage(
   };
 }
 
+const resetInput = z.string().trim().min(1).max(64);
+
 /** Marca a sessão atual como abandonada e cria nova (reset). */
 export async function resetForgeSession(currentSessionId: string): Promise<{ sessionId: string }> {
+  const parsedId = resetInput.safeParse(currentSessionId);
+  if (!parsedId.success) {
+    // Sem id válido não há o que abandonar — só abre sessão nova.
+    return startForgeSession();
+  }
   const { workspace } = await requireSessionAndWorkspace();
   await prisma.forgeSession.updateMany({
-    where: { id: currentSessionId, workspaceId: workspace.id },
+    where: { id: parsedId.data, workspaceId: workspace.id },
     data: { status: ForgeStatus.ABANDONED },
   });
   return startForgeSession();
@@ -230,6 +250,17 @@ export async function saveForgeBasics(
   }
   if (sessionRow.status !== ForgeStatus.IN_PROGRESS) {
     return { status: 'error', error: 'Sessão já encerrada.' };
+  }
+
+  // Guard de fase: o wizard só grava em sessão recém-criada (DISCOVERY, sem
+  // transcript). Aba velha/double-submit re-aplicava o patch e REBOBINAVA uma
+  // sessão que já estava em REVIEW de volta pra KNOWLEDGE.
+  const priorTranscript = Array.isArray(sessionRow.transcript) ? sessionRow.transcript : [];
+  if (sessionRow.currentPhase !== DbForgePhase.DISCOVERY || priorTranscript.length > 0) {
+    return {
+      status: 'error',
+      error: 'Essa sessão já passou dos passos iniciais. Recarrega a página pra continuar no chat.',
+    };
   }
 
   const state = hydrateState(sessionRow);
@@ -297,10 +328,24 @@ function hydrateState(session: {
   const transcript: ForgeMessage[] = [];
   for (const m of rawTranscript) {
     const parsed = forgeMessageSchema.safeParse(m);
-    if (parsed.success) transcript.push(parsed.data);
+    if (parsed.success) {
+      transcript.push(parsed.data);
+    } else {
+      log.error(
+        { sessionId: session.id, issues: parsed.error.issues.slice(0, 3) },
+        'mensagem inválida no transcript — dropada (dado legado/schema mudou?)',
+      );
+    }
   }
 
   const answersResult = forgeAnswersSchema.safeParse(session.collectedAnswers ?? {});
+  if (!answersResult.success) {
+    // Degradar pra {} re-pergunta tudo do zero — não pode ser silencioso.
+    log.error(
+      { sessionId: session.id, issues: answersResult.error.issues.slice(0, 3) },
+      'collectedAnswers inválido — sessão degradada pra answers vazios',
+    );
+  }
   const answers: ForgeAnswers = answersResult.success ? answersResult.data : forgeAnswersSchema.parse({});
 
   return {

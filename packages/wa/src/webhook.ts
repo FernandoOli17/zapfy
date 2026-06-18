@@ -1,7 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { WaWebhookSignatureError } from './errors';
-import { waWebhookPayloadSchema, type WaWebhookPayload } from './types';
+import {
+  waMessagesChangeSchema,
+  waWebhookPayloadSchema,
+  type WaMessagesChange,
+  type WaWebhookPayload,
+} from './types';
 
 const SIGNATURE_PREFIX = 'sha256=';
 
@@ -62,44 +67,57 @@ export function handleWebhookVerification(input: {
   return { ok: true, challenge: input.challenge };
 }
 
+type WaMessagesChangeValue = WaMessagesChange['value'];
+
+interface PhoneNumberBucket {
+  displayPhoneNumber: string;
+  messages: NonNullable<WaMessagesChangeValue['messages']>;
+  statuses: NonNullable<WaMessagesChangeValue['statuses']>;
+  contacts: NonNullable<WaMessagesChangeValue['contacts']>;
+}
+
+/**
+ * Reconhece uma change de `messages` BEM-FORMADA. Faz `safeParse` contra o
+ * schema estrito (não só `field === 'messages'`): uma change com `field:
+ * 'messages'` mas `value` malformado casa o ramo permissivo da union no parse
+ * do payload, e o type-guard antigo (só checava o field) mentia o tipo —
+ * acessar `value.metadata` num `unknown` real crashava e derrubava o POST
+ * inteiro (com as mensagens válidas junto). Aqui, malformada → null → ignorada,
+ * sem crash e sem perder as outras mensagens do mesmo POST.
+ */
+function asMessagesChange(
+  change: WaWebhookPayload['entry'][number]['changes'][number],
+): WaMessagesChange | null {
+  const parsed = waMessagesChangeSchema.safeParse(change);
+  return parsed.success ? parsed.data : null;
+}
+
 /**
  * Itera todas as mensagens + status updates do payload em um array plano,
- * agrupando por phone_number_id pra identificar qual workspace.
+ * agrupando por phone_number_id pra identificar qual workspace. Apenas changes
+ * do field `messages` são consideradas — outros fields são descartados sem
+ * derrubar as mensagens válidas do mesmo POST.
  */
 export function flattenWebhookEvents(payload: WaWebhookPayload): {
-  byPhoneNumberId: Record<
-    string,
-    {
-      displayPhoneNumber: string;
-      messages: WaWebhookPayload['entry'][number]['changes'][number]['value']['messages'];
-      statuses: WaWebhookPayload['entry'][number]['changes'][number]['value']['statuses'];
-      contacts: WaWebhookPayload['entry'][number]['changes'][number]['value']['contacts'];
-    }
-  >;
+  byPhoneNumberId: Record<string, PhoneNumberBucket>;
 } {
-  const byPhoneNumberId: Record<
-    string,
-    {
-      displayPhoneNumber: string;
-      messages: WaWebhookPayload['entry'][number]['changes'][number]['value']['messages'];
-      statuses: WaWebhookPayload['entry'][number]['changes'][number]['value']['statuses'];
-      contacts: WaWebhookPayload['entry'][number]['changes'][number]['value']['contacts'];
-    }
-  > = {};
+  const byPhoneNumberId: Record<string, PhoneNumberBucket> = {};
 
   for (const entry of payload.entry) {
     for (const change of entry.changes) {
-      const v = change.value;
+      const mc = asMessagesChange(change);
+      if (!mc) continue;
+      const v = mc.value;
       const key = v.metadata.phone_number_id;
-      const bucket = byPhoneNumberId[key] ?? {
+      const bucket: PhoneNumberBucket = byPhoneNumberId[key] ?? {
         displayPhoneNumber: v.metadata.display_phone_number,
         messages: [],
         statuses: [],
         contacts: [],
       };
-      if (v.messages) bucket.messages = [...(bucket.messages ?? []), ...v.messages];
-      if (v.statuses) bucket.statuses = [...(bucket.statuses ?? []), ...v.statuses];
-      if (v.contacts) bucket.contacts = [...(bucket.contacts ?? []), ...v.contacts];
+      if (v.messages) bucket.messages = [...bucket.messages, ...v.messages];
+      if (v.statuses) bucket.statuses = [...bucket.statuses, ...v.statuses];
+      if (v.contacts) bucket.contacts = [...bucket.contacts, ...v.contacts];
       byPhoneNumberId[key] = bucket;
     }
   }

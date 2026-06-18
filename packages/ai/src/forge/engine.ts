@@ -6,6 +6,7 @@ import { systemMessage } from '../caching';
 
 import { getPhaseSystemPrompt } from './prompts/phases';
 import { generateSystemPrompt } from './generate';
+import { validatePhaseTransition } from './transitions';
 import { createForgeTools, pickToolsForPhase, type ForgeToolDeps } from './tools';
 import type {
   ForgeAnswers,
@@ -72,7 +73,12 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
       answers = { ...answers, knowledge: [...(answers.knowledge ?? []), item] };
     },
     setNextPhase: (phase) => {
+      const validation = validatePhaseTransition(state.currentPhase, phase, answers);
+      if (!validation.ok) {
+        return { ok: false as const, reason: validation.reason };
+      }
       pendingNextPhase = phase;
+      return { ok: true as const };
     },
     scrapeUrl: io.scrapeUrl,
     generateSystemPrompt: async () => generateSystemPrompt(answers),
@@ -85,6 +91,9 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
         `Você recebe um system prompt atual de um agente de IA pro WhatsApp e uma instrução do dono pra ajustar. Aplique a mudança de forma cirúrgica — mude SÓ o que a instrução pede, preserve o resto literal. Devolva APENAS o system prompt revisado, sem preâmbulo, sem markdown wrapper.`;
       const result = await generateText({
         model: models.chat,
+        // Lei do CLAUDE.md: toda chamada de LLM tem timeout — sem isto a
+        // server action trava até o timeout da plataforma.
+        abortSignal: AbortSignal.timeout(60_000),
         messages: [
           systemMessage(REFINE_SYSTEM),
           {
@@ -137,6 +146,8 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
     messages,
     tools: phaseTools,
     stopWhen: stepCountIs(maxSteps),
+    // Turnos do Forge são longos (scrape + geração de prompt), mas não infinitos.
+    abortSignal: AbortSignal.timeout(60_000),
   });
 
   // --- agrega tool calls executados pra UI ---

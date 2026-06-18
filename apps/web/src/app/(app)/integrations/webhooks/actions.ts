@@ -4,10 +4,11 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@zapfy/db';
-import { createLogger } from '@zapfy/shared';
+import { assertSafeUrl, createLogger, SsrfError } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import {
   generateWebhookSecret,
   OUTGOING_EVENT_NAMES,
@@ -18,6 +19,7 @@ const log = createLogger('webhooks-actions');
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
@@ -47,6 +49,16 @@ export async function createWebhook(
   const parsed = createInput.safeParse(raw);
   if (!parsed.success) {
     return { status: 'error', error: parsed.error.issues[0]?.message ?? 'Inválido' };
+  }
+  // Guard SSRF: sem isto, um admin de workspace registra IP interno/metadata
+  // endpoint e faz o worker disparar POSTs na rede interna (igual custom tools).
+  try {
+    await assertSafeUrl(parsed.data.url);
+  } catch (err) {
+    if (err instanceof SsrfError) {
+      return { status: 'error', error: 'URL não permitida (endereço interno/reservado)' };
+    }
+    throw err;
   }
   const secret = generateWebhookSecret();
   const created = await prisma.outgoingWebhook.create({

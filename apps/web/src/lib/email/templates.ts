@@ -81,19 +81,19 @@ export function welcomeEmail(input: { name: string; workspaceSlug: string; appUr
   const forgeUrl = `${input.appUrl.replace(/\/$/, '')}/forge`;
   const html = wrap(`
     <h1 style="font-size:24px;margin:24px 0 8px">Bem-vindo, ${escapeHtml(input.name)}</h1>
-    <p>Seu workspace <strong>${escapeHtml(input.workspaceSlug)}</strong> tá pronto. 7 dias de trial sem cartão.</p>
+    <p>Seu workspace <strong>${escapeHtml(input.workspaceSlug)}</strong> tá pronto. Monte seu agente de graça, sem cartão — você só assina quando ver funcionando.</p>
     <p>Próximos passos:</p>
     <ol style="padding-left: 20px">
-      <li>Converse com o <strong>Forge</strong> — ele entrevista seu negócio e monta o agente IA.</li>
-      <li>Conecte seu <strong>WhatsApp Business</strong> via Cloud API oficial da Meta.</li>
-      <li>Comece a atender 24/7.</li>
+      <li>Converse com o <strong>Forge</strong> — ele entrevista seu negócio e monta o agente IA, de graça.</li>
+      <li>Assine um plano pra colocar o agente no ar (garantia de 7 dias — não gostou, devolvemos).</li>
+      <li>Conecte seu <strong>WhatsApp Business</strong> via Cloud API oficial da Meta e comece a atender 24/7.</li>
     </ol>
     <a href="${forgeUrl}" style="${BUTTON_STYLES}">Abrir o Forge</a>
     <p style="color:#71717a;font-size:13px">Ou se preferir, vai direto pro <a href="${dashboardUrl}" style="color:#00E676">dashboard</a>.</p>
     <p style="margin-top:32px">Qualquer dúvida, responde esse email. A gente lê.</p>
     <p style="color:#71717a;font-size:13px">— Time Zapfy</p>
   `);
-  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. 7 dias de trial sem cartão.\n\nPróximos passos:\n1. Converse com o Forge: ${forgeUrl}\n2. Conecte seu WhatsApp Business via Cloud API.\n3. Comece a atender 24/7.\n\n— Time Zapfy`;
+  const text = `Bem-vindo, ${input.name}!\n\nSeu workspace "${input.workspaceSlug}" tá pronto. Monte seu agente de graça, sem cartão — você só assina quando ver funcionando.\n\nPróximos passos:\n1. Converse com o Forge (de graça): ${forgeUrl}\n2. Assine um plano pra colocar o agente no ar (garantia de 7 dias).\n3. Conecte seu WhatsApp Business via Cloud API e comece a atender 24/7.\n\n— Time Zapfy`;
   return { html, text, subject: `Bem-vindo ao Zapfy, ${input.name}` };
 }
 
@@ -165,42 +165,44 @@ export function day3ForgeNudgeEmail(input: { name: string; appUrl: string }) {
 }
 
 /**
- * Day 6 — trial acaba amanhã. Mostra plano + CTA pra upgrade.
+ * Day 6 — agente montado mas ainda fora do ar (workspace sem assinatura).
+ * Sem trial: o agente só atende no WhatsApp depois de assinar um plano.
+ * Garantia de 7 dias (reembolso) em todos os planos.
  */
-export function day6TrialEndingEmail(input: { name: string; appUrl: string }) {
+export function day6ActivateEmail(input: { name: string; appUrl: string }) {
   const billingUrl = `${input.appUrl.replace(/\/$/, '')}/billing`;
   const html = wrap(`
-    <h1 style="font-size:24px;margin:24px 0 8px">Seu trial acaba amanhã, ${escapeHtml(input.name)}</h1>
-    <p>Você tá usando o Zapfy faz 6 dias. <strong>Amanhã o trial expira</strong> e você precisa escolher um plano pra continuar atendendo no WhatsApp.</p>
+    <h1 style="font-size:24px;margin:24px 0 8px">Falta pouco pro seu agente ir ao ar, ${escapeHtml(input.name)}</h1>
+    <p>Você montou seu agente no Zapfy, mas ele ainda <strong>não está atendendo no WhatsApp</strong>. Pra colocar no ar, é só escolher um plano — e você tem <strong>7 dias de garantia</strong>: não gostou, devolvemos.</p>
 
     <table style="width:100%;border-collapse:collapse;margin:20px 0">
       <tr>
         <td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">
           <strong style="font-size:16px">Starter — R$ 97/mês</strong><br/>
-          <span style="color:#71717a;font-size:13px">1.000 conversas IA/mês · 1 número WhatsApp · 1 atendente</span>
+          <span style="color:#71717a;font-size:13px">1.500 conversas IA/mês · 1 número WhatsApp · 1 atendente</span>
         </td>
       </tr>
       <tr><td style="padding:4px"></td></tr>
       <tr>
         <td style="padding:12px;border:2px solid #00E676;border-radius:8px;background:#0a0a0a0d">
-          <strong style="font-size:16px;color:#0a0a0a">Pro — R$ 297/mês</strong> <span style="background:#00E676;color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-transform:uppercase">recomendado</span><br/>
-          <span style="color:#3b3b3f;font-size:13px">10.000 conversas IA · 3 números · 5 atendentes · Custom tools · Broadcasts</span>
+          <strong style="font-size:16px;color:#0a0a0a">Pro — R$ 247/mês</strong> <span style="background:#00E676;color:white;padding:2px 6px;border-radius:4px;font-size:10px;text-transform:uppercase">recomendado</span><br/>
+          <span style="color:#3b3b3f;font-size:13px">6.000 conversas IA · 2 números · 3 atendentes · Custom tools</span>
         </td>
       </tr>
       <tr><td style="padding:4px"></td></tr>
       <tr>
         <td style="padding:12px;border:1px solid #e4e4e7;border-radius:8px;background:#fafafa">
-          <strong style="font-size:16px">Premium — R$ 697/mês</strong><br/>
-          <span style="color:#71717a;font-size:13px">Ilimitado · API access · Suporte prioritário</span>
+          <strong style="font-size:16px">Business — R$ 597/mês</strong><br/>
+          <span style="color:#71717a;font-size:13px">Conversas ilimitadas · API access · Suporte prioritário</span>
         </td>
       </tr>
     </table>
 
     <a href="${billingUrl}" style="${BUTTON_STYLES}">Escolher plano</a>
-    <p style="color:#71717a;font-size:13px;margin-top:24px">Não quer continuar? Tudo bem — sua conta vira modo limitado (read-only) em 24h. Pode reativar quando quiser.</p>
+    <p style="color:#71717a;font-size:13px;margin-top:24px">Sem pressa: o agente fica montado esperando você. Pode assinar quando quiser e cancelar a qualquer momento.</p>
   `);
-  const text = `Seu trial acaba amanhã, ${input.name}.\n\nEscolha um plano em ${billingUrl}\n\n- Starter R$ 97 — 1k conversas, 1 número\n- Pro R$ 297 — 10k conversas, 3 números, custom tools\n- Premium R$ 697 — ilimitado\n\nSem upgrade, conta vai pra modo read-only.\n\n— Time Zapfy`;
-  return { html, text, subject: 'Seu trial Zapfy acaba amanhã ⏰' };
+  const text = `Falta pouco pro seu agente ir ao ar, ${input.name}.\n\nSeu agente está montado, mas ainda não atende no WhatsApp. Escolha um plano pra colocar no ar (garantia de 7 dias): ${billingUrl}\n\n- Starter R$ 97 — 1.500 conversas, 1 número\n- Pro R$ 247 — 6.000 conversas, 2 números, custom tools\n- Business R$ 597 — conversas ilimitadas, API access\n\nSem pressa: o agente fica montado esperando. Cancele quando quiser.\n\n— Time Zapfy`;
+  return { html, text, subject: 'Falta pouco pro seu agente Zapfy ir ao ar 🚀' };
 }
 
 /**
@@ -389,7 +391,7 @@ export function supportReplyToUserEmail(input: {
       Olá, ${escapeHtml(input.name)} 👋
     </h1>
     <p style="font-size:14px">
-      Você tem uma resposta no ticket{' '}
+      Você tem uma resposta no ticket
       <strong>#${input.ticketNumber} — ${escapeHtml(input.subject)}</strong>:
     </p>
     <div style="border-left:3px solid #00E676;padding:14px 16px;background:#f4f4f5;margin:20px 0;white-space:pre-wrap;font-size:14px;line-height:1.55">${escapeHtml(input.replyBody)}</div>

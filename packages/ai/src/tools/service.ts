@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma, QuoteStatus, type Prisma } from '@zapfy/db';
 import { createLogger } from '@zapfy/shared';
 import type { VerticalRuntimeDeps } from './runtime/types';
+import { createWithRetry, quoteNumberDelegate } from './public-number';
 
 const log = createLogger('tools:service');
 
@@ -37,21 +38,26 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
         notes: z.string().max(500).optional(),
       }),
       execute: async ({ serviceDescription, serviceAddress, urgency, notes }) => {
-        const publicNumber = await genQuoteNumber(deps.workspaceId);
-        const quote = await prisma.quote.create({
-          data: {
-            workspaceId: deps.workspaceId,
-            contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
-            conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
-            publicNumber,
-            status: QuoteStatus.DRAFT,
-            serviceDescription,
-            ...(serviceAddress ? { serviceAddress: serviceAddress as unknown as Prisma.InputJsonValue } : {}),
-            items: [] as unknown as Prisma.InputJsonValue, // time humano preenche depois
-            notes: notes ? `[urgência: ${urgency}] ${notes}` : `[urgência: ${urgency}]`,
-          },
-          select: { publicNumber: true },
-        });
+        const quote = await createWithRetry(
+          'ORC',
+          deps.workspaceId,
+          (publicNumber) =>
+            prisma.quote.create({
+              data: {
+                workspaceId: deps.workspaceId,
+                contactId: deps.contactId === 'test-contact' ? null : deps.contactId,
+                conversationId: deps.conversationId === 'test-conversation' ? null : deps.conversationId,
+                publicNumber,
+                status: QuoteStatus.DRAFT,
+                serviceDescription,
+                ...(serviceAddress ? { serviceAddress: serviceAddress as unknown as Prisma.InputJsonValue } : {}),
+                items: [] as unknown as Prisma.InputJsonValue, // time humano preenche depois
+                notes: notes ? `[urgência: ${urgency}] ${notes}` : `[urgência: ${urgency}]`,
+              },
+              select: { publicNumber: true },
+            }),
+          quoteNumberDelegate,
+        );
         log.info(
           { workspaceId: deps.workspaceId, quoteNumber: quote.publicNumber, urgency },
           'pedido de orçamento criado (DRAFT)',
@@ -95,18 +101,17 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
           },
         });
 
-        // TODO(credentials): gerar PDF via UploadThing/Vercel Blob quando creds chegarem
-        // const pdfUrl = await renderPdf(quote, items, totalCents)
-        const baseUrl = process.env['NEXT_PUBLIC_APP_URL']?.replace(/\/$/, '') ?? 'https://trato.dev';
-        const previewUrl = `${baseUrl}/q/${quote.publicNumber}`;
-
+        // Não existe rota pública de proposta (`/q/[numero]`) nem PDF gerado
+        // ainda — montar `${baseUrl}/q/${publicNumber}` mandava um link 404 pro
+        // cliente. Enquanto não houver página real, a proposta vai como TEXTO
+        // (itens + total + validade), sem URL sintética no payload.
+        const formattedDate = validUntil.toLocaleDateString('pt-BR');
         return {
           ok: true as const,
           publicNumber: quote.publicNumber,
           totalFormatted: formatBrl(totalCents),
-          validUntil: validUntil.toLocaleDateString('pt-BR'),
-          previewUrl,
-          message: `Proposta ${quote.publicNumber}: ${formatBrl(totalCents)} (válida até ${validUntil.toLocaleDateString('pt-BR')}). Link: ${previewUrl}`,
+          validUntil: formattedDate,
+          message: `Proposta ${quote.publicNumber}: ${formatBrl(totalCents)} (válida até ${formattedDate}). Detalho os itens aqui mesmo na conversa.`,
         };
       },
     }),
@@ -129,26 +134,15 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
           return { ok: false as const, error: 'orçamento ainda não foi enviado/aceito' };
         }
 
-        // Marca como aceito + cria appointment com profissional "Padrão" (criamos se não existir)
-        const defaultProf = await prisma.professional.upsert({
-          where: {
-            id: '__default_team__', // não existe — força create no first run
-          },
-          update: {},
-          create: {
-            id: '__default_team__',
-            workspaceId: deps.workspaceId,
-            name: 'Equipe',
-            active: true,
-          },
-        }).catch(async () => {
-          // upsert por id falha pq id não é único naquele padrão; usa findFirst+create
-          const existing = await prisma.professional.findFirst({
-            where: { workspaceId: deps.workspaceId, name: 'Equipe' },
-          });
-          return existing ?? prisma.professional.create({
-            data: { workspaceId: deps.workspaceId, name: 'Equipe', active: true },
-          });
+        // Marca como aceito + cria appointment com profissional "Equipe" do
+        // PRÓPRIO workspace. NUNCA upsert por id global ('__default_team__'):
+        // Professional.id é @id global, então o upsert achava o registro de
+        // OUTRO tenant e vinculava appointments cross-workspace.
+        const existing = await prisma.professional.findFirst({
+          where: { workspaceId: deps.workspaceId, name: 'Equipe' },
+        });
+        const defaultProf = existing ?? await prisma.professional.create({
+          data: { workspaceId: deps.workspaceId, name: 'Equipe', active: true },
         });
 
         const appointment = await prisma.appointment.create({
@@ -185,11 +179,6 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
       },
     }),
   };
-}
-
-async function genQuoteNumber(workspaceId: string): Promise<string> {
-  const count = await prisma.quote.count({ where: { workspaceId } });
-  return `ORC-${(count + 1).toString().padStart(4, '0')}`;
 }
 
 function formatBrl(cents: number): string {

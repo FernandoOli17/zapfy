@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import Link from 'next/link';
 import {
   ArrowUp,
   Check,
@@ -184,30 +185,22 @@ export function ForgeWorkspace({ initialState, showDevHandoff = false }: Props) 
           className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10"
         >
           <div className="mx-auto max-w-2xl">
-            {state.transcript.length === 0 ? (
-              <EmptyState
-                onSuggest={(suggestion) => {
-                  setDraft(suggestion);
-                }}
-              />
-            ) : (
-              <ol className="space-y-6">
-                {state.transcript.map((m) => (
-                  <li key={m.id}>
-                    <Message
-                      role={m.role === 'assistant' ? 'forge' : 'user'}
-                      content={m.content}
-                      {...(m.toolCalls ? { toolCalls: m.toolCalls } : {})}
-                    />
-                  </li>
-                ))}
-                {thinking && (
-                  <li>
-                    <Message role="forge" content="" thinking />
-                  </li>
-                )}
-              </ol>
-            )}
+            <ol className="space-y-6">
+              {state.transcript.map((m) => (
+                <li key={m.id}>
+                  <Message
+                    role={m.role === 'assistant' ? 'forge' : 'user'}
+                    content={m.content}
+                    {...(m.toolCalls ? { toolCalls: m.toolCalls } : {})}
+                  />
+                </li>
+              ))}
+              {thinking && (
+                <li>
+                  <Message role="forge" content="" thinking />
+                </li>
+              )}
+            </ol>
           </div>
         </div>
 
@@ -232,7 +225,7 @@ export function ForgeWorkspace({ initialState, showDevHandoff = false }: Props) 
                 rows={1}
                 placeholder={
                   isPublished
-                    ? 'Agente publicado. Use /forge novamente pra refinar.'
+                    ? 'Agente publicado. Refinamento pós-publicação chega em breve — por ora, use o reset pra recomeçar.'
                     : state.transcript.length === 0
                     ? 'Me conta do seu negócio. O que vocês vendem ou fazem?'
                     : 'Escreve sua resposta…'
@@ -327,52 +320,6 @@ function ChatHeader({
         </Button>
       </div>
     </header>
-  );
-}
-
-function EmptyState({ onSuggest }: { onSuggest: (text: string) => void }) {
-  const SUGGESTIONS = [
-    'Loja online de tênis pra corrida, atende em todo o Brasil',
-    'Clínica de fisioterapia em São Paulo, 3 profissionais',
-    'Restaurante mexicano com delivery próprio',
-    'Curso online de inglês pra adultos com aulas ao vivo',
-  ];
-  return (
-    <div className="py-8">
-      <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/40 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-        </span>
-        Forge pronto
-      </div>
-      <h2 className="mt-6 text-3xl font-medium leading-tight tracking-tight md:text-5xl">
-        Vamos montar seu agente.{' '}
-        <span className="font-serif italic font-normal text-primary">
-          Me conta do negócio.
-        </span>
-      </h2>
-      <p className="mt-4 max-w-lg text-muted-foreground md:text-lg">
-        Em uma conversa, eu entendo seu negócio, classifico o vertical, escolho as tools,
-        defino tom e handoff, e gero o agente versionado pronto pra atender no WhatsApp.
-      </p>
-
-      <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
-        Pra começar, descreve em uma frase:
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        {SUGGESTIONS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onSuggest(s)}
-            className="rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -574,7 +521,11 @@ function PreviewPanel({ state }: { state: ForgeState }) {
             <p className="text-xs uppercase tracking-widest text-primary">Agente publicado</p>
             <p className="mt-2 text-lg font-medium tracking-tight">{answers.agentName}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Versão 1 ativa. Em breve conecte o WhatsApp pra começar a atender.
+              Versão 1 ativa.{' '}
+              <Link href="/whatsapp" className="text-primary underline-offset-4 hover:underline">
+                Conecte o WhatsApp
+              </Link>{' '}
+              pra começar a atender.
             </p>
           </div>
         )}

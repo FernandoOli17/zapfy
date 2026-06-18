@@ -6,6 +6,7 @@ import { createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { pendingVerificationForSession } from '@/lib/device-verification';
 
 const log = createLogger('forge:transcribe');
 
@@ -45,6 +46,18 @@ export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
+  }
+
+  // Fail-closed: sessão com device verification pendente não chama API paga.
+  const pendingVerification = await pendingVerificationForSession({
+    userId: session.user.id,
+    sessionToken: session.session.token,
+  });
+  if (pendingVerification) {
+    return NextResponse.json(
+      { error: 'DEVICE_VERIFICATION_PENDING' },
+      { status: 403 },
+    );
   }
 
   // Confirma que o user pertence a algum workspace (Forge é flow de workspace)

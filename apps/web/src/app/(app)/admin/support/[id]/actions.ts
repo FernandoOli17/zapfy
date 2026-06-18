@@ -7,10 +7,20 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { prisma, SupportSender, type SupportTicketStatus } from '@zapfy/db';
 import { replyTicket, setTicketStatus } from '@/lib/support';
+import { createLogger } from '@zapfy/shared';
+import { pendingVerificationForSession } from '@/lib/device-verification';
+
+const log = createLogger('admin-support-actions');
 
 async function requireSuperAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
+  // Fail-closed: sessão com verificação de device pendente não age como staff.
+  const pending = await pendingVerificationForSession({
+    userId: session.user.id,
+    sessionToken: session.session.token,
+  });
+  if (pending) return null;
   const me = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { isSuperAdmin: true, name: true, email: true },
@@ -46,7 +56,8 @@ export async function adminReplyAction(
     revalidatePath(`/admin/support/${parsed.data.ticketId}`);
     revalidatePath('/admin/support');
     return { ok: true };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), ticketId: parsed.data.ticketId }, 'replyTicket (staff) falhou');
     return { ok: false, error: 'Falha ao enviar.' };
   }
 }
@@ -70,7 +81,8 @@ export async function adminSetStatusAction(
     revalidatePath(`/admin/support/${parsed.data.ticketId}`);
     revalidatePath('/admin/support');
     return { ok: true };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), ticketId: parsed.data.ticketId }, 'setTicketStatus falhou');
     return { ok: false, error: 'Falha.' };
   }
 }

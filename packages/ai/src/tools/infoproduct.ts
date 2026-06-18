@@ -83,45 +83,40 @@ export function buildInfoproductTools(deps: VerticalRuntimeDeps): Record<string,
 
     send_sales_page: tool({
       description:
-        'Gera URL da página de vendas com UTM rastreável e devolve pro agente colar na conversa. Use depois de qualificar e o lead pedir "me manda o link" ou "como compro".',
+        'Envia a página de vendas do workspace. Use depois de qualificar e o lead pedir "me manda o link". A URL vem da configuração do workspace — você NÃO fornece a URL e NÃO deve inventar nenhum link.',
+      // Sem `salesPageUrl` no input: a URL antes vinha do PRÓPRIO modelo e podia
+      // ser um domínio alucinado mandado pro lead. A fonte real (config do
+      // workspace — TASK-0032, onde a config vai morar é decisão de produto
+      // pendente) ainda não existe. Até existir, a tool degrada honesto em vez
+      // de confiar no que o LLM "acha" que é a URL.
       inputSchema: z.object({
-        salesPageUrl: z.string().url().describe('URL base configurada no workspace. Pega de Product/customField se existir, senão pede pro admin.'),
         campaign: z.string().max(40).default('chat').describe('Campanha pro UTM, ex: blackfriday, lancamento'),
       }),
-      execute: async ({ salesPageUrl, campaign }) => {
-        const utm = new URLSearchParams({
-          utm_source: 'whatsapp',
-          utm_medium: 'trato',
-          utm_campaign: campaign,
-          utm_content: `conv_${deps.conversationId.slice(0, 8)}`,
-        });
-        const sep = salesPageUrl.includes('?') ? '&' : '?';
-        const url = `${salesPageUrl}${sep}${utm.toString()}`;
+      execute: async () => {
         return {
-          ok: true as const,
-          url,
-          message: `Link da página com rastreamento ativo. Use no texto: "Aqui ó: ${url}"`,
+          ok: false as const,
+          reason: 'sales_page_not_configured' as const,
+          error:
+            'Página de vendas não está configurada no workspace. Não invente nem mande nenhum link: explique pro lead os próximos passos por aqui ou diga que vai chamar alguém do time pra mandar o link oficial.',
         };
       },
     }),
 
     schedule_call: tool({
       description:
-        'Agenda call de vendas com closer. Devolve URL do Calendly (configurado no workspace) com slot/data pré-selecionados. Use SÓ pra leads tier A ou B.',
+        'Agenda call de vendas com closer. A URL de agendamento vem da configuração do workspace — você NÃO fornece a URL e NÃO deve inventar nenhum link. Use SÓ pra leads tier A ou B.',
+      // Sem `calendlyUrl` no input pelo mesmo motivo do send_sales_page: a URL
+      // vinha do modelo e podia ser inventada. Sem fonte de config real, degrada
+      // honesto pra handoff em vez de mandar um Calendly alucinado pro lead.
       inputSchema: z.object({
-        calendlyUrl: z.string().url().describe('URL do Calendly do closer (configurado em Workspace settings — TODO).'),
         preferredWeekday: z.enum(['mon', 'tue', 'wed', 'thu', 'fri']).optional(),
       }),
-      execute: async ({ calendlyUrl, preferredWeekday }) => {
-        // TODO(credentials): integrar Calendly API quando workspace tiver token.
-        // Por ora retorna URL crua com hint de dia (Calendly aceita ?date=).
-        const url = preferredWeekday
-          ? `${calendlyUrl}${calendlyUrl.includes('?') ? '&' : '?'}preferred=${preferredWeekday}`
-          : calendlyUrl;
+      execute: async () => {
         return {
-          ok: true as const,
-          url,
-          message: 'Manda esse link e fala: "É só escolher o horário que melhor encaixa pra você"',
+          ok: false as const,
+          reason: 'scheduling_not_configured' as const,
+          error:
+            'Agendamento de call não está configurado no workspace. Não invente link: combine um horário por aqui mesmo ou avise que alguém do time vai mandar o link oficial pra marcar.',
         };
       },
     }),
