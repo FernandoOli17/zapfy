@@ -85,6 +85,39 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     typeof session.customer === 'string' ? session.customer : session.customer?.id;
   if (!subscriptionId || !customerId) return;
 
+  // Defensivo (TASK-0023): se o workspace já tinha OUTRA subscription no Stripe,
+  // esse checkout criou uma segunda. Cancela a antiga pra nunca deixar duas
+  // ativas (cobrança dupla). O fluxo normal de mudança de plano usa
+  // subscriptions.update e nem chega aqui; isso cobre o caso residual.
+  const existing = await prisma.subscription.findUnique({
+    where: { workspaceId },
+    select: { stripeSubscriptionId: true },
+  });
+  const previousSubId = existing?.stripeSubscriptionId;
+  if (previousSubId && previousSubId !== subscriptionId) {
+    try {
+      await stripe.subscriptions.cancel(previousSubId, {
+        invoice_now: false,
+        prorate: true,
+      });
+      log.warn(
+        { workspaceId, previousSubId, newSubId: subscriptionId },
+        'checkout criou nova subscription — cancelada a anterior pra evitar cobrança dupla',
+      );
+    } catch (err) {
+      // Já cancelada/inexistente é OK; outros erros logamos mas seguimos pro upsert.
+      log.error(
+        { workspaceId, previousSubId, err: String(err) },
+        'falha ao cancelar subscription anterior — verificar 2 subs ativas no Stripe',
+      );
+      captureException(err, {
+        context: 'stripe.webhook.cancelPrevious',
+        workspaceId,
+        previousSubId,
+      });
+    }
+  }
+
   const sub = await stripe.subscriptions.retrieve(subscriptionId);
   await upsertFromStripeSubscription(workspaceId, customerId, sub);
 }

@@ -52,6 +52,7 @@ interface PageProps {
   searchParams: Promise<{
     success?: string;
     canceled?: string;
+    changed?: string;
     upgrade?: string;
     mock_portal?: string;
     mock_plan?: string;
@@ -98,6 +99,8 @@ export default async function BillingPage({ searchParams }: PageProps) {
                 <strong>Modo demo:</strong> assinatura "{params.mock_plan}" ativada localmente.
                 Em produção, isso passaria pelo Stripe.
               </>
+            ) : params.changed ? (
+              'Plano alterado! A diferença do ciclo atual entra como proração na próxima fatura. Pode demorar alguns segundos pra refletir aqui.'
             ) : (
               'Assinatura ativada! Pode demorar alguns segundos pra refletir aqui.'
             )}

@@ -72,6 +72,9 @@ export async function createCheckoutSession(
   const sub = workspace.subscription;
   const successUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?success=1&mock_plan=${parsed.data.plan}`;
   const cancelUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?canceled=1`;
+  // Mudança de plano (não primeira assinatura): atualiza no banner sem "mock_plan"
+  // (esse é só pra modo demo). Sinaliza ao usuário que o ciclo foi ajustado.
+  const changedUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/billing?success=1&changed=${parsed.data.plan}`;
 
   // STRIPE_MOCK: bypass total, atualiza Subscription local e devolve URL fake.
   if (isStripeMock()) {
@@ -111,6 +114,72 @@ export async function createCheckoutSession(
       status: 'error',
       error: `Plano ${parsed.data.plan} sem priceId configurado (STRIPE_PRICE_${parsed.data.plan}).`,
     };
+  }
+
+  // Já existe assinatura viva no Stripe → mudança de plano é UPDATE do item
+  // (com proração), NUNCA um novo Checkout. Criar outro Checkout geraria uma
+  // SEGUNDA subscription ativa e cobrança dupla (BI-A1 / TASK-0023).
+  // TRIALING também entra aqui: o cliente já tem subscription, troca o price.
+  // INCOMPLETE/CANCELED/UNPAID caem no fluxo de Checkout normal (sem sub viva).
+  const hasLiveStripeSub =
+    Boolean(sub?.stripeSubscriptionId) &&
+    (sub?.status === 'ACTIVE' || sub?.status === 'PAST_DUE' || sub?.status === 'TRIALING');
+
+  if (hasLiveStripeSub && sub?.stripeSubscriptionId) {
+    const stripeSubscriptionId = sub.stripeSubscriptionId;
+    try {
+      const current = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      const currentItem = current.items.data[0];
+      if (!currentItem) {
+        log.error(
+          { workspaceId: workspace.id, subId: stripeSubscriptionId },
+          'subscription Stripe sem item — não dá pra trocar price',
+        );
+        return {
+          status: 'error',
+          error: 'Assinatura sem item no Stripe. Use "Gerenciar no Stripe" pra ajustar.',
+        };
+      }
+
+      // Já está no price certo? Nada a fazer — evita proração de R$0 e cobrança.
+      if (currentItem.price.id === priceId) {
+        return { status: 'ok', url: changedUrl };
+      }
+
+      const updated = await stripe.subscriptions.update(stripeSubscriptionId, {
+        items: [{ id: currentItem.id, price: priceId }],
+        // Upgrade/downgrade no meio do ciclo: Stripe credita o não-usado do plano
+        // antigo e cobra o pro-rata do novo. Nunca cobra um mês cheio a mais.
+        proration_behavior: 'create_prorations',
+        payment_behavior: 'pending_if_incomplete',
+        cancel_at_period_end: false,
+        metadata: {
+          workspaceId: workspace.id,
+          userId: user.id,
+          plan: parsed.data.plan,
+        },
+      });
+
+      await prisma.subscription.update({
+        where: { workspaceId: workspace.id },
+        data: { plan: parsed.data.plan, stripeSubscriptionId: updated.id },
+      });
+
+      log.info(
+        { workspaceId: workspace.id, subId: stripeSubscriptionId, plan: parsed.data.plan },
+        'plano atualizado via subscriptions.update (proração)',
+      );
+      return { status: 'ok', url: changedUrl };
+    } catch (err) {
+      log.error(
+        { workspaceId: workspace.id, subId: stripeSubscriptionId, err: String(err) },
+        'falha ao atualizar plano da subscription existente',
+      );
+      return {
+        status: 'error',
+        error: err instanceof Error ? err.message : 'Falha ao mudar de plano no Stripe',
+      };
+    }
   }
 
   try {
