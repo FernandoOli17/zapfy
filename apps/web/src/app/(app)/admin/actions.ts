@@ -8,6 +8,7 @@ import { prisma } from '@zapfy/db';
 import { createLogger } from '@zapfy/shared';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import { IMPERSONATE_COOKIE, signImpersonationToken } from '@/lib/impersonation';
 import { syncStripeSubscription } from '@/lib/stripe-sync';
 
@@ -19,6 +20,7 @@ async function requireSuperAdmin(): Promise<
 > {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { id: true, email: true, isSuperAdmin: true },

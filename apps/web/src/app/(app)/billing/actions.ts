@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import {
   getPriceIdForPlan,
   getStripeClient,
@@ -21,6 +22,7 @@ const log = createLogger('billing-actions');
 async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: { include: { subscription: true } } },

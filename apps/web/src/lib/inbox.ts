@@ -6,6 +6,7 @@ import { prisma, type Prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { getImpersonatedWorkspaceId } from '@/lib/impersonation';
+import { pendingVerificationForSession } from '@/lib/device-verification';
 
 /**
  * Like `requireWorkspace`, mas exige role OWNER ou ADMIN. AGENT (tier mais
@@ -29,6 +30,16 @@ export async function requireOwnerOrAdmin(): Promise<
 export async function requireWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+
+  // Gate central de device verification — fail-closed. NÃO confia só no layout
+  // RSC: server actions e route handlers chamam `requireWorkspace` direto, e
+  // sem esse check uma sessão pendente (ou com verificação expirada e nunca
+  // confirmada) executaria mutações normalmente (AU-A3 + AU-A1).
+  const pending = await pendingVerificationForSession({
+    userId: session.user.id,
+    sessionToken: session.session.token,
+  });
+  if (pending) redirect('/verify-device');
 
   const fullUser = await prisma.user.findUnique({
     where: { id: session.user.id },

@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { env } from '@/env';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import { assertPlanLimit } from '@/lib/plans';
 import { captureException } from '@/lib/sentry';
 import { dispatchOutgoingEvent } from '@/lib/webhooks-outgoing';
@@ -22,6 +23,7 @@ const log = createLogger('whatsapp-actions');
 async function requireSessionAndWorkspace() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },

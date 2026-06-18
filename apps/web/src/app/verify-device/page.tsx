@@ -81,8 +81,9 @@ export default async function VerifyDevicePage({ searchParams }: PageProps) {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-muted-foreground">
-              Código expira em ~{expiresInMin} min. Não recebeu? Cheque a caixa de spam ou
-              reenvie abaixo.
+              {pending.expired
+                ? 'O código anterior expirou. Clique em reenviar pra receber um novo — seu acesso segue bloqueado até confirmar.'
+                : `Código expira em ~${expiresInMin} min. Não recebeu? Cheque a caixa de spam ou reenvie abaixo.`}
             </p>
             <div className="mt-2 flex justify-center">
               <ResendButton />

@@ -3,6 +3,7 @@ import { prisma } from '@zapfy/db';
 
 import { auth } from '@/lib/auth';
 import { authorizePrivateChannel } from '@/lib/realtime/pusher-server';
+import { pendingVerificationForSession } from '@/lib/device-verification';
 
 /**
  * Pusher chama esse endpoint pra autorizar inscrição em canal privado.
@@ -12,6 +13,15 @@ export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session) {
     return new NextResponse('Unauthorized', { status: 401 });
+  }
+
+  // Fail-closed: sessão com device verification pendente não recebe realtime.
+  const pending = await pendingVerificationForSession({
+    userId: session.user.id,
+    sessionToken: session.session.token,
+  });
+  if (pending) {
+    return new NextResponse('DEVICE_VERIFICATION_PENDING', { status: 403 });
   }
 
   const form = await req.formData();

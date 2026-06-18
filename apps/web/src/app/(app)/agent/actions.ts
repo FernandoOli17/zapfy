@@ -10,12 +10,14 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { enforceRateLimit } from '@/lib/rate-limit';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 
 const log = createLogger('agent-actions');
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },
@@ -116,6 +118,7 @@ export async function testAgent(
 ): Promise<TestAgentResult> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
 
   const parsed = testInput.safeParse(raw);
   if (!parsed.success) {

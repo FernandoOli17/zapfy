@@ -8,6 +8,7 @@ import { createLogger } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 import { AVAILABLE_SCOPES, generateApiKey } from '@/lib/api-auth';
 import { assertPlanFeature } from '@/lib/plans';
 import { PlanLimitError } from '@zapfy/shared';
@@ -17,6 +18,7 @@ const log = createLogger('integrations-actions');
 async function requireOwnerOrAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect('/login');
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
   const member = await prisma.workspaceMember.findFirst({
     where: { userId: session.user.id },
     include: { workspace: true },

@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { prisma, SupportSender } from '@zapfy/db';
 import { replyTicket } from '@/lib/support';
 import { createLogger } from '@zapfy/shared';
+import { enforceDeviceVerified } from '@/lib/device-verification';
 
 const log = createLogger('support-actions');
 
@@ -21,6 +22,7 @@ export async function replyAsUserAction(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return { ok: false, error: 'Sessão expirada.' };
+  await enforceDeviceVerified({ userId: session.user.id, sessionToken: session.session.token });
 
   const parsed = inputSchema.safeParse(raw);
   if (!parsed.success) {

@@ -133,8 +133,11 @@ export const auth = betterAuth({
               return;
             }
 
-            // Device novo — dispara verificação por email
-
+            // Device novo — dispara verificação por email. Se isso falhar, a
+            // sessão fica sem registro de verificação pendente: o gate central
+            // não teria o que bloquear e o atacante entraria (fail-open,
+            // AU-A6). Fail-closed: destrói a sessão recém-criada e força
+            // re-login (que tentará criar a verificação de novo).
             await createDeviceVerification({
               userId: session.userId,
               email: user.email,
@@ -146,11 +149,20 @@ export const auth = betterAuth({
               appUrl: env.BETTER_AUTH_URL,
             });
           } catch (err) {
-            // Não falha login se a verificação não rolar — só loga
             log.error(
               { err: String(err), userId: session.userId },
-              'falha disparar verificação de device',
+              'falha disparar verificação de device — destruindo sessão (fail-closed)',
             );
+            try {
+              await prisma.session.deleteMany({
+                where: { token: session.token, userId: session.userId },
+              });
+            } catch (delErr) {
+              log.error(
+                { err: String(delErr), userId: session.userId },
+                'falha destruir sessão após erro de verificação de device',
+              );
+            }
           }
         },
       },
