@@ -12,6 +12,14 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
+- **Sub-projeto 3/4 "Redesign do dashboard" CONCLUÍDO (2026-06-18).** Home reimaginada como
+  central de ação: strip de 3 métricas (conversas hoje, resolvidas pela IA, aguardando
+  você), fila de handoff dominante (HUMAN_HANDLING, mais antigo primeiro) com
+  empty-states, atividade 14d + uso do plano, faixa de ações rápidas. Verde elétrico
+  consistente; gradiente azul do CTA removido; manifest theme_color alinhado. Estado
+  derivado de `lib/dashboard-stats.ts` (nunca quebra). Blocos mortos removidos
+  (StatusRow, grid de ações, hero gradiente). Gate verde; E2E do dashboard. Commits
+  locais, sem push. Próximo: sub-projeto 4 (redesign da landing).
 - **Sub-projeto 2/4 "UX do cliente" CONCLUÍDO (2026-06-17).** Card de onboarding com 5
   passos derivados (valor antes de pagar), simulador multi-turno marca o passo 2,
   guia embutido da Meta com validação + erros acionáveis, reenvio de código no
