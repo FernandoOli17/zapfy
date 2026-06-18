@@ -101,18 +101,17 @@ export function buildServiceTools(deps: VerticalRuntimeDeps): Record<string, Too
           },
         });
 
-        // TODO(credentials): gerar PDF via UploadThing/Vercel Blob quando creds chegarem
-        // const pdfUrl = await renderPdf(quote, items, totalCents)
-        const baseUrl = process.env['NEXT_PUBLIC_APP_URL']?.replace(/\/$/, '') ?? 'https://trato.dev';
-        const previewUrl = `${baseUrl}/q/${quote.publicNumber}`;
-
+        // Não existe rota pública de proposta (`/q/[numero]`) nem PDF gerado
+        // ainda — montar `${baseUrl}/q/${publicNumber}` mandava um link 404 pro
+        // cliente. Enquanto não houver página real, a proposta vai como TEXTO
+        // (itens + total + validade), sem URL sintética no payload.
+        const formattedDate = validUntil.toLocaleDateString('pt-BR');
         return {
           ok: true as const,
           publicNumber: quote.publicNumber,
           totalFormatted: formatBrl(totalCents),
-          validUntil: validUntil.toLocaleDateString('pt-BR'),
-          previewUrl,
-          message: `Proposta ${quote.publicNumber}: ${formatBrl(totalCents)} (válida até ${validUntil.toLocaleDateString('pt-BR')}). Link: ${previewUrl}`,
+          validUntil: formattedDate,
+          message: `Proposta ${quote.publicNumber}: ${formatBrl(totalCents)} (válida até ${formattedDate}). Detalho os itens aqui mesmo na conversa.`,
         };
       },
     }),

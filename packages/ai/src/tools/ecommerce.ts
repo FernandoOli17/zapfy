@@ -220,14 +220,25 @@ export function buildEcommerceTools(deps: VerticalRuntimeDeps): Record<string, T
         if (products.length === 0) {
           return { ok: false as const, error: 'nenhum produto válido encontrado' };
         }
-        // TODO(credentials): integrar Shopify/WooCommerce Checkout API real.
-        // Por hora, se Product tem checkoutUrl direto, usa o do primeiro item;
-        // senão, constrói URL mock com query params.
+        // Integração de checkout online (Shopify/WooCommerce) ainda não conectada
+        // — a única URL real disponível é o `checkoutUrl` cadastrado no próprio
+        // Product. Se nenhum item tem checkoutUrl, NÃO inventamos link (proibido
+        // mandar checkout.example.com pro cliente): degrada honesto com handoff.
         const first = products[0];
+        if (!first?.checkoutUrl) {
+          log.info(
+            { workspaceId: deps.workspaceId, productIds: products.map((p) => p.id) },
+            'send_checkout_link sem checkoutUrl real — degradando honesto',
+          );
+          return {
+            ok: false as const,
+            reason: 'checkout_not_configured' as const,
+            error:
+              'Checkout online não está configurado pra esse produto. Não invente link: explique que vai chamar alguém do time pra fechar a compra ou combinar o pagamento por aqui mesmo.',
+          };
+        }
+        const baseUrl = first.checkoutUrl;
         const utm = `utm_source=whatsapp&utm_medium=trato&utm_campaign=conv_${deps.conversationId.slice(0, 8)}`;
-        const baseUrl = first?.checkoutUrl
-          ? first.checkoutUrl
-          : `https://checkout.example.com/cart?items=${products.map((p) => p.id).join(',')}`;
         const sep = baseUrl.includes('?') ? '&' : '?';
         const url = `${baseUrl}${sep}${utm}${couponCode ? `&coupon=${encodeURIComponent(couponCode)}` : ''}`;
 
