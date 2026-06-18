@@ -151,21 +151,38 @@ export const waWebhookChangeValueSchema = z.object({
     .optional(),
 });
 
+/**
+ * Change do field `messages` — o único que processamos.
+ */
+export const waMessagesChangeSchema = z.object({
+  field: z.literal('messages'),
+  value: waWebhookChangeValueSchema,
+});
+
+/**
+ * Change de qualquer outro field (ex.: `message_template_status_update`,
+ * `account_update`). Tolerado e ignorado — a Meta inclui essas changes no mesmo
+ * POST quando o WABA está inscrito em múltiplos fields, e rejeitar o payload
+ * inteiro descartaria mensagens válidas sem retry.
+ */
+const waOtherChangeSchema = z.object({
+  field: z.string(),
+  value: z.unknown().optional(),
+});
+
+const waWebhookChangeSchema = z.union([waMessagesChangeSchema, waOtherChangeSchema]);
+
 export const waWebhookPayloadSchema = z.object({
   object: z.literal('whatsapp_business_account'),
   entry: z.array(
     z.object({
       id: z.string(),
-      changes: z.array(
-        z.object({
-          field: z.literal('messages'),
-          value: waWebhookChangeValueSchema,
-        }),
-      ),
+      changes: z.array(waWebhookChangeSchema),
     }),
   ),
 });
 export type WaWebhookPayload = z.infer<typeof waWebhookPayloadSchema>;
+export type WaMessagesChange = z.infer<typeof waMessagesChangeSchema>;
 
 // =========================================
 // Outbound: payloads de envio
