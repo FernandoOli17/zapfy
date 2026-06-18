@@ -12,6 +12,31 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
+- **Endurecimento da zona vermelha — 11 TASKs code-only CONCLUÍDAS (2026-06-18, branch `hardening`).**
+  Todos os achados de zona vermelha que NÃO precisam de migração/decisão foram
+  corrigidos, cada um com revisão adversarial multi-agente que pegou e fez corrigir
+  bugs reais nos próprios fixes:
+  - **Dinheiro:** 0023 (upgrade usa `subscriptions.update` — sem dupla cobrança),
+    0025 (webhook Stripe 500→retry, estado vivo, sem degradar plano, `paused`→bloqueia),
+    0026 (créditos atômicos + settle idempotente via `finishedAt` — review pegou
+    over-refund no cancel e perda com Redis-fora, corrigidos), 0027 (áudio `fromAi:false`),
+    0024 (enforcement do limite de conversas no worker, fail-closed, plano ∞ não bloqueia),
+    0022 (copy sem trial + preços reais).
+  - **Forge/tools:** 0032 (degradação honesta — sem link sintético/alucinado),
+    0033 (`max+1` + retry P2002; review pegou bug de largura >9999, corrigido),
+    0034 (validação de transição da state machine + pré-req de PUBLISH).
+  - **Segurança/confiabilidade:** 0020 (device verification fail-closed: gate central em
+    todas as server actions/APIs + `createWorkspaceAction`/`acceptInviteAction` gateados
+    no review, revoke-expired destrói sessão, fail-closed na criação), 0029 (webhook Meta:
+    status monotônico, parse tolerante a field extra — review pegou poison-pill + perda
+    de msg no dup-guard, corrigidos).
+  - Gate verde de ponta a ponta. Commits locais na branch `hardening`, **sem push**.
+  - **AGUARDAM SEU OK (não feitos):** migração de schema (0021 nonce de convite, 0030
+    secret cifrado, 0035 `@@unique`+limpeza, 0036 estado RAG, 0038 status template —
+    a `.env` aponta pro Neon de prod); decisão de produto (0031 REFINEMENT do Forge,
+    0032-followup onde mora config de URL, 0037 scopedDb adotar/remover); QA visual
+    (0039 `dark:` app-wide).
+
 - **Sub-projeto 4/4 "Redesign da landing" CONCLUÍDO (2026-06-18). 4/4 frentes do
   pedido original prontas.** Home de marketing reconstruída (nível máximo): hero lidera
   pelo moat ("a IA que monta a IA", Instrument Serif italic verde); seções extraídas em
