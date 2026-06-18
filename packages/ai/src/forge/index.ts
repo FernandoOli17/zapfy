@@ -2,6 +2,7 @@ import type { ForgePhaseId } from './types';
 
 export * from './types';
 export * from './tools';
+export * from './transitions';
 export * from './engine';
 export * from './generate';
 export * from './verticals';

@@ -6,6 +6,7 @@ import { systemMessage } from '../caching';
 
 import { getPhaseSystemPrompt } from './prompts/phases';
 import { generateSystemPrompt } from './generate';
+import { validatePhaseTransition } from './transitions';
 import { createForgeTools, pickToolsForPhase, type ForgeToolDeps } from './tools';
 import type {
   ForgeAnswers,
@@ -72,7 +73,12 @@ export async function runForgeStep(input: RunForgeStepInput): Promise<RunForgeSt
       answers = { ...answers, knowledge: [...(answers.knowledge ?? []), item] };
     },
     setNextPhase: (phase) => {
+      const validation = validatePhaseTransition(state.currentPhase, phase, answers);
+      if (!validation.ok) {
+        return { ok: false as const, reason: validation.reason };
+      }
       pendingNextPhase = phase;
+      return { ok: true as const };
     },
     scrapeUrl: io.scrapeUrl,
     generateSystemPrompt: async () => generateSystemPrompt(answers),
