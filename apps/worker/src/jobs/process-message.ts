@@ -562,7 +562,9 @@ async function sendText(
           type: MessageType.TEXT,
           content: { text },
           status: MessageStatus.SENT,
-          fromAi: true,
+          // Resposta enlatada (ex.: aviso de áudio): zero IA, não pode contar
+          // como conversa de IA cobrável. Espelha sendFallbackMessage.
+          fromAi: false,
           ...(waId ? { whatsappMessageId: waId } : {}),
         },
       });
