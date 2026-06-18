@@ -148,6 +148,52 @@ export async function registerKnownDevice(input: {
 }
 
 /**
+ * Monta e dispara o e-mail de verificação de device. `sendEmail` nunca lança
+ * (captura interna e retorna `{ ok }`), então o caller só checa o booleano.
+ */
+async function sendVerificationEmail(input: {
+  userId: string;
+  email: string;
+  name: string | null;
+  ipAddress: string;
+  userAgent: string;
+  location: string | null;
+  appUrl: string;
+  code: string;
+  verifyToken: string;
+  revokeToken: string;
+}): Promise<{ ok: boolean }> {
+  const appUrl = input.appUrl.replace(/\/$/, '');
+  const tmpl = newDeviceVerificationEmail({
+    name: input.name ?? input.email.split('@')[0] ?? 'usuário',
+    ip: input.ipAddress,
+    ...(input.location ? { location: input.location } : {}),
+    device: describeDevice(input.userAgent, input.location),
+    timestampLabel: new Date().toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    }),
+    verifyUrl: `${appUrl}/verify-device?token=${input.verifyToken}`,
+    code: input.code,
+    revokeUrl: `${appUrl}/api/auth/revoke-device?token=${input.revokeToken}`,
+  });
+  const result = await sendEmail({
+    to: input.email,
+    subject: tmpl.subject,
+    html: tmpl.html,
+    text: tmpl.text,
+  });
+  if (!result.ok) {
+    log.error({ userId: input.userId, err: result.error }, 'e-mail verify-device NÃO enviado');
+  }
+  return { ok: result.ok };
+}
+
+/**
  * Cria uma verificação de dispositivo e dispara o email pro user.
  * Retorna { verifyToken, code } pro caller. `revokeToken` fica salvo no DB.
  */
@@ -182,35 +228,18 @@ export async function createDeviceVerification(input: {
     },
   });
 
-  const appUrl = input.appUrl.replace(/\/$/, '');
-  const tmpl = newDeviceVerificationEmail({
-    name: input.name ?? input.email.split('@')[0] ?? 'usuário',
-    ip: input.ipAddress,
-    ...(input.location ? { location: input.location } : {}),
-    device: describeDevice(input.userAgent, input.location),
-    timestampLabel: new Date().toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    }),
-    verifyUrl: `${appUrl}/verify-device?token=${verifyToken}`,
+  await sendVerificationEmail({
+    userId: input.userId,
+    email: input.email,
+    name: input.name,
+    ipAddress: input.ipAddress,
+    userAgent: input.userAgent,
+    location: input.location,
+    appUrl: input.appUrl,
     code,
-    revokeUrl: `${appUrl}/api/auth/revoke-device?token=${revokeToken}`,
+    verifyToken,
+    revokeToken,
   });
-
-  try {
-    await sendEmail({
-      to: input.email,
-      subject: tmpl.subject,
-      html: tmpl.html,
-      text: tmpl.text,
-    });
-  } catch (err) {
-    log.warn({ err: String(err), userId: input.userId }, 'falha enviar email verify-device');
-  }
 
   log.info(
     { userId: input.userId, ipHash: hashIp(input.ipAddress) },
@@ -218,6 +247,48 @@ export async function createDeviceVerification(input: {
   );
 
   return { verifyToken, code };
+}
+
+/**
+ * Reenvia o código pra verificação PENDENTE da sessão: regenera código e
+ * estende o TTL (não cria registro novo — verifyToken/revokeToken preservados).
+ */
+export async function resendDeviceVerification(
+  sessionToken: string,
+  appUrl: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const pending = await prisma.deviceVerification.findFirst({
+    where: { sessionToken, verifiedAt: null },
+    orderBy: { createdAt: 'desc' },
+  });
+  if (!pending) return { ok: false, error: 'Nenhuma verificação pendente.' };
+
+  const user = await prisma.user.findUnique({
+    where: { id: pending.userId },
+    select: { email: true, name: true },
+  });
+  if (!user) return { ok: false, error: 'Usuário não encontrado.' };
+
+  const code = randomInt(0, 1_000_000).toString().padStart(CODE_LENGTH, '0');
+  await prisma.deviceVerification.update({
+    where: { id: pending.id },
+    data: { codeHash: hashCode(code), expiresAt: new Date(Date.now() + CODE_TTL_MS) },
+  });
+
+  const sent = await sendVerificationEmail({
+    userId: pending.userId,
+    email: user.email,
+    name: user.name,
+    ipAddress: pending.ipAddress,
+    userAgent: pending.userAgent,
+    location: pending.location,
+    appUrl,
+    code,
+    verifyToken: pending.verifyToken,
+    revokeToken: pending.revokeToken,
+  });
+  if (!sent.ok) return { ok: false, error: 'Falha ao enviar o e-mail. Tenta de novo em instantes.' };
+  return { ok: true };
 }
 
 /**

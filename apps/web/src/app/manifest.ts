@@ -2,13 +2,13 @@
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Trato',
-    short_name: 'Trato',
+    name: 'Zapfy',
+    short_name: 'Zapfy',
     description: 'O WhatsApp da sua empresa, com cérebro próprio.',
     start_url: '/dashboard',
     display: 'standalone',
     background_color: '#05070f',
-    theme_color: '#60A5FA',
+    theme_color: '#00E676',
     lang: 'pt-BR',
     orientation: 'portrait',
     icons: [

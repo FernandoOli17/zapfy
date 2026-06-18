@@ -27,6 +27,12 @@ export interface RunAgentInput {
    * roteamento (injeta Haiku em casos triviais) e por testes (mock model).
    */
   model?: LanguageModel;
+  /**
+   * Tools habilitadas pelo dono na fase TOOLS do Forge (AgentVersion.toolsEnabled).
+   * Filtra as tools de VERTICAL; as globais (transfer_to_human, etc.) ficam
+   * sempre disponíveis. Ausente/vazio = todas as tools do vertical (legado).
+   */
+  toolsEnabled?: string[];
 }
 
 export interface RunAgentResult {
@@ -61,6 +67,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
     timeoutMs = 30_000,
     topicBlacklist = [],
     model,
+    toolsEnabled,
   } = input;
 
   if (isMockMode()) {
@@ -103,9 +110,15 @@ export async function runAgent(input: RunAgentInput): Promise<RunAgentResult> {
   }
 
   // ── 2. Montar tools ───────────────────────────────────────────────────────
+  // O dono escolhe tools na fase TOOLS do Forge — desligar tem que desligar de
+  // verdade. Filtro só nas de vertical; globais são infra do atendimento.
   const globalTools = buildGlobalTools(globalDeps);
   const verticalToolsMap = buildVerticalTools(vertical, verticalDeps);
-  const tools: Record<string, Tool> = { ...globalTools, ...verticalToolsMap };
+  const enabledSet = toolsEnabled && toolsEnabled.length > 0 ? new Set(toolsEnabled) : null;
+  const filteredVertical: Record<string, Tool> = enabledSet
+    ? Object.fromEntries(Object.entries(verticalToolsMap).filter(([name]) => enabledSet.has(name)))
+    : verticalToolsMap;
+  const tools: Record<string, Tool> = { ...globalTools, ...filteredVertical };
 
   // ── 3. Montar prompt com RAG ──────────────────────────────────────────────
   const ragSection =

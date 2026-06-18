@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { openTicket } from '@/lib/support';
 import { prisma, type SupportTicketCategory } from '@zapfy/db';
+import { createLogger } from '@zapfy/shared';
+
+const log = createLogger('support-actions');
 
 const inputSchema = z.object({
   category: z.enum([
@@ -49,7 +52,8 @@ export async function createTicketAction(
       senderName: session.user.name ?? session.user.email,
     });
     return { ok: true, ticketId: result.ticketId };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), userId: session.user.id }, 'openTicket falhou');
     return { ok: false, error: 'Falha ao abrir ticket. Tente novamente.' };
   }
 }

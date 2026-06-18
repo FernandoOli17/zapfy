@@ -32,7 +32,7 @@ export default async function OnboardingPage() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="inline-block h-2 w-2 rounded-full bg-primary" aria-hidden />
-          Trato
+          Zapfy
         </Link>
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <span className="hidden sm:inline">{session.user.email}</span>

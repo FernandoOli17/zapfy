@@ -95,9 +95,13 @@ export function ForgeWizard({ sessionId, onComplete }: Props) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && brandName.trim()) setStep(2);
               }}
+              maxLength={80}
               placeholder="Ex: Bella Pizza"
               className="mt-6 w-full rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-lg focus:border-primary/60 focus:outline-none"
             />
+            {brandName.length > 60 && (
+              <p className="mt-2 text-xs text-muted-foreground">{brandName.length}/80</p>
+            )}
             <Button
               type="button"
               onClick={() => setStep(2)}

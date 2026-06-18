@@ -27,7 +27,12 @@ export function nextPhaseDefault(current: ForgePhaseId): ForgePhaseId {
   return order[i + 1] ?? current;
 }
 
-/** Catálogo declarativo de tools sugeridas por vertical (usado por suggest_tools_for_vertical). */
+/**
+ * Catálogo declarativo de tools sugeridas por vertical (usado por
+ * suggest_tools_for_vertical). LEI: só tool que EXISTE no runtime entra aqui —
+ * o nome escolhido vai pro system prompt gerado, e tool fantasma vira promessa
+ * falsa do agente ao cliente final. Guard: tests/forge-catalog.test.ts.
+ */
 export const VERTICAL_TOOL_CATALOG: Record<string, Array<{ name: string; description: string; recommendedActive: boolean }>> = {
   ECOMMERCE: [
     { name: 'list_products', description: 'Busca produtos do catálogo com filtros.', recommendedActive: true },
@@ -38,31 +43,26 @@ export const VERTICAL_TOOL_CATALOG: Record<string, Array<{ name: string; descrip
   ],
   CLINIC: [
     { name: 'list_available_slots', description: 'Lista horários livres por especialidade e data.', recommendedActive: true },
-    { name: 'book_appointment', description: 'Marca consulta no Google Calendar.', recommendedActive: true },
+    { name: 'book_appointment', description: 'Marca consulta na agenda da clínica.', recommendedActive: true },
     { name: 'confirm_appointment', description: 'Confirma presença ou libera horário.', recommendedActive: true },
     { name: 'cancel_appointment', description: 'Cancela e oferece reagendamento.', recommendedActive: true },
-    { name: 'send_intake_form', description: 'Envia ficha pré-consulta pra preencher antes.', recommendedActive: false },
   ],
   RESTAURANT: [
     { name: 'get_menu', description: 'Mostra cardápio completo ou filtrado.', recommendedActive: true },
     { name: 'add_to_cart', description: 'Adiciona item ao pedido com observações.', recommendedActive: true },
-    { name: 'submit_order', description: 'Fecha pedido e envia pro PDV/cozinha.', recommendedActive: true },
+    { name: 'submit_order', description: 'Fecha pedido e registra na cozinha.', recommendedActive: true },
     { name: 'check_delivery_eta', description: 'Consulta status do pedido e ETA.', recommendedActive: true },
-    { name: 'apply_loyalty_discount', description: 'Aplica desconto de cliente recorrente.', recommendedActive: false },
   ],
   INFOPRODUCT: [
     { name: 'qualify_lead', description: 'Faz perguntas BANT.', recommendedActive: true },
     { name: 'send_sales_page', description: 'Envia URL da página de vendas com UTM.', recommendedActive: true },
     { name: 'schedule_call', description: 'Marca call de vendas no Calendly.', recommendedActive: true },
-    { name: 'apply_discount', description: 'Aplica cupom seguindo regras.', recommendedActive: false },
     { name: 'send_objection_handler', description: 'Responde objeção comum.', recommendedActive: true },
   ],
   SERVICE: [
     { name: 'request_quote', description: 'Coleta detalhes pra orçamento.', recommendedActive: true },
     { name: 'send_proposal', description: 'Envia proposta formatada.', recommendedActive: true },
     { name: 'book_service', description: 'Agenda data e horário.', recommendedActive: true },
-    { name: 'follow_up', description: 'Dá retorno em leads sem resposta.', recommendedActive: false },
-    { name: 'request_payment_pix', description: 'Gera Pix de sinal com QR Code.', recommendedActive: false },
   ],
   OTHER: [
     { name: 'search_knowledge', description: 'Busca na base de conhecimento (RAG).', recommendedActive: true },

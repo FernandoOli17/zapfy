@@ -43,6 +43,11 @@
   --color-destructive: hsl(0 84% 60%);       /* #ef4444 */
   --color-destructive-foreground: hsl(0 0% 98%);
 
+  /* Atenção/espera (âmbar). Valor dark-first; override no .light abaixo.
+     Tokenizado pra acompanhar o toggle de tema (.light) — `dark:` do Tailwind
+     segue o SO, não o app, então não usar variante dark: pra cor de tema. */
+  --color-warning: hsl(43 96% 58%);          /* âmbar claro p/ contraste em dark */
+
   /* Borders: #1a1a1a / #111 / #2a2a2a */
   --color-border: hsl(0 0% 10%);
   --color-border-subtle: hsl(0 0% 7%);
@@ -84,9 +89,36 @@
     --color-destructive: hsl(0 84% 60%);
     --color-destructive-foreground: hsl(0 0% 98%);
 
+    /* Âmbar escuro p/ AA sobre superfícies claras (#fff/#fafafa). */
+    --color-warning: hsl(30 90% 36%);
+
     --color-border: hsl(0 0% 91%);
     --color-input: hsl(0 0% 91%);
     --color-ring: hsl(151 100% 35%);
+  }
+
+  /* Força tema escuro num subtree (marketing é dark-first — ignora o toggle do
+     app). Re-declara os valores dark p/ neutralizar um `.light` herdado do <html>. */
+  .theme-dark {
+    --color-background: hsl(0 0% 4%);
+    --color-foreground: hsl(0 0% 98%);
+    --color-card: hsl(0 0% 7%);
+    --color-card-foreground: hsl(0 0% 98%);
+    --color-popover: hsl(0 0% 5%);
+    --color-popover-foreground: hsl(0 0% 98%);
+    --color-primary: hsl(151 100% 45%);
+    --color-primary-foreground: hsl(0 0% 4%);
+    --color-secondary: hsl(0 0% 10%);
+    --color-secondary-foreground: hsl(0 0% 98%);
+    --color-muted: hsl(0 0% 10%);
+    --color-muted-foreground: hsl(0 0% 53%);
+    --color-accent: hsl(151 100% 10%);
+    --color-accent-foreground: hsl(151 100% 75%);
+    --color-destructive: hsl(0 84% 60%);
+    --color-warning: hsl(43 96% 58%);
+    --color-border: hsl(0 0% 10%);
+    --color-input: hsl(0 0% 10%);
+    --color-ring: hsl(151 100% 45%);
   }
 
   *,

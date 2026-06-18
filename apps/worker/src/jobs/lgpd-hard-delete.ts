@@ -1,5 +1,6 @@
 import { prisma } from '@zapfy/db';
-import { createLogger } from '@zapfy/shared';
+import { createLogger, hashPii } from '@zapfy/shared';
+import { env } from '../env';
 
 const log = createLogger('worker:lgpd-hard-delete');
 
@@ -48,7 +49,9 @@ export async function processLgpdHardDelete(data: LgpdHardDeleteJob): Promise<vo
         targetType: 'Contact',
         targetId: contact.id,
         metadata: {
-          phoneE164: contact.phoneE164,
+          // NUNCA o telefone em claro: o AuditLog sobrevive ao hard delete e
+          // guardaria pra sempre a PII que este job existe pra apagar (LGPD).
+          phoneHash: hashPii(contact.phoneE164, env.LOG_PII_SALT),
           scheduledAt: contact.deletedAt?.toISOString(),
           executedAt: new Date().toISOString(),
         },

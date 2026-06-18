@@ -1,7 +1,8 @@
 ---
 id: BLK-worker-deploy-prod
 type: blocker
-status: open
+status: resolved
+resolved: 2026-06-03
 severity: high
 owner: user
 requires: Railway worker + Meta number

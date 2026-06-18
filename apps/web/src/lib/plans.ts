@@ -87,9 +87,15 @@ export async function dailyAiConversationsLastDays(
   workspaceId: string,
   days: number,
 ): Promise<Array<{ label: string; value: number }>> {
-  const since = new Date();
-  since.setDate(since.getDate() - (days - 1));
-  since.setHours(0, 0, 0, 0);
+  // Bucket, range e label na MESMA referência: fuso de Brasília (-03:00 fixo,
+  // sem DST desde 2019). Antes a chave era data UTC e o label data local —
+  // conversa das 21h+ caía no dia seguinte (e no último dia, fora do gráfico).
+  const DAY_MS = 86_400_000;
+  const BRT_OFFSET_MS = 3 * 3_600_000;
+  const dayKeyBrt = (d: Date) => new Date(d.getTime() - BRT_OFFSET_MS).toISOString().slice(0, 10);
+
+  const todayStart = new Date(`${dayKeyBrt(new Date())}T00:00:00.000-03:00`);
+  const since = new Date(todayStart.getTime() - (days - 1) * DAY_MS);
 
   const rows = await prisma.message.findMany({
     where: { workspaceId, fromAi: true, createdAt: { gte: since } },
@@ -98,23 +104,18 @@ export async function dailyAiConversationsLastDays(
 
   const buckets = new Map<string, Set<string>>();
   for (let i = 0; i < days; i++) {
-    const d = new Date(since);
-    d.setDate(d.getDate() + i);
-    buckets.set(d.toISOString().slice(0, 10), new Set());
+    buckets.set(dayKeyBrt(new Date(since.getTime() + i * DAY_MS)), new Set());
   }
   for (const r of rows) {
-    const key = r.createdAt.toISOString().slice(0, 10);
-    const set = buckets.get(key);
+    const set = buckets.get(dayKeyBrt(r.createdAt));
     if (set) set.add(r.conversationId);
   }
 
-  return Array.from(buckets.entries()).map(([k, set]) => {
-    const d = new Date(k + 'T00:00:00');
-    return {
-      label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      value: set.size,
-    };
-  });
+  return Array.from(buckets.entries()).map(([k, set]) => ({
+    // k é YYYY-MM-DD já no calendário BRT — label direto das partes.
+    label: `${k.slice(8, 10)}/${k.slice(5, 7)}`,
+    value: set.size,
+  }));
 }
 
 /**

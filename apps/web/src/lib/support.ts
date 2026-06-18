@@ -165,13 +165,21 @@ export async function replyTicket(input: ReplyTicketInput): Promise<void> {
             ? `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/support/${ticket.id}`
             : `mailto:${STAFF_EMAIL}?subject=${encodeURIComponent('Re: Ticket #' + ticket.publicNumber)}`,
         });
-        await sendEmail({
+        const result = await sendEmail({
           to: userEmail,
           subject: tmpl.subject,
           html: tmpl.html,
           text: tmpl.text,
           replyTo: STAFF_EMAIL,
         });
+        if (!result.ok) {
+          // sendEmail nunca lança — sem checar ok, o staff achava que tinha
+          // respondido e o cliente nunca recebia nada (classe do ERR-0001).
+          log.error(
+            { ticketId: input.ticketId, err: result.error },
+            'e-mail de resposta de ticket NÃO entregue ao cliente',
+          );
+        }
       }
     } else {
       // User respondeu → notifica staff
@@ -185,16 +193,22 @@ export async function replyTicket(input: ReplyTicketInput): Promise<void> {
           : `Usuário (${ticket.user?.email ?? ticket.userId})`,
         adminUrl: `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '')}/admin/support/${ticket.id}`,
       });
-      await sendEmail({
+      const result = await sendEmail({
         to: STAFF_EMAIL,
         subject: tmpl.subject,
         html: tmpl.html,
         text: tmpl.text,
         ...(ticket.guestEmail ? { replyTo: ticket.guestEmail } : {}),
       });
+      if (!result.ok) {
+        log.error(
+          { ticketId: input.ticketId, err: result.error },
+          'notificação de ticket pro staff NÃO entregue',
+        );
+      }
     }
   } catch (err) {
-    log.warn({ err: String(err), ticketId: input.ticketId }, 'falha notificar');
+    log.error({ err: String(err), ticketId: input.ticketId }, 'falha notificar resposta de ticket');
   }
 }
 

@@ -70,11 +70,11 @@ async function sendIfNotSent(input: {
   email: string;
   templateKey: string;
   tmpl: TemplateOutput;
-}): Promise<void> {
+}): Promise<boolean> {
   const already = await prisma.emailSent.findUnique({
     where: { userId_templateKey: { userId: input.userId, templateKey: input.templateKey } },
   });
-  if (already) return;
+  if (already) return false;
 
   const resend = getResend();
   if (!resend) {
@@ -86,7 +86,7 @@ async function sendIfNotSent(input: {
     await prisma.emailSent.create({
       data: { userId: input.userId, templateKey: input.templateKey, resendId: 'dev-no-op' },
     });
-    return;
+    return true;
   }
 
   try {
@@ -98,8 +98,10 @@ async function sendIfNotSent(input: {
       text: input.tmpl.text,
     });
     if (res.error) {
-      log.warn({ templateKey: input.templateKey, err: res.error }, 'resend error');
-      return;
+      // Falha do Resend é a classe do ERR-0001: sem EmailSent persistido, a
+      // janela móvel do sweep pode expirar e o e-mail nunca mais é tentado.
+      log.error({ userId: input.userId, templateKey: input.templateKey, err: res.error }, 'resend error — email NÃO enviado');
+      return false;
     }
     await prisma.emailSent.create({
       data: {
@@ -109,8 +111,10 @@ async function sendIfNotSent(input: {
       },
     });
     log.info({ userId: input.userId, templateKey: input.templateKey }, 'email sequence enviado');
+    return true;
   } catch (err) {
     log.error({ userId: input.userId, templateKey: input.templateKey, err: String(err) }, 'send falhou');
+    return false;
   }
 }
 
@@ -147,13 +151,13 @@ export async function runEmailSequencesSweep(): Promise<{ sent: number }> {
     );
     if (hasPublished) continue;
 
-    await sendIfNotSent({
+    const ok = await sendIfNotSent({
       userId: u.id,
       email: u.email,
       templateKey: 'day3_forge_nudge',
       tmpl: day3Forge(u.name?.split(' ')[0] ?? 'tudo bem?'),
     });
-    sent += 1;
+    if (ok) sent += 1;
   }
 
   // ─── day6_trial_ending ──────────────────────────────────────────────────
@@ -178,13 +182,13 @@ export async function runEmailSequencesSweep(): Promise<{ sent: number }> {
 
   for (const u of day6Users) {
     if (!u.email) continue;
-    await sendIfNotSent({
+    const ok = await sendIfNotSent({
       userId: u.id,
       email: u.email,
       templateKey: 'day6_trial_ending',
       tmpl: day6Trial(u.name?.split(' ')[0] ?? 'olá'),
     });
-    sent += 1;
+    if (ok) sent += 1;
   }
 
   // ─── activation ─────────────────────────────────────────────────────────
@@ -207,13 +211,13 @@ export async function runEmailSequencesSweep(): Promise<{ sent: number }> {
   for (const ws of activationCandidates) {
     const owner = ws.members[0]?.user;
     if (!owner || !owner.email) continue;
-    await sendIfNotSent({
+    const ok = await sendIfNotSent({
       userId: owner.id,
       email: owner.email,
       templateKey: 'activation',
       tmpl: activation(owner.name?.split(' ')[0] ?? '', ws.slug),
     });
-    sent += 1;
+    if (ok) sent += 1;
   }
 
   return { sent };

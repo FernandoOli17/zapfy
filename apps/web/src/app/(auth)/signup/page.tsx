@@ -1,8 +1,15 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 
 import { SignupForm } from './signup-form';
 
 export const metadata = { title: 'Criar conta' };
+
+// `useSearchParams()` no SignupForm (lê ?next= e ?email= do convite) exige
+// Suspense boundary em Next.js 15+.
+function SignupFormSkeleton() {
+  return <div className="h-[360px] animate-pulse rounded-lg bg-muted/40" />;
+}
 
 export default function SignupPage() {
   return (
@@ -15,7 +22,9 @@ export default function SignupPage() {
         Crie sua conta e converse com o Forge em minutos.
       </p>
       <div className="mt-8">
-        <SignupForm />
+        <Suspense fallback={<SignupFormSkeleton />}>
+          <SignupForm />
+        </Suspense>
       </div>
       <p className="mt-8 text-sm text-muted-foreground">
         Já tem conta?{' '}

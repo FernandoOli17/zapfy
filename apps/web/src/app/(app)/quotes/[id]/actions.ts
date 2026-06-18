@@ -147,6 +147,9 @@ export async function changeQuoteStatus(
   if ((parsed.data.status === 'ACCEPTED' || parsed.data.status === 'REJECTED') && q.status !== 'SENT') {
     return { status: 'error', error: 'Aceitar/recusar só depois de enviado' };
   }
+  if (parsed.data.status === 'EXPIRED' && q.status !== 'SENT') {
+    return { status: 'error', error: 'Só orçamento enviado pode expirar' };
+  }
 
   await prisma.$transaction([
     prisma.quote.update({

@@ -7,6 +7,9 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { prisma, SupportSender, type SupportTicketStatus } from '@zapfy/db';
 import { replyTicket, setTicketStatus } from '@/lib/support';
+import { createLogger } from '@zapfy/shared';
+
+const log = createLogger('admin-support-actions');
 
 async function requireSuperAdmin() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -46,7 +49,8 @@ export async function adminReplyAction(
     revalidatePath(`/admin/support/${parsed.data.ticketId}`);
     revalidatePath('/admin/support');
     return { ok: true };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), ticketId: parsed.data.ticketId }, 'replyTicket (staff) falhou');
     return { ok: false, error: 'Falha ao enviar.' };
   }
 }
@@ -70,7 +74,8 @@ export async function adminSetStatusAction(
     revalidatePath(`/admin/support/${parsed.data.ticketId}`);
     revalidatePath('/admin/support');
     return { ok: true };
-  } catch {
+  } catch (err) {
+    log.error({ err: String(err), ticketId: parsed.data.ticketId }, 'setTicketStatus falhou');
     return { ok: false, error: 'Falha.' };
   }
 }

@@ -12,7 +12,58 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
-- **Fase atual:** **Fase 6 — Motor de IA (EM ANDAMENTO, 2026-05-29).** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Gate: lint/typecheck/test (53 testes). **Medição com token real aguarda credenciais no .env** + rodar scripts de eval/custo/roteamento. ADR-0004 (roteamento) proposto, decisão do usuário pendente. **Fase B (produção) aguarda OK.**
+- **Sub-projeto 4/4 "Redesign da landing" CONCLUÍDO (2026-06-18). 4/4 frentes do
+  pedido original prontas.** Home de marketing reconstruída (nível máximo): hero lidera
+  pelo moat ("a IA que monta a IA", Instrument Serif italic verde); seções extraídas em
+  `components/marketing/sections/` (problem, how-it-works, capabilities bento, segments,
+  product-proof, pricing-teaser, final-cta) com `page.tsx` como composição — monólito de
+  582 linhas desmontado. Honestidade: removidos os 3 depoimentos fabricados (+340%, Ana
+  Lima, Dr. Carlos), capabilities sem claims falsas (áudio/mídia, "aprende"), ForgeDemo
+  sem "tempo médio do beta: 8min", JSON-LD com preços reais (PRO 247, BUSINESS 597);
+  prova nova = produto real (Cloud API oficial, LGPD, garantia 7d, Forge grátis). 53
+  hardcodes → tokens (verde); dark-first preservado via `.theme-dark`. Gate verde
+  (typecheck/lint/build 43 páginas); E2E da landing escrito. **Pendência de ambiente:**
+  `next start` local falha por `.next` poluído (turbopack×webpack) — não é o código;
+  resolve com `rm -rf apps/web/.next && pnpm --filter @zapfy/web dev`. Commits locais,
+  sem push até OK de deploy.
+- **Sub-projeto 3/4 "Redesign do dashboard" CONCLUÍDO (2026-06-18).** Home reimaginada como
+  central de ação: strip de 3 métricas (conversas hoje, resolvidas pela IA, aguardando
+  você), fila de handoff dominante (HUMAN_HANDLING, mais antigo primeiro) com
+  empty-states, atividade 14d + uso do plano, faixa de ações rápidas. Verde elétrico
+  consistente; gradiente azul do CTA removido; manifest theme_color alinhado. Estado
+  derivado de `lib/dashboard-stats.ts` (nunca quebra). Blocos mortos removidos
+  (StatusRow, grid de ações, hero gradiente). Gate verde; E2E do dashboard. Commits
+  locais, sem push. Próximo: sub-projeto 4 (redesign da landing).
+- **Sub-projeto 2/4 "UX do cliente" CONCLUÍDO (2026-06-17).** Card de onboarding com 5
+  passos derivados (valor antes de pagar), simulador multi-turno marca o passo 2,
+  guia embutido da Meta com validação + erros acionáveis, reenvio de código no
+  verify-device, 13 quick wins do audit aplicados. E2E do card
+  (`apps/web/e2e/onboarding-card.spec.ts`) passou contra o DB real (Neon); gate
+  completo do root verde (typecheck 7/7, lint 7/7, test 3 pacotes, build 2/2).
+  Débito: capturar prints reais do painel da Meta pra
+  `apps/web/public/guias/meta/{passo-1-app,passo-2-ids,passo-3-token,passo-4-secret}.png`
+  (nomes exatos que o `StepImage` de `meta-guide.tsx` procura; slots já renderizam
+  quando os arquivos existirem). Desvio anotado: o segundo cenário E2E previsto ("após
+  publicar agente, CTA aponta pra /agent") não é determinístico — publicar exige o
+  loop de tool calls da IA (mockada em E2E), então o avanço de passo fica coberto
+  pelo derivador puro (Task 1), não por E2E. Commits locais, sem push. Próximo:
+  sub-projeto 3 (redesign do dashboard).
+- **Sub-projeto 1/4 "Zerar erros" CONCLUÍDO (2026-06-12).** Auditoria paralela
+  (5 agentes + verificação adversarial) achou **69 bugs confirmados** nos fluxos
+  críticos. **36 corrigidos** em 7 commits locais (`204f8e0`..`4673322` —
+  idempotência de retry no WhatsApp, cross-tenant no book_service, lock do Forge,
+  toolsEnabled aplicado, SSRF em webhooks, LGPD sem PII, +testes novos em
+  packages/wa e forge-catalog). **33 triados** em TASK-0020..0038 (**aguardam OK**
+  — destaque P1: TASK-0023 dupla cobrança no upgrade, TASK-0024 limite de
+  conversas sem enforcement, TASK-0025 webhook Stripe perde evento, TASK-0029
+  webhook Meta síncrono, TASK-0020 device verification contornável, TASK-0031
+  REFINEMENT do Forge inexistente). Gate final verde. Relatório completo:
+  `docs/superpowers/audits/2026-06-10-zerar-erros/relatorio.md`. **Commits locais,
+  sem push** (push dispara deploy Vercel — precisa de OK). Pedido original do
+  usuário tem 4 frentes; próximas: **sub-projeto 2 (UX do cliente) → 3 (redesign
+  dashboard) → 4 (redesign landing)**, cada uma com spec própria.
+- **🟢 PRODUÇÃO NO AR DE PONTA A PONTA (2026-06-03).** Web na Vercel (www.zapfy.store, `/api/health` 200, Forge guiada deployada), **worker no Railway rodando** (consome a fila BullMQ → IA responde no WhatsApp), Anthropic + Voyage **validadas ao vivo** (`scripts/validate-key.ts` + ping Voyage 1024 dims), DB/Redis/Stripe/Pusher/Resend conectados. Bloqueios resolvidos: BLK-push-rede, BLK-worker-deploy-prod. Gate verde (typecheck 7/7, lint 7/7, test 41/41). **Falta só:** smoke test E2E com número Meta real (signup → Forge → conectar WhatsApp → msg real → IA responde).
+- **Fase atual:** **Fase 6 — Motor de IA.** Fundação construída e verde (medidor de custo, detector de alucinação, tool loop testado, eval harness, roteamento Haiku→Sonnet atrás de flag). Credenciais reais validadas; rodar scripts de eval/custo/roteamento com token real é o próximo passo de medição. ADR-0004 (roteamento) proposto, decisão do usuário pendente.
 - **Próxima ação:** **Forge guiada DEPLOYADA** — push de 21 commits feito em 2026-06-03 (`c267ca9`), Vercel redeploya o web. `railway.json` criado (destrava worker). **Gargalo restante pro fluxo WhatsApp do cliente:** criar o serviço worker no Railway ([[BLK-worker-deploy-prod]]) + chaves (Voyage, Meta number). Depois: sub-projetos (cardápio+fotos multimodal / tutorial onboarding / paywall).
 - **Anterior:** Refactor de billing DEPLOYADO em produção (www.zapfy.store), Stripe live, migração de prod aplicada, login resolvido. Fases 1–5 ✅.
 

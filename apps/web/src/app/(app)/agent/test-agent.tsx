@@ -29,19 +29,34 @@ const EXAMPLES_BY_VERTICAL: Record<string, string[]> = {
   OTHER: ['oi qual o horário de vocês?', 'onde fica?', 'tem desconto pra cliente novo?'],
 };
 
+type ChatMsg = { role: 'user' | 'assistant'; text: string };
+
 export function TestAgent({ agentId, vertical }: Props) {
   const [text, setText] = useState('');
+  const [chat, setChat] = useState<ChatMsg[]>([]);
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<TestAgentResult | null>(null);
 
   const examples = EXAMPLES_BY_VERTICAL[vertical] ?? EXAMPLES_BY_VERTICAL['OTHER']!;
 
   function onRun() {
-    if (!text.trim()) return;
-    setResult(null);
+    const msg = text.trim();
+    if (!msg) return;
+    setText('');
+    setChat((c) => [...c, { role: 'user', text: msg }]);
     startTransition(async () => {
-      const r = await testAgent({ agentId, inboundText: text });
+      // Só as últimas trocas: o schema do servidor limita history a 20 itens —
+      // mandar a conversa inteira travava o simulador depois de ~11 rodadas.
+      const r = await testAgent({ agentId, inboundText: msg, history: chat.slice(-18) });
       setResult(r);
+      if (r.status === 'ok') {
+        setChat((c) => [...c, { role: 'assistant', text: r.replyText }]);
+      } else {
+        // Turno falhou: desfaz o append otimista (senão fica um 'user' órfão,
+        // gerando dois 'user' seguidos no próximo histórico) e devolve o texto.
+        setChat((c) => c.slice(0, -1));
+        setText(msg);
+      }
     });
   }
 
@@ -54,10 +69,38 @@ export function TestAgent({ agentId, vertical }: Props) {
         <div>
           <h2 className="text-sm font-semibold tracking-tight">Testar agente</h2>
           <p className="text-xs text-muted-foreground">
-            Simula uma mensagem como se viesse do WhatsApp. Não envia nada nem cobra mensagem.
+            Converse com seu agente — é assim que seus clientes serão atendidos. Nada é enviado nem cobrado.
           </p>
         </div>
       </div>
+
+      {chat.length > 0 && (
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label="Conversa do simulador"
+          className="mt-4 max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border bg-background p-3"
+        >
+          {chat.map((m, i) => (
+            <div
+              key={i}
+              className={cn(
+                'max-w-[85%] rounded-xl px-3 py-2 text-sm whitespace-pre-wrap',
+                m.role === 'user'
+                  ? 'ml-auto bg-primary/15 text-foreground'
+                  : 'mr-auto bg-muted',
+              )}
+            >
+              {m.text}
+            </div>
+          ))}
+          {pending && (
+            <div className="mr-auto inline-flex items-center gap-1.5 rounded-xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> digitando…
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 space-y-3">
         <textarea
@@ -106,6 +149,19 @@ export function TestAgent({ agentId, vertical }: Props) {
               {ex.length > 32 ? ex.slice(0, 32) + '…' : ex}
             </button>
           ))}
+          {chat.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setChat([]);
+                setResult(null);
+              }}
+              disabled={pending}
+              className="ml-auto rounded-full px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              Limpar conversa
+            </button>
+          )}
         </div>
       </div>
 

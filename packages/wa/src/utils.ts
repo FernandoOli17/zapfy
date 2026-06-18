@@ -32,7 +32,9 @@ export function splitText(
 
 function findCut(text: string, max: number, separators: string[]): number {
   for (const sep of separators) {
-    const idx = text.lastIndexOf(sep, max);
+    // Busca limitada a max - sep.length: garante cut (idx + sep.length) <= max,
+    // senão um ". " em idx === max gerava chunk de max+1 chars após o trim.
+    const idx = text.lastIndexOf(sep, max - sep.length);
     if (idx > max * 0.4) return idx + sep.length;
   }
   return -1;
@@ -45,7 +47,9 @@ function findCut(text: string, max: number, separators: string[]): number {
 export function isWithin24hWindow(lastIncomingAt: Date | null | undefined): boolean {
   if (!lastIncomingAt) return false;
   const elapsed = Date.now() - lastIncomingAt.getTime();
-  return elapsed >= 0 && elapsed < WA_WINDOW_MS;
+  // elapsed negativo = timestamp da Meta à frente do relógio local (clock skew).
+  // Mensagem "do futuro" é recém-chegada — o caso mais dentro-da-janela possível.
+  return elapsed < WA_WINDOW_MS;
 }
 
 /** Horas decorridas desde a última mensagem recebida (arredondado pra baixo). */
