@@ -77,6 +77,7 @@ ADRs no vault: `ADR-0001` (modelo), `ADR-0002` (conversa de IA), `ADR-0003` (ren
 - **Broadcasts:** créditos de marketing (`Subscription.marketingCredits`), bloqueio por saldo no launch; fluxo de compra é fase futura.
 - **Código verde** (lint/typecheck 7/7/test 7/7). **Pendente:** migração de prod (zona vermelha, OK necessário), Price objects Stripe, deploy. Em dev: `STRIPE_MOCK=true`.
 - **Débitos:** testes unitários de billing (`TASK-0007`), falha de e-mail não engolida (`TASK-0009`).
+- **TASK-0022 (2026-06-18):** e-mails de onboarding prometiam trial inexistente. Decisão: opção (a) — alinhar copy ao modelo sem trial + garantia 7d (não implementar trial). `welcomeEmail` e os templates `day6` (web + worker) reescritos pra "monte de graça → assine pra ir ao ar → garantia 7d", preços corrigidos (Pro R$247, Business R$597, conversas 1.500/6.000/∞). Sweep `day6` agora mira workspaces `INCOMPLETE` em ~D+6 do signup (era query `TRIALING`+`trialEndsAt` que nunca casava). `templateKey` `day6_trial_ending` mantido pra preservar idempotência de `EmailSent`. Sem schema.
 
 ### Auditoria de 2026-05-26 (fixes aplicados)
 - ✅ **RAG real:** chunker com overlap + embedding batch via Voyage AI + RRF híbrido. Job `process-knowledge` em BullMQ, fallback inline se Redis down. UI de reprocessar erros.
