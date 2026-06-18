@@ -43,6 +43,11 @@
   --color-destructive: hsl(0 84% 60%);       /* #ef4444 */
   --color-destructive-foreground: hsl(0 0% 98%);
 
+  /* Atenção/espera (âmbar). Valor dark-first; override no .light abaixo.
+     Tokenizado pra acompanhar o toggle de tema (.light) — `dark:` do Tailwind
+     segue o SO, não o app, então não usar variante dark: pra cor de tema. */
+  --color-warning: hsl(43 96% 58%);          /* âmbar claro p/ contraste em dark */
+
   /* Borders: #1a1a1a / #111 / #2a2a2a */
   --color-border: hsl(0 0% 10%);
   --color-border-subtle: hsl(0 0% 7%);
@@ -83,6 +88,9 @@
 
     --color-destructive: hsl(0 84% 60%);
     --color-destructive-foreground: hsl(0 0% 98%);
+
+    /* Âmbar escuro p/ AA sobre superfícies claras (#fff/#fafafa). */
+    --color-warning: hsl(30 90% 36%);
 
     --color-border: hsl(0 0% 91%);
     --color-input: hsl(0 0% 91%);

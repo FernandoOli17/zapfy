@@ -33,7 +33,7 @@ export function HandoffQueue({ items, total, whatsappConnected }: Props) {
         <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
           Aguardando você
           {total > 0 && (
-            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-medium text-warning">
               {total}
             </span>
           )}
@@ -57,7 +57,7 @@ export function HandoffQueue({ items, total, whatsappConnected }: Props) {
         />
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden />}
+          icon={<CheckCircle2 className="h-5 w-5 text-primary" aria-hidden />}
           title="Tudo em dia"
           body="A IA está dando conta — ninguém esperando atendimento humano agora."
         />

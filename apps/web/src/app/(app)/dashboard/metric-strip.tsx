@@ -52,34 +52,38 @@ function Metric({
 }) {
   return (
     <div
+      role="group"
+      aria-label={hint ? `${label}: ${value}, ${hint}` : `${label}: ${value}`}
       className={cn(
         'rounded-xl border bg-card p-4',
-        tone === 'warn' ? 'border-amber-500/40' : 'border-border',
+        tone === 'warn' ? 'border-warning/40' : 'border-border',
       )}
     >
       <div
+        aria-hidden
         className={cn(
           'flex h-8 w-8 items-center justify-center rounded-lg',
           tone === 'primary'
             ? 'bg-primary/10 text-primary'
             : tone === 'warn'
-              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+              ? 'bg-warning/15 text-warning'
               : 'bg-muted text-muted-foreground',
         )}
       >
         {icon}
       </div>
       <div
+        aria-hidden
         className={cn(
           'mt-3 text-3xl font-semibold tracking-tight tabular-nums',
           tone === 'primary' && 'text-primary',
-          tone === 'warn' && 'text-amber-600 dark:text-amber-400',
+          tone === 'warn' && 'text-warning',
         )}
       >
         {value}
       </div>
-      <div className="mt-0.5 text-xs font-medium">{label}</div>
-      {hint && <div className="text-xs text-muted-foreground">{hint}</div>}
+      <div aria-hidden className="mt-0.5 text-xs font-medium">{label}</div>
+      {hint && <div aria-hidden className="text-xs text-muted-foreground">{hint}</div>}
     </div>
   );
 }
