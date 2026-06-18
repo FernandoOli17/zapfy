@@ -24,8 +24,14 @@ function isUniqueViolation(err: unknown): boolean {
 
 /**
  * Maior sufixo numérico já usado para `prefix` no workspace, ou 0 se nenhum.
- * Ordena por `publicNumber desc` (índice da unique) e faz parse do sufixo do
- * topo — robusto mesmo se o padding mudar de largura (ex.: passar de 9999).
+ *
+ * NÃO ordena por `publicNumber` (string): a ordenação lexicográfica quebra quando
+ * o padding muda de largura (PED-9999 → PED-10000), colocando "10000" ANTES de
+ * "9999" e devolvendo um max defasado. Em vez disso lê todos os sufixos do
+ * workspace e tira o máximo NUMÉRICO em JS — correto independente da largura.
+ * Trade-off: O(n) linhas (só o campo `publicNumber`, indexado). Pro estágio do
+ * produto (SMB) é barato; se um workspace passar de dezenas de milhares de
+ * pedidos, trocar por `MAX(CAST(substring ...))` via $queryRaw.
  */
 async function maxNumber(
   delegate: { findMany: (args: unknown) => Promise<Array<{ publicNumber: string }>> },
@@ -34,9 +40,7 @@ async function maxNumber(
 ): Promise<number> {
   const rows = await delegate.findMany({
     where: { workspaceId, publicNumber: { startsWith: `${prefix}-` } },
-    orderBy: { publicNumber: 'desc' },
     select: { publicNumber: true },
-    take: 8,
   });
   let max = 0;
   for (const r of rows) {

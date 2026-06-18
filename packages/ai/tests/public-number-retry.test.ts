@@ -157,6 +157,28 @@ describe('submit_order — numeração de Order resiliente (TASK-0033)', () => {
     expect(orderState.createCalls).toBeGreaterThanOrEqual(2);
     expect(res.ok).toBe(true);
   });
+
+  it('numeração acima de 9999 não regride (largura 4→5 dígitos)', async () => {
+    // Ordenação lexicográfica colocaria "PED-10000" ANTES de "PED-9999" e
+    // devolveria max defasado. O max NUMÉRICO correto é 10000 → próximo 10001.
+    orderState.rows = [
+      { publicNumber: 'PED-9998' },
+      { publicNumber: 'PED-9999' },
+      { publicNumber: 'PED-10000' },
+    ];
+    const tools = buildRestaurantTools(deps);
+    const conv = await import('@zapfy/db');
+    (conv.prisma.conversation.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({
+      internalNotes: '__CART__:' + JSON.stringify({ items: [{ productId: 'c'.repeat(25), name: 'X', qty: 1, priceCents: 100 }] }),
+    });
+    const submit = tools['submit_order']!;
+    const res = (await (submit.execute as (i: unknown, o: unknown) => Promise<unknown>)(
+      orderInput,
+      {},
+    )) as { ok: boolean; publicNumber?: string };
+    expect(res.ok).toBe(true);
+    expect(res.publicNumber).toBe('PED-10001');
+  });
 });
 
 describe('request_quote — numeração de Quote resiliente (TASK-0033)', () => {

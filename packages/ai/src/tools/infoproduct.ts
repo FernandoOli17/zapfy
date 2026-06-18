@@ -86,8 +86,9 @@ export function buildInfoproductTools(deps: VerticalRuntimeDeps): Record<string,
         'Envia a página de vendas do workspace. Use depois de qualificar e o lead pedir "me manda o link". A URL vem da configuração do workspace — você NÃO fornece a URL e NÃO deve inventar nenhum link.',
       // Sem `salesPageUrl` no input: a URL antes vinha do PRÓPRIO modelo e podia
       // ser um domínio alucinado mandado pro lead. A fonte real (config do
-      // workspace) ainda não existe — ver notes/PLAN.md. Até existir, a tool
-      // degrada honesto em vez de confiar no que o LLM "acha" que é a URL.
+      // workspace — TASK-0032, onde a config vai morar é decisão de produto
+      // pendente) ainda não existe. Até existir, a tool degrada honesto em vez
+      // de confiar no que o LLM "acha" que é a URL.
       inputSchema: z.object({
         campaign: z.string().max(40).default('chat').describe('Campanha pro UTM, ex: blackfriday, lancamento'),
       }),
