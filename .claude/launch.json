@@ -4,8 +4,9 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@zapai/web", "dev"],
-      "port": 3000
+      "runtimeArgs": ["-C", "apps/web", "dev", "--", "--port", "3100"],
+      "port": 3100,
+      "autoPort": false
     }
   ]
 }

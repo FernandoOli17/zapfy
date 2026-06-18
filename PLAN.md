@@ -12,6 +12,20 @@ contínuo em linguagem natural.
 **Diferencial central:** o moat não é a IA que atende, é a IA que constrói a IA que atende.
 
 ## Estado atual
+- **Sub-projeto 4/4 "Redesign da landing" CONCLUÍDO (2026-06-18). 4/4 frentes do
+  pedido original prontas.** Home de marketing reconstruída (nível máximo): hero lidera
+  pelo moat ("a IA que monta a IA", Instrument Serif italic verde); seções extraídas em
+  `components/marketing/sections/` (problem, how-it-works, capabilities bento, segments,
+  product-proof, pricing-teaser, final-cta) com `page.tsx` como composição — monólito de
+  582 linhas desmontado. Honestidade: removidos os 3 depoimentos fabricados (+340%, Ana
+  Lima, Dr. Carlos), capabilities sem claims falsas (áudio/mídia, "aprende"), ForgeDemo
+  sem "tempo médio do beta: 8min", JSON-LD com preços reais (PRO 247, BUSINESS 597);
+  prova nova = produto real (Cloud API oficial, LGPD, garantia 7d, Forge grátis). 53
+  hardcodes → tokens (verde); dark-first preservado via `.theme-dark`. Gate verde
+  (typecheck/lint/build 43 páginas); E2E da landing escrito. **Pendência de ambiente:**
+  `next start` local falha por `.next` poluído (turbopack×webpack) — não é o código;
+  resolve com `rm -rf apps/web/.next && pnpm --filter @zapfy/web dev`. Commits locais,
+  sem push até OK de deploy.
 - **Sub-projeto 3/4 "Redesign do dashboard" CONCLUÍDO (2026-06-18).** Home reimaginada como
   central de ação: strip de 3 métricas (conversas hoje, resolvidas pela IA, aguardando
   você), fila de handoff dominante (HUMAN_HANDLING, mais antigo primeiro) com
