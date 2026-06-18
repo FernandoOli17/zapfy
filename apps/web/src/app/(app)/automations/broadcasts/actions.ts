@@ -213,6 +213,7 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
   // Cada job tem jobId determinístico (broadcast:contactId) pra dedup natural
   // em re-enqueue/retry.
   let enqueued = 0;
+  const failedToEnqueue: string[] = [];
   for (const r of broadcast.recipients) {
     const job: SendBroadcastJob = {
       workspaceId: ctx.workspace.id,
@@ -224,6 +225,46 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
       attempts: 3,
     });
     if (res.ok) enqueued += 1;
+    else failedToEnqueue.push(r.contactId);
+  }
+
+  // Fila totalmente indisponível (Redis fora): nada foi enfileirado. Reverte o
+  // launch INTEIRO — estorna os créditos debitados e volta o status — pra não
+  // perder dinheiro nem deixar o broadcast travado em RUNNING sem jobs.
+  if (enqueued === 0) {
+    await prisma.subscription.updateMany({
+      where: { workspaceId: ctx.workspace.id },
+      data: { marketingCredits: { increment: needed } },
+    });
+    await prisma.broadcast.updateMany({
+      where: { id: broadcast.id, status: BroadcastStatus.RUNNING },
+      data: { status: previousStatus, startedAt: null },
+    });
+    log.error(
+      { broadcastId: broadcast.id, needed },
+      'fila indisponível no launch — revertido (créditos estornados)',
+    );
+    return {
+      status: 'error',
+      error: 'A fila de envio está indisponível agora. Nada foi cobrado — tente de novo em instantes.',
+    };
+  }
+
+  // Falha parcial de enqueue: marca os não-enfileirados como FAILED pra que o
+  // settle do broadcast os estorne (senão ficariam PENDING pra sempre, com o
+  // crédito preso). Os enfileirados seguem normalmente.
+  if (failedToEnqueue.length > 0) {
+    await prisma.broadcastRecipient.updateMany({
+      where: { broadcastId: broadcast.id, contactId: { in: failedToEnqueue } },
+      data: {
+        status: BroadcastRecipientStatus.FAILED,
+        errorMessage: 'não enfileirado (fila indisponível no launch)',
+      },
+    });
+    log.warn(
+      { broadcastId: broadcast.id, enqueued, total: needed, failed: failedToEnqueue.length },
+      'launch parcial — recipients não-enfileirados marcados FAILED (serão estornados no settle)',
+    );
   }
 
   await prisma.auditLog.create({
@@ -254,6 +295,41 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
   return { status: 'ok', broadcastId: broadcast.id };
 }
 
+/**
+ * Settle idempotente de um broadcast CANCELED: reivindica `finishedAt` (null→now)
+ * e, se vencer, estorna 1 crédito por recipient FAILED/SKIPPED (estado FINAL — SENT
+ * não estorna). Só dispara com PENDING===0; senão os jobs do worker settam ao
+ * drenar. Mesma lógica do `maybeCompleteBroadcast` do worker — espelhada aqui pro
+ * caso de cancel sem jobs em voo. Retorna quantos créditos foram estornados agora.
+ */
+async function settleCanceledBroadcast(broadcastId: string, workspaceId: string): Promise<number> {
+  const remaining = await prisma.broadcastRecipient.count({
+    where: { broadcastId, status: BroadcastRecipientStatus.PENDING },
+  });
+  if (remaining > 0) return 0; // jobs em voo settam depois
+
+  const claimed = await prisma.broadcast.updateMany({
+    where: { id: broadcastId, finishedAt: null },
+    data: { finishedAt: new Date() },
+  });
+  if (claimed.count === 0) return 0;
+
+  const refundCount = await prisma.broadcastRecipient.count({
+    where: {
+      broadcastId,
+      status: { in: [BroadcastRecipientStatus.FAILED, BroadcastRecipientStatus.SKIPPED] },
+    },
+  });
+  if (refundCount > 0) {
+    await prisma.subscription.updateMany({
+      where: { workspaceId },
+      data: { marketingCredits: { increment: refundCount } },
+    });
+    log.info({ workspaceId, broadcastId, refundCount }, 'créditos estornados no settle do cancelamento');
+  }
+  return refundCount;
+}
+
 export async function cancelBroadcast(broadcastId: string): Promise<BroadcastActionResult> {
   const ctx = await requireAdmin();
   if ('error' in ctx) return { status: 'error', error: ctx.error };
@@ -269,45 +345,25 @@ export async function cancelBroadcast(broadcastId: string): Promise<BroadcastAct
     return { status: 'error', error: `Broadcast já está ${broadcast.status}` };
   }
 
-  // Transição atômica pra CANCELED: o `count > 0` garante que o estorno roda uma
-  // única vez (não em cancelamentos concorrentes nem se o worker já tiver fechado).
+  // Transição atômica pra CANCELED, SEM finishedAt: o estorno NÃO acontece aqui.
+  // Quem estorna é o settle (`settleCanceledBroadcast`), reivindicado por
+  // `finishedAt` — assim ele conta o estado FINAL dos recipients. Estornar PENDING
+  // aqui dava over-refund: um envio em voo (sendTemplate já feito, prestes a virar
+  // SENT) seria contado como não-entregue e estornado mesmo tendo consumido crédito.
   const canceled = await prisma.broadcast.updateMany({
     where: {
       id: broadcast.id,
       status: { notIn: [BroadcastStatus.COMPLETED, BroadcastStatus.CANCELED] },
     },
-    data: { status: BroadcastStatus.CANCELED, finishedAt: new Date() },
+    data: { status: BroadcastStatus.CANCELED },
   });
   if (canceled.count === 0) {
     return { status: 'error', error: 'Broadcast já foi finalizado' };
   }
 
-  // Estorno: devolve 1 crédito por destinatário que não foi entregue
-  // (FAILED/SKIPPED) e por destinatário ainda PENDING — esses nunca serão
-  // enviados após o cancelamento. Só recipients que de fato consumiram envio
-  // (SENT/DELIVERED/READ) seguem debitados.
-  const refundCount = await prisma.broadcastRecipient.count({
-    where: {
-      broadcastId: broadcast.id,
-      status: {
-        in: [
-          BroadcastRecipientStatus.PENDING,
-          BroadcastRecipientStatus.FAILED,
-          BroadcastRecipientStatus.SKIPPED,
-        ],
-      },
-    },
-  });
-  if (refundCount > 0) {
-    await prisma.subscription.updateMany({
-      where: { workspaceId: ctx.workspace.id },
-      data: { marketingCredits: { increment: refundCount } },
-    });
-    log.info(
-      { workspaceId: ctx.workspace.id, broadcastId: broadcast.id, refundCount },
-      'créditos estornados no cancelamento do broadcast',
-    );
-  }
+  // Se não há mais recipients PENDING (nenhum job em voo), settla aqui; senão os
+  // jobs do worker, ao verem CANCELED, marcam SKIPPED e o último a drenar settla.
+  const refundCount = await settleCanceledBroadcast(broadcast.id, ctx.workspace.id);
 
   await prisma.auditLog.create({
     data: {

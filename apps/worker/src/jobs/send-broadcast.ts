@@ -180,22 +180,30 @@ async function maybeCompleteBroadcast(broadcastId: string): Promise<void> {
   const remaining = await prisma.broadcastRecipient.count({
     where: { broadcastId, status: BroadcastRecipientStatus.PENDING },
   });
-  if (remaining === 0) {
-    const updated = await prisma.broadcast.updateMany({
-      where: {
-        id: broadcastId,
-        status: { in: [BroadcastStatus.RUNNING, BroadcastStatus.SCHEDULED] },
-      },
-      data: { status: BroadcastStatus.COMPLETED, finishedAt: new Date() },
-    });
-    // O `count > 0` garante que o estorno roda uma única vez: só o job que de
-    // fato vence a transição RUNNING→COMPLETED estorna. Quem chegar depois vê
-    // o broadcast já COMPLETED e não toca nos créditos.
-    if (updated.count > 0) {
-      log.info({ broadcastId }, 'broadcast completed');
-      await refundUndelivered(broadcastId);
-    }
-  }
+  if (remaining > 0) return;
+
+  // Settle idempotente reivindicado por `finishedAt` (null→now): cobre tanto o
+  // fechamento normal (RUNNING→COMPLETED) quanto o cancelamento (CANCELED). Só
+  // um caller — o último worker a drenar OU o cancel — vence o claim e estorna,
+  // contando o estado FINAL: um envio que já virou SENT NÃO é estornado; só
+  // SKIPPED/FAILED. Como o settle só dispara com PENDING===0, nenhum envio em
+  // voo (ainda PENDING) é contado — elimina o over-refund de cancel concorrente.
+  const claimed = await prisma.broadcast.updateMany({
+    where: { id: broadcastId, finishedAt: null },
+    data: { finishedAt: new Date() },
+  });
+  if (claimed.count === 0) return;
+
+  // Marca COMPLETED só se ainda estava em andamento; CANCELED permanece CANCELED.
+  await prisma.broadcast.updateMany({
+    where: {
+      id: broadcastId,
+      status: { in: [BroadcastStatus.RUNNING, BroadcastStatus.SCHEDULED] },
+    },
+    data: { status: BroadcastStatus.COMPLETED },
+  });
+  log.info({ broadcastId }, 'broadcast settled');
+  await refundUndelivered(broadcastId);
 }
 
 /**
