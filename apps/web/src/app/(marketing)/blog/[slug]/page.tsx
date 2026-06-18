@@ -85,7 +85,8 @@ export default async function BlogPostPage({ params }: PageProps) {
             <span className="font-serif italic font-normal text-primary">funcionando?</span>
           </h2>
           <p className="mt-5 text-lg text-muted-foreground md:text-xl">
-            7 dias grátis, sem cartão. Conversa com o Forge, publica o agente, conecta o WhatsApp.
+            Monte seu agente de graça, sem cartão. Conversa com o Forge, vê funcionando e assina
+            pra publicar — com garantia de 7 dias.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Button asChild size="lg" className="h-12 px-6 text-base">

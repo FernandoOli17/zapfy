@@ -28,7 +28,7 @@ export default function TermosPage() {
       eyebrow="Termos de uso"
       title="As regras"
       emphasis="do nosso acordo."
-      lastUpdated="11 de maio de 2026"
+      lastUpdated="18 de junho de 2026"
       toc={TOC}
     >
       <p className="text-lg text-muted-foreground leading-relaxed">
@@ -102,17 +102,21 @@ export default function TermosPage() {
 
         <LegalSection id="planos-pagamento" number={4} title="Planos, pagamento e cancelamento">
           <p>
-            Oferecemos os planos Starter, Pro e Premium, com mensalidades indicadas em{' '}
+            Oferecemos os planos Starter, Pro e Business, com mensalidades indicadas em{' '}
             <Link href="/precos" className="text-foreground underline-offset-4 hover:underline">
               /precos
             </Link>
-            . O período de teste gratuito (7 dias) não exige cartão e expira automaticamente.
+            . Não há período de teste gratuito (trial): você pode montar e visualizar seu Agente
+            com o Forge gratuitamente e sem cartão, e a cobrança só ocorre quando você contrata um
+            plano pago, momento em que o Agente passa a atender no WhatsApp.
           </p>
           <p>
-            Cobranças são processadas via Stripe em ciclos mensais a partir do fim do trial. O
-            cancelamento pode ser feito a qualquer momento pelo portal de assinatura. Em caso de
-            cancelamento, mantemos o acesso até o fim do ciclo já pago, sem reembolso proporcional
-            dos dias não utilizados, salvo previsão expressa em contrário.
+            A cobrança é processada via Stripe em ciclos mensais, a partir da contratação do
+            plano. Oferecemos garantia de 7 dias: se você solicitar o cancelamento em até 7 (sete)
+            dias corridos contados da contratação, devolvemos integralmente o valor pago nesse
+            período. Após esse prazo, o cancelamento pode ser feito a qualquer momento pelo portal
+            de assinatura, mantendo-se o acesso até o fim do ciclo já pago, sem reembolso
+            proporcional dos dias não utilizados, salvo previsão expressa em contrário.
           </p>
           <p>
             Upgrades e downgrades são prorrateados no ciclo atual. Caso o limite mensal de

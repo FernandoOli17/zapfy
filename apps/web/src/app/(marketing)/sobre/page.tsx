@@ -30,7 +30,7 @@ const PRINCIPLES = [
   },
   {
     title: 'Sem dark pattern.',
-    body: 'Cancelamento em um clique no portal Stripe. Preço previsível. Limites avisados em 80%. Trial sem cartão. Nada de letrinha miúda.',
+    body: 'Cancelamento em um clique no portal Stripe. Preço previsível. Limites avisados em 80%. Sem cartão pra montar e 7 dias de garantia. Nada de letrinha miúda.',
   },
 ];
 
