@@ -1,28 +1,23 @@
 ﻿import { NextResponse, type NextRequest } from 'next/server';
 import type Stripe from 'stripe';
-import { PlanId, prisma, SubscriptionStatus } from '@zapfy/db';
+import { type PlanId, prisma, SubscriptionStatus } from '@zapfy/db';
 import { createLogger } from '@zapfy/shared';
 
 import { env } from '@/env';
 import { captureException } from '@/lib/sentry';
-import { getStripeClient, planIdFromStripePrice } from '@/lib/stripe';
+import { getStripeClient } from '@/lib/stripe';
+import { mapPriceToDbPlan, STATUS_MAP } from '@/lib/stripe-webhook-mappers';
 
 const log = createLogger('stripe-webhook');
 
-const STATUS_MAP: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
-  trialing: SubscriptionStatus.TRIALING,
-  active: SubscriptionStatus.ACTIVE,
-  past_due: SubscriptionStatus.PAST_DUE,
-  canceled: SubscriptionStatus.CANCELED,
-  unpaid: SubscriptionStatus.UNPAID,
-  incomplete: SubscriptionStatus.INCOMPLETE,
-  incomplete_expired: SubscriptionStatus.CANCELED,
-  paused: SubscriptionStatus.PAST_DUE,
-};
-
 /**
  * Webhook do Stripe. Trata eventos de Subscription, Invoice e Checkout.
- * Retorna 200 mesmo em erro pra Stripe parar de fazer retry — logamos pra investigação.
+ *
+ * Em erro de handler devolvemos 500 pra Stripe re-tentar: os handlers são
+ * upserts idempotentes, então reprocessar é seguro, e um blip transitório de DB
+ * não pode deixar um cliente pago em INCOMPLETE pra sempre (BI-A3). Só
+ * devolvemos 200 quando o evento é ignorado ou o payload é irrecuperável
+ * (early-return dentro do handler) — nesses casos retry não ajudaria.
  */
 export async function POST(req: NextRequest) {
   const stripe = getStripeClient();
@@ -55,7 +50,7 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
-        await handleSubscriptionEvent(event.data.object);
+        await handleSubscriptionEvent(stripe, event.data.object);
         break;
       case 'invoice.paid':
       case 'invoice.payment_failed':
@@ -65,9 +60,11 @@ export async function POST(req: NextRequest) {
         log.info({ type: event.type, id: event.id }, 'evento ignorado');
     }
   } catch (err) {
-    log.error({ type: event.type, err: String(err) }, 'handler explodiu');
+    log.error({ type: event.type, eventId: event.id, err: String(err) }, 'handler explodiu');
     captureException(err, { context: 'stripe.webhook', eventType: event.type, eventId: event.id });
-    // mesmo assim 200 pra Stripe não bombardear de retry — Stripe Dashboard mostra a falha
+    // 500 → Stripe re-tenta. Handlers são upserts idempotentes; reprocessar é
+    // seguro e evita perder o evento num blip transitório de DB (BI-A3).
+    return new NextResponse('Webhook handler failed', { status: 500 });
   }
 
   return new NextResponse('OK', { status: 200 });
@@ -122,7 +119,22 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
   await upsertFromStripeSubscription(workspaceId, customerId, sub);
 }
 
-async function handleSubscriptionEvent(sub: Stripe.Subscription) {
+async function handleSubscriptionEvent(stripe: Stripe, eventSub: Stripe.Subscription) {
+  // Re-busca o estado atual no Stripe em vez de aplicar o payload do evento:
+  // webhooks podem chegar fora de ordem e um `updated` atrasado reativaria um
+  // workspace já cancelado. O estado vivo do Stripe vence (BI-A4). Se a sub não
+  // existe mais (404), o payload do evento (último estado conhecido) é o
+  // fallback — tipicamente um `deleted` já com status canceled.
+  let sub = eventSub;
+  try {
+    sub = await stripe.subscriptions.retrieve(eventSub.id);
+  } catch (err) {
+    log.warn(
+      { subId: eventSub.id, err: String(err) },
+      'falha ao re-buscar subscription no Stripe — usando payload do evento',
+    );
+  }
+
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
   const workspaceId =
     sub.metadata['workspaceId'] ??
@@ -165,7 +177,28 @@ async function upsertFromStripeSubscription(
 ) {
   const item = sub.items.data[0];
   const priceId = item?.price.id ?? null;
-  const plan: PlanId = priceId ? mapPriceToDbPlan(priceId) : PlanId.STARTER;
+  // Price desconhecido (env STRIPE_PRICE_* faltando/divergente) NÃO pode
+  // rebaixar o plano pra STARTER em silêncio — um BUSINESS viraria STARTER no
+  // DB (BI-A7). Nesses casos deixamos `plan` undefined: no create o default do
+  // schema (STARTER) vale; no update o plano existente é preservado.
+  const plan: PlanId | undefined = priceId ? (mapPriceToDbPlan(priceId) ?? undefined) : undefined;
+  if (priceId && plan === undefined) {
+    log.error(
+      { workspaceId, subId: sub.id, priceId },
+      'price desconhecido no Stripe — plan NÃO sobrescrito; conferir env STRIPE_PRICE_*',
+    );
+    captureException(new Error(`Unknown Stripe price ${priceId}`), {
+      context: 'stripe.webhook.unknownPrice',
+      workspaceId,
+      subId: sub.id,
+      priceId,
+    });
+  } else if (!priceId) {
+    log.error(
+      { workspaceId, subId: sub.id },
+      'subscription sem price/item — plan NÃO sobrescrito',
+    );
+  }
   const status = STATUS_MAP[sub.status] ?? SubscriptionStatus.INCOMPLETE;
 
   // Em Stripe API recente (2025+) os periods estão no item, não no subscription.
@@ -188,7 +221,7 @@ async function upsertFromStripeSubscription(
     where: { workspaceId },
     create: {
       workspaceId,
-      plan,
+      ...(plan ? { plan } : {}),
       status,
       stripeCustomerId: customerId,
       stripeSubscriptionId: sub.id,
@@ -198,7 +231,7 @@ async function upsertFromStripeSubscription(
       cancelAtPeriodEnd: sub.cancel_at_period_end,
     },
     update: {
-      plan,
+      ...(plan ? { plan } : {}),
       status,
       stripeCustomerId: customerId,
       stripeSubscriptionId: sub.id,
@@ -215,15 +248,7 @@ async function upsertFromStripeSubscription(
       action: `subscription.${sub.status}`,
       targetType: 'Subscription',
       targetId: sub.id,
-      metadata: { plan, customerId },
+      metadata: { plan: plan ?? null, customerId },
     },
   });
-}
-
-function mapPriceToDbPlan(priceId: string): PlanId {
-  const id = planIdFromStripePrice(priceId);
-  if (id === 'STARTER') return PlanId.STARTER;
-  if (id === 'PRO') return PlanId.PRO;
-  if (id === 'BUSINESS') return PlanId.BUSINESS;
-  return PlanId.STARTER;
 }
