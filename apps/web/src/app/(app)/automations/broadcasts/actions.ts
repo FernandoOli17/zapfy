@@ -5,10 +5,11 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import {
   BroadcastStatus,
+  BroadcastRecipientStatus,
   prisma,
   type Prisma,
 } from '@zapfy/db';
-import { createLogger, creditsSufficient } from '@zapfy/shared';
+import { createLogger } from '@zapfy/shared';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
@@ -165,26 +166,47 @@ export async function launchBroadcast(broadcastId: string): Promise<BroadcastAct
   // Vendidos em pacotes à parte (fluxo de compra é fase futura) — por ora só
   // bloqueia quando o saldo não cobre o envio.
   const needed = broadcast.recipients.length;
-  const sub = await prisma.subscription.findUnique({
-    where: { workspaceId: ctx.workspace.id },
-    select: { marketingCredits: true },
+  const previousStatus = broadcast.status;
+
+  // Dinheiro: o débito e a transição de status precisam ser atômicos, senão dois
+  // launches concorrentes (double-click no mesmo broadcast, ou dois broadcasts
+  // com saldo pra só um) passam ambos num check separado e debitam 2× / deixam
+  // o saldo negativo. Sequência:
+  //   1. claim atômico DRAFT/SCHEDULED→RUNNING (só um launcher vence o mesmo broadcast);
+  //   2. débito condicional (`gte`) — saldo nunca fica negativo;
+  //   3. se o débito não pegar (saldo insuficiente), reverte o status pro original.
+  const claimed = await prisma.broadcast.updateMany({
+    where: {
+      id: broadcast.id,
+      status: { in: [BroadcastStatus.DRAFT, BroadcastStatus.SCHEDULED] },
+    },
+    data: { status: BroadcastStatus.RUNNING, startedAt: new Date() },
   });
-  const balance = sub?.marketingCredits ?? 0;
-  if (!creditsSufficient(balance, needed)) {
+  if (claimed.count === 0) {
+    return { status: 'error', error: 'Broadcast já foi lançado' };
+  }
+
+  const debited = await prisma.subscription.updateMany({
+    where: { workspaceId: ctx.workspace.id, marketingCredits: { gte: needed } },
+    data: { marketingCredits: { decrement: needed } },
+  });
+  if (debited.count === 0) {
+    // Não conseguiu debitar — desfaz o claim de status pra não deixar o
+    // broadcast RUNNING sem créditos nem jobs enfileirados.
+    await prisma.broadcast.updateMany({
+      where: { id: broadcast.id, status: BroadcastStatus.RUNNING },
+      data: { status: previousStatus, startedAt: null },
+    });
+    const sub = await prisma.subscription.findUnique({
+      where: { workspaceId: ctx.workspace.id },
+      select: { marketingCredits: true },
+    });
+    const balance = sub?.marketingCredits ?? 0;
     return {
       status: 'error',
       error: `Saldo de créditos de marketing insuficiente: ${balance} crédito(s) pra ${needed} destinatário(s). Compre mais créditos pra disparar.`,
     };
   }
-  await prisma.subscription.update({
-    where: { workspaceId: ctx.workspace.id },
-    data: { marketingCredits: { decrement: needed } },
-  });
-
-  await prisma.broadcast.update({
-    where: { id: broadcast.id },
-    data: { status: BroadcastStatus.RUNNING, startedAt: new Date() },
-  });
 
   // Enfileira um job por recipient. BullMQ worker tem concurrency=3 globalmente
   // (apps/worker/src/index.ts) — efetivamente já rate-limita envios pra Meta.
@@ -247,10 +269,45 @@ export async function cancelBroadcast(broadcastId: string): Promise<BroadcastAct
     return { status: 'error', error: `Broadcast já está ${broadcast.status}` };
   }
 
-  await prisma.broadcast.update({
-    where: { id: broadcast.id },
+  // Transição atômica pra CANCELED: o `count > 0` garante que o estorno roda uma
+  // única vez (não em cancelamentos concorrentes nem se o worker já tiver fechado).
+  const canceled = await prisma.broadcast.updateMany({
+    where: {
+      id: broadcast.id,
+      status: { notIn: [BroadcastStatus.COMPLETED, BroadcastStatus.CANCELED] },
+    },
     data: { status: BroadcastStatus.CANCELED, finishedAt: new Date() },
   });
+  if (canceled.count === 0) {
+    return { status: 'error', error: 'Broadcast já foi finalizado' };
+  }
+
+  // Estorno: devolve 1 crédito por destinatário que não foi entregue
+  // (FAILED/SKIPPED) e por destinatário ainda PENDING — esses nunca serão
+  // enviados após o cancelamento. Só recipients que de fato consumiram envio
+  // (SENT/DELIVERED/READ) seguem debitados.
+  const refundCount = await prisma.broadcastRecipient.count({
+    where: {
+      broadcastId: broadcast.id,
+      status: {
+        in: [
+          BroadcastRecipientStatus.PENDING,
+          BroadcastRecipientStatus.FAILED,
+          BroadcastRecipientStatus.SKIPPED,
+        ],
+      },
+    },
+  });
+  if (refundCount > 0) {
+    await prisma.subscription.updateMany({
+      where: { workspaceId: ctx.workspace.id },
+      data: { marketingCredits: { increment: refundCount } },
+    });
+    log.info(
+      { workspaceId: ctx.workspace.id, broadcastId: broadcast.id, refundCount },
+      'créditos estornados no cancelamento do broadcast',
+    );
+  }
 
   await prisma.auditLog.create({
     data: {
@@ -259,6 +316,7 @@ export async function cancelBroadcast(broadcastId: string): Promise<BroadcastAct
       action: 'broadcast.canceled',
       targetType: 'Broadcast',
       targetId: broadcast.id,
+      metadata: { refundedCredits: refundCount },
     },
   });
 

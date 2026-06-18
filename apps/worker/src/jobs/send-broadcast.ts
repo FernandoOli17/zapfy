@@ -188,8 +188,48 @@ async function maybeCompleteBroadcast(broadcastId: string): Promise<void> {
       },
       data: { status: BroadcastStatus.COMPLETED, finishedAt: new Date() },
     });
-    if (updated.count > 0) log.info({ broadcastId }, 'broadcast completed');
+    // O `count > 0` garante que o estorno roda uma única vez: só o job que de
+    // fato vence a transição RUNNING→COMPLETED estorna. Quem chegar depois vê
+    // o broadcast já COMPLETED e não toca nos créditos.
+    if (updated.count > 0) {
+      log.info({ broadcastId }, 'broadcast completed');
+      await refundUndelivered(broadcastId);
+    }
   }
+}
+
+/**
+ * Estorna 1 crédito de marketing por destinatário que não recebeu o template
+ * (FAILED/SKIPPED) — conta WA desconectada, template reprovado, opt-out,
+ * cancelado. Só recipients SENT/DELIVERED/READ consumiram envio e seguem
+ * debitados. DEVE ser chamado uma única vez por broadcast, no momento da
+ * transição atômica pro estado terminal.
+ */
+async function refundUndelivered(broadcastId: string): Promise<void> {
+  const broadcast = await prisma.broadcast.findUnique({
+    where: { id: broadcastId },
+    select: { workspaceId: true },
+  });
+  if (!broadcast) return;
+
+  const refundCount = await prisma.broadcastRecipient.count({
+    where: {
+      broadcastId,
+      status: {
+        in: [BroadcastRecipientStatus.FAILED, BroadcastRecipientStatus.SKIPPED],
+      },
+    },
+  });
+  if (refundCount === 0) return;
+
+  await prisma.subscription.updateMany({
+    where: { workspaceId: broadcast.workspaceId },
+    data: { marketingCredits: { increment: refundCount } },
+  });
+  log.info(
+    { broadcastId, workspaceId: broadcast.workspaceId, refundCount },
+    'créditos estornados no fechamento do broadcast',
+  );
 }
 
 async function markRecipient(
