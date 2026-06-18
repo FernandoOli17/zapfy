@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import { WaWebhookSignatureError } from './errors';
 import {
+  waMessagesChangeSchema,
   waWebhookPayloadSchema,
   type WaMessagesChange,
   type WaWebhookPayload,
@@ -76,14 +77,19 @@ interface PhoneNumberBucket {
 }
 
 /**
- * Type guard: change do field `messages`. Changes de outros fields
- * (`message_template_status_update`, `account_update`, etc.) são toleradas no
- * payload mas ignoradas aqui.
+ * Reconhece uma change de `messages` BEM-FORMADA. Faz `safeParse` contra o
+ * schema estrito (não só `field === 'messages'`): uma change com `field:
+ * 'messages'` mas `value` malformado casa o ramo permissivo da union no parse
+ * do payload, e o type-guard antigo (só checava o field) mentia o tipo —
+ * acessar `value.metadata` num `unknown` real crashava e derrubava o POST
+ * inteiro (com as mensagens válidas junto). Aqui, malformada → null → ignorada,
+ * sem crash e sem perder as outras mensagens do mesmo POST.
  */
-function isMessagesChange(
+function asMessagesChange(
   change: WaWebhookPayload['entry'][number]['changes'][number],
-): change is WaMessagesChange {
-  return change.field === 'messages';
+): WaMessagesChange | null {
+  const parsed = waMessagesChangeSchema.safeParse(change);
+  return parsed.success ? parsed.data : null;
 }
 
 /**
@@ -99,8 +105,9 @@ export function flattenWebhookEvents(payload: WaWebhookPayload): {
 
   for (const entry of payload.entry) {
     for (const change of entry.changes) {
-      if (!isMessagesChange(change)) continue;
-      const v = change.value;
+      const mc = asMessagesChange(change);
+      if (!mc) continue;
+      const v = mc.value;
       const key = v.metadata.phone_number_id;
       const bucket: PhoneNumberBucket = byPhoneNumberId[key] ?? {
         displayPhoneNumber: v.metadata.display_phone_number,

@@ -293,9 +293,20 @@ async function persistInboundMessage(input: {
         },
       }));
 
-    // duplicate guard (se Meta retransmite o mesmo evento)
+    // duplicate guard (se Meta retransmite o mesmo evento): NÃO persiste de novo,
+    // mas devolve os ids pra o caller AINDA ENFILEIRAR. Se a 1ª entrega persistiu
+    // mas o enqueue falhou (Redis piscou) e a Meta re-entregou, é aqui que a
+    // mensagem é recuperada — o jobId determinístico (`msg-<id>`) deduplica, então
+    // re-enfileirar uma já processada é no-op.
     const dup = await tx.message.findUnique({ where: { whatsappMessageId: m.id } });
-    if (dup) return null;
+    if (dup) {
+      return {
+        messageId: dup.id,
+        conversationId: dup.conversationId,
+        contactId: dup.contactId,
+        isDuplicate: true as const,
+      };
+    }
 
     const created = await tx.message.create({
       data: {
@@ -320,10 +331,14 @@ async function persistInboundMessage(input: {
       },
     });
 
-    return { messageId: created.id, conversationId: conversation.id, contactId: contact.id };
+    return {
+      messageId: created.id,
+      conversationId: conversation.id,
+      contactId: contact.id,
+      isDuplicate: false as const,
+    };
   });
 
-  // Mensagem duplicada (re-entrega da Meta) — nada a fazer, já processada.
   if (!result) return { enqueued: true };
 
   const previewText =
@@ -363,29 +378,32 @@ async function persistInboundMessage(input: {
   }
 
   // Pusher e outgoing webhook saem do caminho do ack (background, best-effort).
-  // publishInboxEvent já trata o próprio erro internamente; ainda assim não o
-  // aguardamos pra não atrasar o 200 (regra inviolável: ack <1s).
-  void publishInboxEvent(workspaceId, {
-    name: 'message.new',
-    data: {
-      conversationId: result.conversationId,
-      messageId: result.messageId,
-      contactId: result.contactId,
-      direction: 'INBOUND',
-      preview: previewText.slice(0, 140),
-      createdAt: timestamp.toISOString(),
-    },
-  });
+  // SÓ pra mensagem nova: numa re-entrega da Meta (isDuplicate) o inbox já foi
+  // notificado na 1ª vez — re-publicar duplicaria o evento. O enqueue acima já
+  // rodou (idempotente) pra recuperar processamento eventualmente perdido.
+  if (!result.isDuplicate) {
+    void publishInboxEvent(workspaceId, {
+      name: 'message.new',
+      data: {
+        conversationId: result.conversationId,
+        messageId: result.messageId,
+        contactId: result.contactId,
+        direction: 'INBOUND',
+        preview: previewText.slice(0, 140),
+        createdAt: timestamp.toISOString(),
+      },
+    });
 
-  void dispatchOutgoingEvent(workspaceId, 'message.received', {
-    messageId: result.messageId,
-    conversationId: result.conversationId,
-    contactId: result.contactId,
-    phoneE164: m.from,
-    type: m.type,
-    text: previewText,
-    receivedAt: timestamp.toISOString(),
-  });
+    void dispatchOutgoingEvent(workspaceId, 'message.received', {
+      messageId: result.messageId,
+      conversationId: result.conversationId,
+      contactId: result.contactId,
+      phoneE164: m.from,
+      type: m.type,
+      text: previewText,
+      receivedAt: timestamp.toISOString(),
+    });
+  }
 
   return { enqueued: enqueueResult.ok };
 }
